@@ -1,14 +1,11 @@
 name: Deploy
 
-# Сборка и запуск на хосте по SSH (make deploy) после успешных проверок (Verify)
-# или вручную. Настройки — переменная репозитория DEPLOY_ENV (содержимое
+# Сборка и запуск на хосте по SSH (make deploy): из CI после проверок main или
+# вручную. Настройки — переменная репозитория DEPLOY_ENV (содержимое
 # .env.deploy: хост, каталог, порт), ключ — секрет SSH_PRIVATE_KEY. Адрес API
 # для сборки — .env.production.local на хосте (make env).
 on:
-  workflow_run:
-    workflows: [Verify]
-    types: [completed]
-    branches: [main]
+  workflow_call:
   workflow_dispatch:
 
 permissions:
@@ -16,19 +13,15 @@ permissions:
 
 jobs:
   deploy:
-    if: >-
-      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
-      (github.event.workflow_run.conclusion == 'success' &&
-       github.event.workflow_run.event == 'push')
+    # Только с main: ручной запуск с другой ветки пропускается.
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     concurrency:
-      group: deploy
+      group: deploy-production
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
       - name: Настройки деплоя
         env:

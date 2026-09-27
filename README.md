@@ -104,7 +104,7 @@ yarn build
 ```
 
 Git-хуки (lefthook): на коммит — eslint и prettier по изменённым файлам, на push —
-typecheck и тесты. В CI (GitHub Actions, workflow `Verify`) на pull request и
+typecheck и тесты. В CI (GitHub Actions, workflow `CI`) на pull request и
 push в `main` — lint, typecheck, тесты и сборка.
 
 Автофиксы:
@@ -133,8 +133,8 @@ make local-up | local-down | local-logs   # то же на этой машине
 `up` запускается с `--remove-orphans`: контейнеры прежних имён сервиса в том же
 compose-проекте удаляются.
 
-GitHub Actions: workflow `Deploy` запускается после успешного `Verify` на push в `main`
-(или вручную, только с `main`) и выполняет `make deploy`. Нужны переменная репозитория `DEPLOY_ENV` —
+GitHub Actions: после проверок на push в `main` workflow `CI` вызывает `Deploy`
+(в том же запуске; вручную — только с `main`), и тот выполняет `make deploy`. Нужны переменная репозитория `DEPLOY_ENV` —
 содержимое `.env.deploy` (хост, каталог на хосте, порт) — и секрет `SSH_PRIVATE_KEY`.
 Адрес API для сборки берётся из `.env.production.local` на хосте (`make env`).
 

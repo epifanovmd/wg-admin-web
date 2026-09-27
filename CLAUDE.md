@@ -21,7 +21,7 @@ yarn generate:orval # регенерация src/shared/api/gen/ (MAIN_SWAGGER �
 ```
 
 Перед merge обязательны: lint + typecheck + test + build. Хуки lefthook: на коммит —
-eslint и prettier по изменённым файлам, на push — typecheck и тесты; CI (`Verify`) —
+eslint и prettier по изменённым файлам, на push — typecheck и тесты; CI (`ci.yml`) —
 всё вместе со сборкой.
 
 ## Никогда не редактировать вручную
