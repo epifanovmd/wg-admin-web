@@ -1,0 +1,65 @@
+import { RotateWgAgentKeyButton } from "@features/manage-wg-node";
+import type { WgNodeDto } from "@shared/api/gen/main/model";
+import { Button } from "@shared/ui";
+import { HardDriveDownload, PackageX, Pencil, Trash2 } from "lucide-react";
+import { observer } from "mobx-react-lite";
+import { FC } from "react";
+
+import type { WgNodeDetailVM } from "../model/useWgNodeDetailVM";
+import { AgentUpdateButton } from "./AgentUpdateButton";
+
+interface NodeHeaderActionsProps {
+  vm: WgNodeDetailVM;
+  node: WgNodeDto;
+}
+
+/** Действия с нодой в шапке: агент, ключ, изменение и удаление. */
+export const NodeHeaderActions: FC<NodeHeaderActionsProps> = observer(
+  ({ vm, node }) => (
+    <div className="flex flex-wrap gap-2">
+      {vm.canProvision && (
+        <Button
+          variant="outline"
+          leftIcon={<HardDriveDownload size={15} />}
+          onClick={() => vm.provision.openFor(node)}
+        >
+          Установить агента
+        </Button>
+      )}
+      {vm.canProvision && node.hasAgentKey && (
+        <Button
+          variant="outline"
+          leftIcon={<PackageX size={15} />}
+          onClick={() => vm.provision.openFor(node, "uninstall")}
+        >
+          Удалить агента
+        </Button>
+      )}
+      {vm.canManage && (
+        <>
+          <AgentUpdateButton
+            node={node}
+            release={vm.release}
+            loading={vm.updateAgent.isLoading}
+            onUpdate={() => void vm.updateAgent.mutate()}
+          />
+          <RotateWgAgentKeyButton nodeId={node.id} />
+          <Button
+            variant="outline"
+            leftIcon={<Pencil size={15} />}
+            onClick={() => vm.nodeForm.openEdit(node)}
+          >
+            Изменить
+          </Button>
+          <Button
+            variant="destructive"
+            leftIcon={<Trash2 size={15} />}
+            onClick={() => void vm.removeNode(node)}
+          >
+            Удалить
+          </Button>
+        </>
+      )}
+    </div>
+  ),
+);

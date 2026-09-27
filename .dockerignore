@@ -1,0 +1,35 @@
+# Зависимости — устанавливаются внутри образа
+node_modules
+
+# Артефакты сборки и тестов — генерируются внутри образа
+dist
+coverage
+.tanstack
+
+# Git, CI и инструменты разработки
+.git
+.gitignore
+.github
+.claude
+.vscode
+.idea
+
+# Документация — сборке не нужна
+docs
+*.md
+
+# Env разработки и деплоя; .env.production и .env.production.local нужны сборке
+.env.development
+.env.development.local
+.env.local
+.env.deploy*
+
+# Логи и временные файлы
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS-артефакты
+.DS_Store
+Thumbs.db

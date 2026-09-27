@@ -1,0 +1,13 @@
+# Не уходит на хост при `make sync`. Исключённое не удаляется на хосте (.env.production.local там сохраняется).
+.git
+node_modules
+dist
+coverage
+.tanstack
+.claude
+.idea
+.vscode
+.DS_Store
+.env.local
+.env.*.local
+.env.deploy

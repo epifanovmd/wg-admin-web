@@ -1,0 +1,73 @@
+import { createDisposer } from "@shared/lib/di";
+import { ISocketTransport } from "@shared/lib/socket";
+import { injectable } from "inversify";
+
+import {
+  IUserSocketService,
+  SessionTerminatedPayload,
+  UserEmailVerifiedPayload,
+  UserPasswordChangedPayload,
+  UserPrivilegesChangedPayload,
+  UserSocketHandlers,
+  UserUsernameChangedPayload,
+} from "./user-socket.types";
+
+@injectable()
+export class UserSocketService implements IUserSocketService {
+  constructor(@ISocketTransport() private _transport: ISocketTransport) {}
+
+  subscribe(handlers: UserSocketHandlers): () => void {
+    const disposers = createDisposer();
+
+    if (handlers.onProfileUpdated) {
+      disposers.add(
+        this._transport.on("profile:updated", handlers.onProfileUpdated),
+      );
+    }
+    if (handlers.onUsernameChanged) {
+      disposers.add(
+        this._transport.on<[UserUsernameChangedPayload]>(
+          "user:username-changed",
+          handlers.onUsernameChanged,
+        ),
+      );
+    }
+    if (handlers.onEmailVerified) {
+      disposers.add(
+        this._transport.on<[UserEmailVerifiedPayload]>(
+          "user:email-verified",
+          handlers.onEmailVerified,
+        ),
+      );
+    }
+    if (handlers.onPrivilegesChanged) {
+      disposers.add(
+        this._transport.on<[UserPrivilegesChangedPayload]>(
+          "user:privileges-changed",
+          handlers.onPrivilegesChanged,
+        ),
+      );
+    }
+    if (handlers.onNewSession) {
+      disposers.add(this._transport.on("session:new", handlers.onNewSession));
+    }
+    if (handlers.onSessionTerminated) {
+      disposers.add(
+        this._transport.on<[SessionTerminatedPayload]>(
+          "session:terminated",
+          handlers.onSessionTerminated,
+        ),
+      );
+    }
+    if (handlers.onPasswordChanged) {
+      disposers.add(
+        this._transport.on<[UserPasswordChangedPayload]>(
+          "user:password-changed",
+          handlers.onPasswordChanged,
+        ),
+      );
+    }
+
+    return disposers.dispose;
+  }
+}

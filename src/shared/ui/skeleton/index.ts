@@ -1,0 +1,12 @@
+export type { SkeletonProps } from "./Skeleton";
+export { Skeleton } from "./Skeleton";
+export type { SkeletonTextGap } from "./skeleton-variants";
+export { skeletonVariants } from "./skeleton-variants";
+export type { SkeletonAvatarProps } from "./SkeletonAvatar";
+export { SkeletonAvatar } from "./SkeletonAvatar";
+export type { SkeletonGroupProps } from "./SkeletonGroup";
+export { SkeletonGroup } from "./SkeletonGroup";
+export type { SkeletonRowProps } from "./SkeletonRow";
+export { SkeletonRow } from "./SkeletonRow";
+export type { SkeletonTextProps } from "./SkeletonText";
+export { SkeletonText } from "./SkeletonText";

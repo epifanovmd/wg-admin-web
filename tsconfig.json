@@ -1,0 +1,48 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["DOM", "DOM.Iterable", "ESNext"],
+    "module": "ESNext",
+    "types": [
+      "vite/client",
+      "vitest/globals",
+      "@testing-library/jest-dom",
+      "reflect-metadata"
+    ],
+    "jsx": "react-jsx",
+    "moduleResolution": "Bundler",
+    "moduleDetection": "force",
+
+    "strict": true,
+    "noEmit": true,
+    "isolatedModules": true,
+    "skipLibCheck": true,
+
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "esModuleInterop": true,
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+
+    "noImplicitReturns": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noFallthroughCasesInSwitch": true,
+
+    "paths": {
+      "@app": ["./src/app"],
+      "@app/*": ["./src/app/*"],
+      "@pages": ["./src/pages"],
+      "@pages/*": ["./src/pages/*"],
+      "@widgets": ["./src/widgets"],
+      "@widgets/*": ["./src/widgets/*"],
+      "@features": ["./src/features"],
+      "@features/*": ["./src/features/*"],
+      "@entities": ["./src/entities"],
+      "@entities/*": ["./src/entities/*"],
+      "@shared": ["./src/shared"],
+      "@shared/*": ["./src/shared/*"]
+    }
+  },
+  "include": ["./src/**/*", "./vitest.setup.ts"]
+}

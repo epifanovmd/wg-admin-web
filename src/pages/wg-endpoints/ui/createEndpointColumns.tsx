@@ -1,0 +1,100 @@
+import type { WgEndpointDto } from "@shared/api/gen/main/model";
+import {
+  Badge,
+  createColumnHelper,
+  IconButton,
+  TableRowActions,
+  Tooltip,
+} from "@shared/ui";
+import { Pencil, Trash2 } from "lucide-react";
+import type { RefObject } from "react";
+
+import type { WgEndpointsVM } from "../model/useWgEndpointsVM";
+
+const column = createColumnHelper<WgEndpointDto>();
+
+interface EndpointColumnsOptions {
+  canManage: boolean;
+  relayNodeName: (id: string | null) => string | null;
+  /** VM — через ref: колонки стабильны, ячейки не перемонтируются. */
+  vm: RefObject<WgEndpointsVM>;
+}
+
+/** Колонки таблицы точек подключения. */
+export const createEndpointColumns = ({
+  canManage,
+  relayNodeName,
+  vm,
+}: EndpointColumnsOptions) => [
+  column.display({
+    id: "name",
+    header: "Точка",
+    cell: ({ row }) => (
+      <div className="min-w-0">
+        <p className="font-medium">{row.original.name}</p>
+        <p className="truncate font-mono text-xs text-muted-foreground">
+          {row.original.host}
+        </p>
+      </div>
+    ),
+  }),
+  column.display({
+    id: "mode",
+    header: "Режим",
+    size: 220,
+    cell: ({ row }) => {
+      const endpoint = row.original;
+
+      if (endpoint.mode === "direct") {
+        return <Badge variant="outline">напрямую</Badge>;
+      }
+
+      return (
+        <div className="flex flex-wrap items-center gap-1">
+          <Badge variant="info">
+            релей: {relayNodeName(endpoint.relayNodeId) ?? "—"}
+          </Badge>
+          <Badge variant={endpoint.forwardMode === "ipip" ? "purple" : "muted"}>
+            {endpoint.forwardMode === "ipip" ? "IPIP" : "DNAT"}
+          </Badge>
+        </div>
+      );
+    },
+  }),
+  column.display({
+    id: "description",
+    header: "Описание",
+    cell: ({ row }) => (
+      <span className="text-xs text-muted-foreground">
+        {row.original.description ?? "—"}
+      </span>
+    ),
+  }),
+  column.display({
+    id: "actions",
+    size: 100,
+    meta: { align: "right" },
+    cell: ({ row }) =>
+      canManage ? (
+        <TableRowActions>
+          <Tooltip content="Изменить">
+            <IconButton
+              aria-label="Изменить"
+              onClick={() => vm.current.form.openEdit(row.original)}
+            >
+              <Pencil size={15} />
+            </IconButton>
+          </Tooltip>
+          <Tooltip content="Удалить">
+            <IconButton
+              aria-label="Удалить"
+              variant="destructive"
+              onClick={() => void vm.current.remove(row.original)}
+            >
+              <Trash2 size={15} />
+            </IconButton>
+          </Tooltip>
+        </TableRowActions>
+      ) : null,
+  }),
+];

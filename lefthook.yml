@@ -1,0 +1,22 @@
+# Быстрые проверки — на коммит (только изменённые файлы), полные — на push.
+pre-commit:
+  parallel: false
+  jobs:
+    - name: eslint
+      glob: "*.{ts,tsx}"
+      run: yarn eslint --fix {staged_files}
+      stage_fixed: true
+
+    - name: prettier
+      glob: "*.{ts,tsx,js,jsx,mjs,cjs,json,css,md,html,yml,yaml}"
+      run: yarn prettier --write {staged_files}
+      stage_fixed: true
+
+pre-push:
+  parallel: true
+  jobs:
+    - name: typecheck
+      run: yarn typecheck
+
+    - name: test
+      run: yarn test

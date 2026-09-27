@@ -1,0 +1,67 @@
+name: Deploy
+
+# Сборка и запуск на хосте по SSH (make deploy) после успешных проверок (Verify)
+# или вручную. Настройки — переменная репозитория DEPLOY_ENV (содержимое
+# .env.deploy: хост, каталог, порт), ключ — секрет SSH_PRIVATE_KEY. Адрес API
+# для сборки — .env.production.local на хосте (make env).
+on:
+  workflow_run:
+    workflows: [Verify]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    if: >-
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    concurrency:
+      group: deploy
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Настройки деплоя
+        env:
+          DEPLOY_ENV: ${{ vars.DEPLOY_ENV }}
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        run: |
+          if [ -z "$DEPLOY_ENV" ] || [ -z "$SSH_PRIVATE_KEY" ]; then
+            echo "::error::Нужны переменная репозитория DEPLOY_ENV и секрет SSH_PRIVATE_KEY"
+            exit 1
+          fi
+          # Веб-форма GitHub сохраняет значение с CRLF — \r ломает хост и пути.
+          printf '%s\n' "$DEPLOY_ENV" | tr -d '\r' > .env.deploy
+
+      - uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      # Связь с хостом бывает нестабильной: таймауты и повторы подключения.
+      - name: SSH к хосту
+        run: |
+          host=$(sed -n 's/^SSH_HOST=//p' .env.deploy)
+          printf 'Host *\n  ConnectTimeout 20\n  ConnectionAttempts 5\n  ServerAliveInterval 15\n  ServerAliveCountMax 8\n' >> ~/.ssh/config
+          for i in 1 2 3 4 5; do
+            keys=$(ssh-keyscan -T 15 "$host" 2>/dev/null) && [ -n "$keys" ] && break
+            sleep 5
+          done
+          [ -n "$keys" ] || { echo "::error::Хост $host не отвечает"; exit 1; }
+          echo "$keys" >> ~/.ssh/known_hosts
+
+      - name: Исходники на хост
+        run: |
+          for i in 1 2 3; do make sync && exit 0; sleep 10; done
+          exit 1
+
+      - name: Сборка и запуск
+        run: make build up

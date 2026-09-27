@@ -1,0 +1,4 @@
+dist/
+coverage/
+src/shared/api/gen/
+src/app/routeTree.gen.ts

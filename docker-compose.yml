@@ -1,0 +1,8 @@
+services:
+  wg-admin-web:
+    build: .
+    image: wg-admin-web:latest
+    container_name: wg-admin-web
+    ports:
+      - "${APP_PORT:-3000}:80"
+    restart: unless-stopped

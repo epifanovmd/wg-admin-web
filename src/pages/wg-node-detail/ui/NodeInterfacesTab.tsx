@@ -1,0 +1,191 @@
+import { WgToggleSwitch } from "@entities/wg";
+import { InterfaceReplicasCell } from "@features/manage-wg-interface";
+import type { WgInterfaceDto } from "@shared/api/gen/main/model";
+import { useLatestRef } from "@shared/lib/hooks";
+import {
+  createColumnHelper,
+  IconButton,
+  stopRowClick,
+  Table,
+  TableRowActions,
+  Tooltip,
+} from "@shared/ui";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { ArrowRightLeft, Copy, Pencil, RotateCcw, Trash2 } from "lucide-react";
+import { FC, RefObject, useMemo } from "react";
+
+interface NodeInterfacesTabProps {
+  interfaces: WgInterfaceDto[];
+  isLoading: boolean;
+  canManage: boolean;
+  onEdit: (iface: WgInterfaceDto) => void;
+  onToggle: (iface: WgInterfaceDto) => Promise<boolean>;
+  onRestart: (iface: WgInterfaceDto) => void;
+  onDelete: (iface: WgInterfaceDto) => void;
+  onMove: (iface: WgInterfaceDto) => void;
+  onCopy: (iface: WgInterfaceDto) => void;
+  onPin: (iface: WgInterfaceDto, nodeId: string | null) => void;
+  onRemoveReplica: (iface: WgInterfaceDto, nodeId: string) => void;
+}
+
+const column = createColumnHelper<WgInterfaceDto>();
+
+type RowActions = Pick<
+  NodeInterfacesTabProps,
+  | "onEdit"
+  | "onToggle"
+  | "onRestart"
+  | "onDelete"
+  | "onMove"
+  | "onCopy"
+  | "onPin"
+  | "onRemoveReplica"
+>;
+
+/** Обработчики — через ref: колонки стабильны, ячейки не перемонтируются. */
+const createColumns = (canManage: boolean, actions: RefObject<RowActions>) => [
+  column.display({
+    id: "name",
+    header: "Интерфейс",
+    cell: ({ row }) => (
+      <div className="min-w-0">
+        <Link
+          to="/wg/interfaces/$interfaceId"
+          params={{ interfaceId: row.original.id }}
+          className="font-mono font-medium hover:underline"
+          onClick={stopRowClick}
+        >
+          {row.original.name}
+        </Link>
+        <p className="text-xs text-muted-foreground">
+          {row.original.addressCidr}
+          {row.original.addressV6Cidr && `, ${row.original.addressV6Cidr}`}
+          {" · порт "}
+          {row.original.listenPort}
+        </p>
+      </div>
+    ),
+  }),
+  column.display({
+    id: "endpoint",
+    header: "Подключение клиентов",
+    cell: ({ row }) => (
+      <div className="text-xs">
+        <p className="font-mono">
+          {row.original.clientEndpoint ?? "адрес не задан"}
+        </p>
+        <p className="text-muted-foreground">
+          {row.original.endpointId
+            ? "через точку подключения"
+            : "publicHost ноды"}
+          {row.original.natEnabled && " · NAT"}
+        </p>
+      </div>
+    ),
+  }),
+  column.display({
+    id: "copies",
+    header: "Копии и статус",
+    size: 260,
+    cell: ({ row }) => (
+      <div onClick={stopRowClick}>
+        <InterfaceReplicasCell
+          iface={row.original}
+          canManage={canManage}
+          onPin={(iface, nodeId) => actions.current.onPin(iface, nodeId)}
+          onRemoveReplica={(iface, nodeId) =>
+            actions.current.onRemoveReplica(iface, nodeId)
+          }
+        />
+      </div>
+    ),
+  }),
+  column.display({
+    id: "actions",
+    size: 240,
+    meta: { align: "right" },
+    cell: ({ row }) =>
+      canManage ? (
+        <TableRowActions>
+          <WgToggleSwitch
+            enabled={row.original.enabled}
+            onToggle={() => actions.current.onToggle(row.original)}
+          />
+          <Tooltip content="Перезапустить">
+            <IconButton
+              aria-label="Перезапустить"
+              onClick={() => actions.current.onRestart(row.original)}
+            >
+              <RotateCcw size={15} />
+            </IconButton>
+          </Tooltip>
+          <Tooltip content="Скопировать на ноду (реплика с теми же пирами)">
+            <IconButton
+              aria-label="Скопировать на ноду"
+              onClick={() => actions.current.onCopy(row.original)}
+            >
+              <Copy size={15} />
+            </IconButton>
+          </Tooltip>
+          <Tooltip content="Перенести на другую ноду">
+            <IconButton
+              aria-label="Перенести на другую ноду"
+              onClick={() => actions.current.onMove(row.original)}
+            >
+              <ArrowRightLeft size={15} />
+            </IconButton>
+          </Tooltip>
+          <Tooltip content="Изменить">
+            <IconButton
+              aria-label="Изменить"
+              onClick={() => actions.current.onEdit(row.original)}
+            >
+              <Pencil size={15} />
+            </IconButton>
+          </Tooltip>
+          <Tooltip content="Удалить">
+            <IconButton
+              aria-label="Удалить"
+              variant="destructive"
+              onClick={() => actions.current.onDelete(row.original)}
+            >
+              <Trash2 size={15} />
+            </IconButton>
+          </Tooltip>
+        </TableRowActions>
+      ) : null,
+  }),
+];
+
+/** Интерфейсы ноды: статусы, включение, перезапуск; строка открывает интерфейс. */
+export const NodeInterfacesTab: FC<NodeInterfacesTabProps> = ({
+  interfaces,
+  isLoading,
+  canManage,
+  ...actions
+}) => {
+  const navigate = useNavigate();
+  const actionsRef = useLatestRef<RowActions>(actions);
+  const columns = useMemo(
+    () => createColumns(canManage, actionsRef),
+    [canManage, actionsRef],
+  );
+
+  return (
+    <Table
+      className="w-full flex-none"
+      data={interfaces}
+      columns={columns}
+      loading={isLoading}
+      labels={{ empty: "Интерфейсов пока нет" }}
+      getRowId={iface => iface.id}
+      onRowClick={iface =>
+        void navigate({
+          to: "/wg/interfaces/$interfaceId",
+          params: { interfaceId: iface.id },
+        })
+      }
+      aria-label="Интерфейсы ноды"
+    />
+  );
+};
