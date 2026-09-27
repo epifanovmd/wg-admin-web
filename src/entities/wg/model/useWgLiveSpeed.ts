@@ -15,13 +15,16 @@ interface IWgLiveSnapshot {
   txBps: number;
 }
 
-interface UseWgLiveSpeedOptions<TLive extends IWgLiveSnapshot> {
+interface UseWgLiveSpeedOptions<TLive extends IWgLiveSnapshot, TPayload> {
   /** Чья статистика; `null` — не загружать и не слушать. */
   id: string | null;
-  /** Событие сокета со снимком. */
+  /** Событие сокета со снимком (или пачкой снимков). */
   event: string;
-  /** Снимок относится к `id` (по умолчанию — любой). */
-  match?: (snapshot: TLive, id: string) => boolean;
+  /**
+   * Снимок `id` из события; `null` — событие не о нём. По умолчанию событие
+   * и есть снимок.
+   */
+  select?: (payload: TPayload, id: string) => TLive | null | undefined;
   /** Текущий снимок с сервера — при открытии и по `reload`. */
   load: (id: string) => Promise<{ data?: TLive | null }>;
   /** Скорость за последние минуты — график сразу с историей. */
@@ -34,7 +37,7 @@ interface ILiveState<TLive> {
   points: ISpeedPoint[];
 }
 
-const matchAny = () => true;
+const selectPayload = <TLive>(payload: unknown) => payload as TLive;
 
 const noWindow = async () => ({ data: null });
 
@@ -43,13 +46,16 @@ const noWindow = async () => ({ data: null });
  * открытии, дальше события сокета; точки графика — скользящее окно. Состояние
  * принадлежит `id`: при его смене прежние данные не показываются.
  */
-export const useWgLiveSpeed = <TLive extends IWgLiveSnapshot>({
+export const useWgLiveSpeed = <
+  TLive extends IWgLiveSnapshot,
+  TPayload = TLive,
+>({
   id,
   event,
-  match = matchAny,
+  select = selectPayload<TLive>,
   load,
   loadWindow = noWindow,
-}: UseWgLiveSpeedOptions<TLive>) => {
+}: UseWgLiveSpeedOptions<TLive, TPayload>) => {
   const [state, setState] = useState<ILiveState<TLive>>({
     id,
     live: null,
@@ -85,10 +91,12 @@ export const useWgLiveSpeed = <TLive extends IWgLiveSnapshot>({
     void reload();
   }, [reload]);
 
-  useSocketEvent<[TLive]>(
+  useSocketEvent<[TPayload]>(
     event,
-    snapshot => {
-      if (!id || !match(snapshot, id)) return;
+    payload => {
+      const snapshot = id ? select(payload, id) : null;
+
+      if (!id || !snapshot) return;
 
       setState(prev => ({
         id,

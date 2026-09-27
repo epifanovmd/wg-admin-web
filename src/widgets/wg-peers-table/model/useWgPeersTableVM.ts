@@ -57,6 +57,11 @@ export const useWgPeersTableVM = (filters: IWgPeersFilters) => {
   useSocketRoom("wg-overview", canViewAll ? "all" : null, () =>
     peers.reload({ refresh: true }),
   );
+  // Держатель — статистика своих пиров из комнаты «мои пиры».
+  useSocketRoom(
+    "wg-peers-own",
+    !canViewAll && canView ? (userStore.user?.id ?? null) : null,
+  );
   useSocketEvent<[WgPeerDto]>("wg:peer:updated", updateIfListed, canView);
   useSocketEvent<[{ id: string }]>(
     "wg:peer:deleted",
@@ -91,16 +96,11 @@ export const useWgPeersTableVM = (filters: IWgPeersFilters) => {
     });
   };
 
-  // Живая статистика: пачкой за тик — комнаты интерфейса и обзора; по пиру —
-  // держателю адресно.
+  // Живая статистика пиров — пачкой за тик (комнаты интерфейса, обзора или
+  // «мои пиры»).
   useSocketEvent<[{ peers: IWgPeerLive[] }]>(
     "wg:peers:stats",
     ({ peers: lives }) => applyLive(lives),
-    canView,
-  );
-  useSocketEvent<[IWgPeerLive]>(
-    "wg:peer:stats",
-    live => applyLive([live]),
     canView,
   );
 

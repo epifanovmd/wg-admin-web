@@ -1,4 +1,5 @@
 import { IUserStore } from "@entities/user";
+import { WG_PERMISSIONS } from "@entities/wg";
 import { IMainApi } from "@shared/api";
 import type { WgPeerDto } from "@shared/api/gen/main/model";
 import { iocContainer } from "@shared/lib/di";
@@ -97,13 +98,17 @@ describe("useWgPeersTableVM", () => {
     await waitFor(() => expect(result.current.peers.items).toHaveLength(1));
 
     act(() =>
-      socket.fire("wg:peer:stats", {
-        peerId: "p1",
-        online: true,
-        lastHandshakeAt: "2026-09-27T12:00:00.000Z",
-        endpoint: "198.51.100.9:40000",
-        rxTotal: 1000,
-        txTotal: 2000,
+      socket.fire("wg:peers:stats", {
+        peers: [
+          {
+            peerId: "p1",
+            online: true,
+            lastHandshakeAt: "2026-09-27T12:00:00.000Z",
+            endpoint: "198.51.100.9:40000",
+            rxTotal: 1000,
+            txTotal: 2000,
+          },
+        ],
       }),
     );
 
@@ -116,7 +121,11 @@ describe("useWgPeersTableVM", () => {
       txBytesTotal: 2000,
     });
 
-    act(() => socket.fire("wg:peer:stats", { peerId: "other", rxTotal: 1 }));
+    act(() =>
+      socket.fire("wg:peers:stats", {
+        peers: [{ peerId: "other", rxTotal: 1 }],
+      }),
+    );
     expect(result.current.peers.items).toHaveLength(1);
   });
 
@@ -173,5 +182,22 @@ describe("useWgPeersTableVM", () => {
     act(() => socket.fire("wg:peers:stats", tick));
     expect(changes).toHaveBeenCalledTimes(1);
     dispose();
+  });
+
+  it("держатель без права видеть всех — комната «мои пиры», не обзор", async () => {
+    iocContainer.rebind(IUserStore.Tid).toConstantValue({
+      user: { id: "u1" },
+      can: (permission: string) => permission === WG_PERMISSIONS.PEER_OWN,
+    });
+
+    renderHook(() => useWgPeersTableVM({}));
+
+    await waitFor(() =>
+      expect(
+        socket.emitted
+          .filter(({ event }) => event === "room:subscribe")
+          .map(({ args }) => args[0]),
+      ).toEqual([{ type: "wg-peers-own", id: "u1" }]),
+    );
   });
 });

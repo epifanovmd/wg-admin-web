@@ -35,7 +35,7 @@ const render = (id: string | null) =>
       useWgLiveSpeed<Live>({
         id: current,
         event: "wg:node:stats",
-        match: (live, nodeId) => live.nodeId === nodeId,
+        select: (live, nodeId) => (live.nodeId === nodeId ? live : null),
         load: nodeId =>
           Promise.resolve({ data: nodeId === "a" ? snapshot("a", 1) : null }),
       }),
@@ -82,7 +82,7 @@ describe("useWgLiveSpeed", () => {
       useWgLiveSpeed<Live>({
         id: "a",
         event: "wg:node:stats",
-        match: (live, nodeId) => live.nodeId === nodeId,
+        select: (live, nodeId) => (live.nodeId === nodeId ? live : null),
         load: () => Promise.resolve({ data: snapshot("a", 3) }),
         loadWindow: () =>
           Promise.resolve({
@@ -106,5 +106,31 @@ describe("useWgLiveSpeed", () => {
     expect(result.current.points.map(point => point.rxBps)).toEqual([
       1, 2, 3, 4,
     ]);
+  });
+
+  it("снимок из пачки: select берёт свой, чужие пачки не трогают график", async () => {
+    const peer = (peerId: string, rxBps: number) => ({
+      ...snapshot("a", rxBps),
+      peerId,
+    });
+    const { result } = renderHook(() =>
+      useWgLiveSpeed<
+        Live & { peerId: string },
+        { peers: (Live & { peerId: string })[] }
+      >({
+        id: "p1",
+        event: "wg:peers:stats",
+        select: ({ peers }, id) => peers.find(live => live.peerId === id),
+        load: () => Promise.resolve({ data: null }),
+      }),
+    );
+
+    act(() => {
+      socket.fire("wg:peers:stats", { peers: [peer("p2", 9)] });
+      socket.fire("wg:peers:stats", { peers: [peer("p2", 1), peer("p1", 5)] });
+    });
+
+    expect(result.current.live?.rxBps).toBe(5);
+    expect(result.current.points.map(point => point.rxBps)).toEqual([5]);
   });
 });

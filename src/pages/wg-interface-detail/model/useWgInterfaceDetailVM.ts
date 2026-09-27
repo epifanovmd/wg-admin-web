@@ -45,7 +45,7 @@ export const useWgInterfaceDetailVM = (interfaceId: string) => {
   const speed = useWgLiveSpeed<IWgInterfaceLive>({
     id: liveId,
     event: "wg:interface:stats",
-    match: (snapshot, id) => snapshot.interfaceId === id,
+    select: (snapshot, id) => (snapshot.interfaceId === id ? snapshot : null),
     load: id => api.wgStatsCurrentInterface(id),
     loadWindow: id => api.wgStatsInterfaceWindow(id),
   });

@@ -34,10 +34,11 @@ export const useWgPeerDetailVM = (peerId: string) => {
     enabled: canView,
   });
 
-  const speed = useWgLiveSpeed<IWgPeerLive>({
+  // Статистика пиров приходит пачкой за тик — берём свой.
+  const speed = useWgLiveSpeed<IWgPeerLive, { peers: IWgPeerLive[] }>({
     id: liveId,
-    event: "wg:peer:stats",
-    match: (snapshot, id) => snapshot.peerId === id,
+    event: "wg:peers:stats",
+    select: ({ peers }, id) => peers.find(live => live.peerId === id),
     load: id => api.wgStatsCurrentPeer(id),
     loadWindow: id => api.wgStatsPeerWindow(id),
   });

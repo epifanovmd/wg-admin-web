@@ -111,7 +111,7 @@ export const useWgNodeDetailVM = (nodeId: string) => {
   const speed = useWgLiveSpeed<IWgNodeLive>({
     id: liveId,
     event: "wg:node:stats",
-    match: (snapshot, id) => snapshot.nodeId === id,
+    select: (snapshot, id) => (snapshot.nodeId === id ? snapshot : null),
     load: id => api.wgStatsCurrentNode(id),
     loadWindow: id => api.wgStatsNodeWindow(id),
   });
