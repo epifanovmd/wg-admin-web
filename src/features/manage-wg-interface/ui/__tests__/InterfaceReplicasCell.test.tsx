@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
 
 import { InterfaceReplicasCell } from "../InterfaceReplicasCell";
+import { InterfaceTrafficNote } from "../InterfaceTrafficNote";
 
 vi.mock("@tanstack/react-router", () => ({
   Link: ({ children }: { children: ReactNode }) => <a>{children}</a>,
@@ -63,22 +64,34 @@ describe("InterfaceReplicasCell", () => {
     expect(onRemoveReplica).toHaveBeenCalledWith(iface, "d");
   });
 
-  it("выбора копии здесь нет — только куда идёт трафик, управление у релея", () => {
-    renderCell({
-      iface: {
-        ...iface,
-        endpoint: {
-          name: "msk-relay",
-          mode: "relay",
-          relayNodeId: "r",
-          relayNodeName: "MSK",
-        },
-      } as unknown as WgInterfaceDto,
-    });
+  it("строка «куда идёт трафик» — отдельно: релей, копия, авто", () => {
+    render(
+      <InterfaceTrafficNote
+        iface={
+          {
+            ...iface,
+            endpoint: {
+              name: "msk-relay",
+              mode: "relay",
+              relayNodeId: "r",
+              relayNodeName: "MSK",
+            },
+          } as unknown as WgInterfaceDto
+        }
+      />,
+    );
+
+    expect(screen.getByText(/релей MSK/)).toBeTruthy();
+    expect(screen.getByText("Бета")).toBeTruthy();
+    expect(screen.getByText(/авто/)).toBeTruthy();
+  });
+
+  it("выбора копии в ячейке нет, у основной нет кнопки удаления", () => {
+    renderCell({});
 
     expect(screen.queryByLabelText("Трафик через копию")).toBeNull();
-    expect(screen.getByText(/релей MSK/)).toBeTruthy();
-    expect(screen.getByText("Управление — в пробросах")).toBeTruthy();
+    expect(screen.queryByLabelText("Убрать копию Альфа")).toBeNull();
+    expect(screen.getByText("основная")).toBeTruthy();
   });
 
   it("копия на ноде без агента — «Ожидает агента» вместо статуса интерфейса", () => {

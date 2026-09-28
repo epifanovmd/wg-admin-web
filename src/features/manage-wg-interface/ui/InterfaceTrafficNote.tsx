@@ -1,5 +1,4 @@
 import type { WgInterfaceDto } from "@shared/api/gen/main/model";
-import { Link } from "@tanstack/react-router";
 import { FC } from "react";
 
 import { interfaceTraffic } from "../model/interface-traffic";
@@ -9,8 +8,8 @@ interface InterfaceTrafficNoteProps {
 }
 
 /**
- * Куда идёт трафик клиентов: копию выбирает релей точки (управление — на
- * странице пробросов), без релея копии — только резерв для переноса.
+ * Куда идёт трафик клиентов — строкой: копию выбирает релей точки, без
+ * релея копии — только резерв для переноса.
  */
 export const InterfaceTrafficNote: FC<InterfaceTrafficNoteProps> = ({
   iface,
@@ -21,27 +20,22 @@ export const InterfaceTrafficNote: FC<InterfaceTrafficNoteProps> = ({
 
   if (traffic.kind === "manual") {
     return (
-      <p className="text-xs text-muted-foreground">
-        Копии — резерв для ручного переноса:{" "}
+      <span>
         {traffic.endpointName
-          ? `точка «${traffic.endpointName}» — адрес ноды`
-          : "у интерфейса нет точки подключения"}
-        , трафик на копию сам не переключится. Для переключения нужна точка
-        через релей панели.
-      </p>
+          ? `Точка «${traffic.endpointName}» — адрес ноды`
+          : "Без точки подключения"}
+        : трафик на копию сам не переключится — только резерв для переноса.
+      </span>
     );
   }
 
   return (
-    <p className="text-xs text-muted-foreground">
+    <span>
       Трафик клиентов: релей {traffic.relayName} →{" "}
-      <span className="text-foreground">
+      <span className="font-medium text-foreground">
         {traffic.servingName ?? "ждёт отчёта релея"}
       </span>{" "}
-      · {traffic.pinned ? "закреплено" : "авто"}.{" "}
-      <Link to="/wg/forwards" className="underline hover:text-foreground">
-        Управление — в пробросах
-      </Link>
-    </p>
+      · {traffic.pinned ? "закреплено" : "авто"}
+    </span>
   );
 };

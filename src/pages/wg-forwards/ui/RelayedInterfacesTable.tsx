@@ -54,7 +54,7 @@ const createColumns = (canPin: boolean, vm: RefObject<RelayedInterfacesVM>) => [
       <InterfaceReplicasCell
         iface={row.original}
         canManageReplicas={false}
-        showTraffic={false}
+        dense
       />
     ),
   }),

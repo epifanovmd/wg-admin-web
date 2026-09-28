@@ -1,7 +1,11 @@
 import { formatBps, formatTraffic, WgRxTx, WgSpeedChart } from "@entities/wg";
-import { InterfaceReplicasCell } from "@features/manage-wg-interface";
+import {
+  InterfaceReplicasCell,
+  InterfaceTrafficNote,
+} from "@features/manage-wg-interface";
 import type { WgInterfaceDto } from "@shared/api/gen/main/model";
-import { Card, CopyableText, InfoField, StatCard } from "@shared/ui";
+import { Button, Card, CopyableText, InfoField, StatCard } from "@shared/ui";
+import { Link } from "@tanstack/react-router";
 import { Database, Gauge, Users } from "lucide-react";
 import { observer } from "mobx-react-lite";
 import { FC } from "react";
@@ -90,7 +94,17 @@ export const InterfaceOverviewTab: FC<InterfaceSectionProps> = observer(
             />
           </Card>
         </div>
-        <Card title="Копии на нодах">
+        <Card
+          title="Копии на нодах"
+          description={<InterfaceTrafficNote iface={iface} />}
+          extra={
+            iface.endpoint?.mode === "relay" && iface.replicas.length > 0 ? (
+              <Button asChild size="sm" variant="ghost">
+                <Link to="/wg/forwards">Управление трафиком</Link>
+              </Button>
+            ) : undefined
+          }
+        >
           <InterfaceReplicasCell
             iface={iface}
             canManageReplicas={vm.permissions.canReplicas}
