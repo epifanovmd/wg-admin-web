@@ -38,6 +38,7 @@ const handlers = {
   onDelete: vi.fn(),
   onMove: vi.fn(),
   onCopy: vi.fn(),
+  onRemoveReplica: vi.fn(),
 };
 
 const ALL_ACTIONS = {
@@ -95,5 +96,13 @@ describe("NodeInterfacesTab", () => {
 
     expect(screen.getByText("копия · основная — Нидерланды")).toBeTruthy();
     expect(screen.queryByLabelText("Перезапустить")).toBeNull();
+
+    // Единственное действие у копии — убрать её с этой ноды; строку не открывает.
+    fireEvent.click(screen.getByLabelText("Убрать копию с этой ноды"));
+    expect(handlers.onRemoveReplica).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "i2" }),
+      "n1",
+    );
+    expect(navigate).not.toHaveBeenCalled();
   });
 });

@@ -30,13 +30,21 @@ interface NodeInterfacesTabProps {
   onDelete: (iface: WgInterfaceDto) => void;
   onMove: (iface: WgInterfaceDto) => void;
   onCopy: (iface: WgInterfaceDto) => void;
+  /** Убрать копию чужого интерфейса с этой ноды. */
+  onRemoveReplica: (iface: WgInterfaceDto, nodeId: string) => void;
 }
 
 const column = createColumnHelper<WgInterfaceDto>();
 
 type RowActions = Pick<
   NodeInterfacesTabProps,
-  "onEdit" | "onToggle" | "onRestart" | "onDelete" | "onMove" | "onCopy"
+  | "onEdit"
+  | "onToggle"
+  | "onRestart"
+  | "onDelete"
+  | "onMove"
+  | "onCopy"
+  | "onRemoveReplica"
 >;
 
 /** Обработчики — через ref: колонки стабильны, ячейки не перемонтируются. */
@@ -107,10 +115,29 @@ const createColumns = (
     id: "actions",
     size: 240,
     meta: { align: "right" },
-    // Действия — у основной копии: перезапуск, перенос и удаление копии здесь
-    // не про неё.
+    // Действия интерфейса — у основной; у копии чужого интерфейса — только
+    // убрать её с этой ноды.
     cell: ({ row }) =>
-      row.original.nodeId === nodeId && hasAnyInterfaceAction(permissions) ? (
+      row.original.nodeId !== nodeId ? (
+        permissions.canReplicas ? (
+          <TableRowActions>
+            <Tooltip content="Убрать копию с этой ноды">
+              <IconButton
+                variant="ghost"
+                size="sm"
+                className="text-muted-foreground hover:text-destructive"
+                aria-label="Убрать копию с этой ноды"
+                onClick={event => {
+                  stopRowClick(event);
+                  actions.current.onRemoveReplica(row.original, nodeId);
+                }}
+              >
+                <Trash2 size={15} />
+              </IconButton>
+            </Tooltip>
+          </TableRowActions>
+        ) : null
+      ) : hasAnyInterfaceAction(permissions) ? (
         <TableRowActions>
           {permissions.canControl && (
             <>

@@ -75,6 +75,16 @@ export const useWgNodeDetailVM = (nodeId: string) => {
     enabled: canViewInterfaces,
   });
 
+  // Перенесённый или копия убрана с этой ноды — строка пропадает.
+  const upsertInterface = (iface: WgInterfaceDto) => {
+    const hosted =
+      iface.nodeId === nodeId ||
+      iface.replicas.some(replica => replica.nodeId === nodeId);
+
+    if (hosted) interfaces.upsertItem(iface.id, iface);
+    else interfaces.removeItem(iface.id);
+  };
+
   const metrics = useEntity<IWgNodeMetricPointDto[], string>({
     queryFn: id => api.wgNodeMetrics({ nodeId: id }),
     watch: [nodeId],
@@ -169,15 +179,7 @@ export const useWgNodeDetailVM = (nodeId: string) => {
   );
   useSocketEvent<[WgInterfaceDto]>(
     "wg:interface:updated",
-    iface => {
-      // Перенесённый или копия убрана — пропадает из списка этой ноды.
-      const hosted =
-        iface.nodeId === nodeId ||
-        iface.replicas.some(replica => replica.nodeId === nodeId);
-
-      if (hosted) interfaces.upsertItem(iface.id, iface);
-      else interfaces.removeItem(iface.id);
-    },
+    upsertInterface,
     canViewInterfaces,
   );
   useSocketEvent<[{ id: string }]>(
@@ -199,9 +201,6 @@ export const useWgNodeDetailVM = (nodeId: string) => {
     onError: error => notifyApiError(toast, error),
   });
 
-  const upsertInterface = (iface: WgInterfaceDto) =>
-    interfaces.upsertItem(iface.id, iface);
-
   const interfaceActions = useWgInterfaceActions({
     onChanged: upsertInterface,
     onDeleted: iface => interfaces.removeItem(iface.id),
@@ -213,12 +212,7 @@ export const useWgNodeDetailVM = (nodeId: string) => {
   });
   const provision = useProvisionWgNodeVM({});
   // Перенос уводит интерфейс с ноды, копия — обновляет строку.
-  const move = useMoveWgInterfaceVM({
-    onMoved: iface =>
-      iface.nodeId === nodeId
-        ? upsertInterface(iface)
-        : interfaces.removeItem(iface.id),
-  });
+  const move = useMoveWgInterfaceVM({ onMoved: upsertInterface });
   const removeNode = useDeleteWgNode({
     onDeleted: () => void navigate({ to: "/wg/nodes" }),
   });
