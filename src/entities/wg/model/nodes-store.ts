@@ -57,4 +57,8 @@ export class WgNodesStore implements IWgNodesStore {
   remove(id: string) {
     this._list.removeItem(id);
   }
+
+  reset() {
+    this._list.reset();
+  }
 }

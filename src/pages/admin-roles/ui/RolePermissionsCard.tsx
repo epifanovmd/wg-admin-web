@@ -1,13 +1,18 @@
-import { KNOWN_PERMISSIONS, PERMISSION_LABELS } from "@entities/user";
+import { PermissionPicker } from "@entities/permission";
+import { ALL_PERMISSIONS } from "@entities/user";
 import { type IRoleDto, KnownRole } from "@shared/api/gen/main/model";
 import { pluralize } from "@shared/lib/utils";
-import { Button, Card, Checkbox, IconButton, Tooltip } from "@shared/ui";
+import { Button, Card, IconButton, Tooltip } from "@shared/ui";
 import { Trash2 } from "lucide-react";
 import { FC, useEffect, useState } from "react";
 
 interface RolePermissionsCardProps {
   role: IRoleDto;
-  canManage: boolean;
+  /** Менять права роли. */
+  canUpdate: boolean;
+  canDelete: boolean;
+  /** Выдавать полный доступ «*» (только суперпользователь). */
+  canGrantAll: boolean;
   onSave: (role: IRoleDto, permissions: string[]) => Promise<boolean>;
   onDelete: (role: IRoleDto) => void;
 }
@@ -22,7 +27,9 @@ const PERMISSION_WORDS = { one: "право", few: "права", many: "прав
 /** Права одной роли: отметки правятся локально и сохраняются кнопкой. */
 export const RolePermissionsCard: FC<RolePermissionsCardProps> = ({
   role,
-  canManage,
+  canUpdate,
+  canDelete,
+  canGrantAll,
   onSave,
   onDelete,
 }) => {
@@ -51,7 +58,7 @@ export const RolePermissionsCard: FC<RolePermissionsCardProps> = ({
       title={<span className="font-mono">{role.name}</span>}
       description={pluralize(role.permissions.length, PERMISSION_WORDS, true)}
       extra={
-        canManage &&
+        canDelete &&
         !SYSTEM_ROLES.has(role.name) && (
           <Tooltip content={`Удалить роль ${role.name}`}>
             <IconButton
@@ -65,25 +72,19 @@ export const RolePermissionsCard: FC<RolePermissionsCardProps> = ({
         )
       }
       footer={
-        canManage && (
+        canUpdate && (
           <Button size="sm" disabled={!dirty} loading={saving} onClick={save}>
             Сохранить
           </Button>
         )
       }
     >
-      <div className="flex flex-col gap-2">
-        {KNOWN_PERMISSIONS.map(name => (
-          <Checkbox
-            key={name}
-            label={PERMISSION_LABELS[name]}
-            description={name}
-            disabled={!canManage}
-            checked={selected.includes(name)}
-            onCheckedChange={on => toggle(name, on === true)}
-          />
-        ))}
-      </div>
+      <PermissionPicker
+        selected={selected}
+        onToggle={toggle}
+        readOnly={!canUpdate}
+        isLocked={name => name === ALL_PERMISSIONS && !canGrantAll}
+      />
     </Card>
   );
 };

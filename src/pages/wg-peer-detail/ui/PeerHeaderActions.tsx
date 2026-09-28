@@ -16,10 +16,12 @@ interface PeerHeaderActionsProps {
 export const PeerHeaderActions: FC<PeerHeaderActionsProps> = observer(
   ({ vm, peer }) => (
     <div className="flex flex-wrap items-center gap-3">
-      <span className="flex items-center gap-2 text-sm">
-        <WgToggleSwitch enabled={peer.enabled} onToggle={vm.toggle} />
-        Включён
-      </span>
+      {vm.canToggle && (
+        <span className="flex items-center gap-2 text-sm">
+          <WgToggleSwitch enabled={peer.enabled} onToggle={vm.toggle} />
+          Включён
+        </span>
+      )}
       {peer.hasPrivateKey && (
         <Button
           leftIcon={<QrCode size={15} />}
@@ -28,7 +30,7 @@ export const PeerHeaderActions: FC<PeerHeaderActionsProps> = observer(
           QR и конфиг
         </Button>
       )}
-      {vm.canManage && (
+      {vm.canUpdate && (
         <Button
           variant="outline"
           leftIcon={<Pencil size={15} />}

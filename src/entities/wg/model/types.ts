@@ -14,4 +14,5 @@ export interface IWgNodesStore {
   byId(id: string): WgNodeDto | undefined;
   upsert(node: WgNodeDto): void;
   remove(id: string): void;
+  reset(): void;
 }

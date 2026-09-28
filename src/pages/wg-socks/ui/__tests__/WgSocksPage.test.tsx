@@ -56,8 +56,8 @@ describe("WgSocksPage", () => {
     expect(screen.queryByRole("button", { name: "Новый прокси" })).toBeNull();
   });
 
-  it("с правом управления кнопка «Новый прокси» есть", () => {
-    bind([WG_PERMISSIONS.SOCKS_VIEW, WG_PERMISSIONS.SOCKS_MANAGE]);
+  it("с правом создания кнопка «Новый прокси» есть", () => {
+    bind([WG_PERMISSIONS.SOCKS_VIEW, WG_PERMISSIONS.SOCKS_CREATE]);
     renderPage();
 
     expect(screen.getByRole("button", { name: "Новый прокси" })).toBeTruthy();

@@ -8,6 +8,7 @@ import {
 import { IMainApi } from "@shared/api";
 import type { IWgMeshMatrix, WgNodeDto } from "@shared/api/gen/main/model";
 import { useEntity } from "@shared/lib/holders";
+import { useCloseWhenForbidden } from "@shared/lib/hooks";
 import { useSocketEvent, useSocketRoom } from "@shared/lib/socket";
 import { useEffect } from "react";
 
@@ -18,6 +19,10 @@ export const useWgNodesVM = () => {
   const nodes = IWgNodesStore.useInstance();
   const canView = userStore.can(WG_PERMISSIONS.NODE_VIEW);
   const canViewMesh = canView && userStore.can(WG_PERMISSIONS.STATS_VIEW);
+  const canCreate = userStore.can(WG_PERMISSIONS.NODE_CREATE);
+  const canUpdate = userStore.can(WG_PERMISSIONS.NODE_UPDATE);
+  const canDelete = userStore.can(WG_PERMISSIONS.NODE_DELETE);
+  const canProvision = userStore.can(WG_PERMISSIONS.NODE_PROVISION);
 
   const form = useWgNodeFormVM({ onSaved: nodes.upsert });
   const provision = useProvisionWgNodeVM({});
@@ -34,11 +39,21 @@ export const useWgNodesVM = () => {
     if (canView) void nodes.load();
   }, [canView, nodes]);
 
-  useSocketRoom("wg-overview", canView ? "all" : null, () => {
-    void nodes.load();
-    if (canViewMesh) void mesh.refresh();
-  });
+  useCloseWhenForbidden(form.open, form.editing ? canUpdate : canCreate, () =>
+    form.setOpen(false),
+  );
+  useCloseWhenForbidden(!!provision.node, canProvision, provision.close);
+
+  useSocketRoom("wg-nodes", canView ? "all" : null, () => void nodes.load());
+  useSocketRoom("wg-overview", canViewMesh ? "all" : null, () =>
+    mesh.refresh(),
+  );
   useSocketEvent<[WgNodeDto]>("wg:node:updated", nodes.upsert, canView);
+  useSocketEvent<[{ id: string }]>(
+    "wg:node:deleted",
+    ({ id }) => nodes.remove(id),
+    canView,
+  );
   useSocketEvent<[IWgMeshMatrix]>("wg:stats:mesh", mesh.setData, canViewMesh);
 
   return {
@@ -49,8 +64,10 @@ export const useWgNodesVM = () => {
     form,
     provision,
     remove,
-    canManage: userStore.can(WG_PERMISSIONS.NODE_MANAGE),
-    canProvision: userStore.can(WG_PERMISSIONS.NODE_PROVISION),
+    canCreate,
+    canUpdate,
+    canDelete,
+    canProvision,
   };
 };
 

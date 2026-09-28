@@ -256,4 +256,21 @@ describe("useWgPeersTableVM", () => {
       expect(result.current.peers.items.map(item => item.id)).toEqual(["p2"]),
     );
   });
+
+  it("все пиры — комната списка; обзор — только при праве на статистику", async () => {
+    iocContainer.rebind(IUserStore.Tid).toConstantValue({
+      user: { id: "u1" },
+      can: (permission: string) => permission === WG_PERMISSIONS.PEER_VIEW,
+    });
+
+    renderHook(() => useWgPeersTableVM({}));
+
+    await waitFor(() =>
+      expect(
+        socket.emitted
+          .filter(({ event }) => event === "room:subscribe")
+          .map(({ args }) => (args[0] as { type: string }).type),
+      ).toEqual(["wg-peers"]),
+    );
+  });
 });

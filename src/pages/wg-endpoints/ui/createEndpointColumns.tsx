@@ -14,7 +14,8 @@ import type { WgEndpointsVM } from "../model/useWgEndpointsVM";
 const column = createColumnHelper<WgEndpointDto>();
 
 interface EndpointColumnsOptions {
-  canManage: boolean;
+  canUpdate: boolean;
+  canDelete: boolean;
   relayNodeName: (id: string | null) => string | null;
   /** VM — через ref: колонки стабильны, ячейки не перемонтируются. */
   vm: RefObject<WgEndpointsVM>;
@@ -22,7 +23,8 @@ interface EndpointColumnsOptions {
 
 /** Колонки таблицы точек подключения. */
 export const createEndpointColumns = ({
-  canManage,
+  canUpdate,
+  canDelete,
   relayNodeName,
   vm,
 }: EndpointColumnsOptions) => [
@@ -75,25 +77,29 @@ export const createEndpointColumns = ({
     size: 100,
     meta: { align: "right" },
     cell: ({ row }) =>
-      canManage ? (
+      canUpdate || canDelete ? (
         <TableRowActions>
-          <Tooltip content="Изменить">
-            <IconButton
-              aria-label="Изменить"
-              onClick={() => vm.current.form.openEdit(row.original)}
-            >
-              <Pencil size={15} />
-            </IconButton>
-          </Tooltip>
-          <Tooltip content="Удалить">
-            <IconButton
-              aria-label="Удалить"
-              variant="destructive"
-              onClick={() => void vm.current.remove(row.original)}
-            >
-              <Trash2 size={15} />
-            </IconButton>
-          </Tooltip>
+          {canUpdate && (
+            <Tooltip content="Изменить">
+              <IconButton
+                aria-label="Изменить"
+                onClick={() => vm.current.form.openEdit(row.original)}
+              >
+                <Pencil size={15} />
+              </IconButton>
+            </Tooltip>
+          )}
+          {canDelete && (
+            <Tooltip content="Удалить">
+              <IconButton
+                aria-label="Удалить"
+                variant="destructive"
+                onClick={() => void vm.current.remove(row.original)}
+              >
+                <Trash2 size={15} />
+              </IconButton>
+            </Tooltip>
+          )}
         </TableRowActions>
       ) : null,
   }),

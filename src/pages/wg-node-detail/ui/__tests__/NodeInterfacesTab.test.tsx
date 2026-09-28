@@ -13,6 +13,7 @@ vi.mock("@tanstack/react-router", () => ({
   useNavigate: () => navigate,
 }));
 vi.mock("@features/manage-wg-interface", () => ({
+  hasAnyInterfaceAction: () => true,
   InterfaceReplicasCell: ({
     iface,
     onPin,
@@ -47,13 +48,22 @@ const handlers = {
   onRemoveReplica: vi.fn(),
 };
 
+const ALL_ACTIONS = {
+  canCreate: true,
+  canUpdate: true,
+  canDelete: true,
+  canControl: true,
+  canMove: true,
+  canReplicas: true,
+};
+
 const renderTab = () =>
   render(
     <TooltipProvider>
       <NodeInterfacesTab
         interfaces={[iface]}
         isLoading={false}
-        canManage
+        permissions={ALL_ACTIONS}
         {...handlers}
       />
     </TooltipProvider>,

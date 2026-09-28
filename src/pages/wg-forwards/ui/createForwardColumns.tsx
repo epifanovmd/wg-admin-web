@@ -22,14 +22,16 @@ const ROUTES: Array<{ value: EWgForwardRoute; label: string }> = [
 ];
 
 interface ForwardColumnsOptions {
-  canManage: boolean;
+  canUpdate: boolean;
+  canDelete: boolean;
   /** VM — через ref: колонки стабильны, ячейки не перемонтируются. */
   vm: RefObject<WgForwardsVM>;
 }
 
 /** Колонки таблицы пробросов. */
 export const createForwardColumns = ({
-  canManage,
+  canUpdate,
+  canDelete,
   vm,
 }: ForwardColumnsOptions) => [
   column.display({
@@ -83,7 +85,7 @@ export const createForwardColumns = ({
             size="sm"
             options={ROUTES}
             value={forward.route}
-            disabled={!canManage}
+            disabled={!canUpdate}
             onValueChange={route => void vm.current.setRoute(forward, route)}
           />
           {forward.activeRoute && (
@@ -108,29 +110,35 @@ export const createForwardColumns = ({
     size: 140,
     meta: { align: "right" },
     cell: ({ row }) =>
-      canManage ? (
+      canUpdate || canDelete ? (
         <TableRowActions>
-          <WgToggleSwitch
-            enabled={row.original.enabled}
-            onToggle={() => vm.current.toggle(row.original)}
-          />
-          <Tooltip content="Изменить">
-            <IconButton
-              aria-label="Изменить"
-              onClick={() => vm.current.form.openEdit(row.original)}
-            >
-              <Pencil size={15} />
-            </IconButton>
-          </Tooltip>
-          <Tooltip content="Удалить">
-            <IconButton
-              aria-label="Удалить"
-              variant="destructive"
-              onClick={() => void vm.current.remove(row.original)}
-            >
-              <Trash2 size={15} />
-            </IconButton>
-          </Tooltip>
+          {canUpdate && (
+            <>
+              <WgToggleSwitch
+                enabled={row.original.enabled}
+                onToggle={() => vm.current.toggle(row.original)}
+              />
+              <Tooltip content="Изменить">
+                <IconButton
+                  aria-label="Изменить"
+                  onClick={() => vm.current.form.openEdit(row.original)}
+                >
+                  <Pencil size={15} />
+                </IconButton>
+              </Tooltip>
+            </>
+          )}
+          {canDelete && (
+            <Tooltip content="Удалить">
+              <IconButton
+                aria-label="Удалить"
+                variant="destructive"
+                onClick={() => void vm.current.remove(row.original)}
+              >
+                <Trash2 size={15} />
+              </IconButton>
+            </Tooltip>
+          )}
         </TableRowActions>
       ) : null,
   }),

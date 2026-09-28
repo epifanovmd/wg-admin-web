@@ -23,7 +23,7 @@ export const WgNodesPage: FC = observer(() => {
           title="Ноды"
           subtitle="VPS с агентами WireGuard: статусы, конфигурация, установка"
           actions={
-            vm.canManage && (
+            vm.canCreate && (
               <Button
                 leftIcon={<Plus size={15} />}
                 onClick={vm.form.openCreate}

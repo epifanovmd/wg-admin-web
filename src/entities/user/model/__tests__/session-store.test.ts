@@ -29,7 +29,7 @@ const createStore = (items: SessionDto[]) => {
     signOut: vi.fn(),
   } as unknown as IAuthSessionGuard;
 
-  return new SessionStore(api, guard);
+  return Object.assign(new SessionStore(api, guard), { guard });
 };
 
 describe("SessionStore", () => {
@@ -39,5 +39,21 @@ describe("SessionStore", () => {
     await store.load();
 
     expect(store.sessions.map(s => s.id)).toEqual(["s-1", "s-2"]);
+  });
+
+  it("завершены все сессии (аккаунт удалён) — выход", () => {
+    const store = createStore([]);
+
+    store.handleSessionTerminated("all");
+
+    expect(store.guard.signOut).toHaveBeenCalledOnce();
+  });
+
+  it("завершена чужая сессия — только убирается из списка", () => {
+    const store = createStore([]);
+
+    store.handleSessionTerminated("s-9");
+
+    expect(store.guard.signOut).not.toHaveBeenCalled();
   });
 });

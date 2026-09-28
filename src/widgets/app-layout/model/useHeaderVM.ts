@@ -19,7 +19,9 @@ export const useHeaderVM = () => {
   const visibleGroups = NAV_GROUPS.map(group => ({
     ...group,
     items: group.items.filter(
-      item => !item.permission || userStore.can(item.permission),
+      item =>
+        !item.permission ||
+        [item.permission].flat().some(permission => userStore.can(permission)),
     ),
   })).filter(group => group.items.length > 0);
 

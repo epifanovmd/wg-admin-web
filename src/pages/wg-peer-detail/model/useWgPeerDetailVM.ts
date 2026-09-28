@@ -5,9 +5,11 @@ import { useWgPeerConfigVM } from "@features/wg-peer-config";
 import { IMainApi } from "@shared/api";
 import type { IWgSeriesDto, WgPeerDto } from "@shared/api/gen/main/model";
 import { useEntity } from "@shared/lib/holders";
+import { useCloseWhenForbidden } from "@shared/lib/hooks";
 import { notifyApiError } from "@shared/lib/http";
 import { INotificationService } from "@shared/lib/notifications";
 import { useSocketEvent, useSocketRoom } from "@shared/lib/socket";
+import { useNavigate } from "@tanstack/react-router";
 
 /**
  * Карточка пира: данные, live-скорость и трафик за сутки, конфиг и
@@ -17,9 +19,11 @@ export const useWgPeerDetailVM = (peerId: string) => {
   const api = IMainApi.useInstance();
   const toast = INotificationService.useInstance();
   const userStore = IUserStore.useInstance();
-  const canView =
-    userStore.can(WG_PERMISSIONS.PEER_VIEW) ||
-    userStore.can(WG_PERMISSIONS.PEER_OWN);
+  const navigate = useNavigate();
+  const canViewAll = userStore.can(WG_PERMISSIONS.PEER_VIEW);
+  const canViewOwn = userStore.can(WG_PERMISSIONS.PEER_OWN);
+  const canView = canViewAll || canViewOwn;
+  const canUpdate = userStore.can(WG_PERMISSIONS.PEER_UPDATE);
   const liveId = canView ? peerId : null;
 
   const peer = useEntity<WgPeerDto, string>({
@@ -47,16 +51,36 @@ export const useWgPeerDetailVM = (peerId: string) => {
     void peer.refresh(peerId);
     void speed.reload();
   });
+  /** Пир удалён или больше не виден (ушёл к другому держателю). */
+  const leave = (message: string) => {
+    toast.warning(message);
+    void navigate({ to: "/wg/peers" });
+  };
+
   useSocketEvent<[WgPeerDto]>(
     "wg:peer:updated",
     updated => {
-      if (updated.id === peerId) peer.setData(updated);
+      if (updated.id !== peerId) return;
+      if (!canViewAll && updated.userId !== userStore.user?.id) {
+        leave("Пир больше не закреплён за вами");
+      } else {
+        peer.setData(updated);
+      }
+    },
+    canView,
+  );
+  useSocketEvent<[{ id: string }]>(
+    "wg:peer:deleted",
+    ({ id }) => {
+      if (id === peerId) leave("Пир удалён или больше недоступен");
     },
     canView,
   );
 
   const config = useWgPeerConfigVM();
   const form = useWgPeerFormVM({ onSaved: peer.setData });
+
+  useCloseWhenForbidden(form.open, canUpdate, () => form.setOpen(false));
 
   const toggle = async (): Promise<boolean> => {
     const current = peer.data;
@@ -87,7 +111,11 @@ export const useWgPeerDetailVM = (peerId: string) => {
     config,
     form,
     toggle,
-    canManage: userStore.can(WG_PERMISSIONS.PEER_MANAGE),
+    canUpdate,
+    /** Включать и выключать: любой пир по праву, свой — как держатель. */
+    canToggle:
+      userStore.can(WG_PERMISSIONS.PEER_TOGGLE) ||
+      (canViewOwn && peer.data?.userId === userStore.user?.id),
   };
 };
 

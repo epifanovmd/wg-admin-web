@@ -8,10 +8,12 @@ import {
   useMoveWgInterfaceVM,
   useWgInterfaceActions,
   useWgInterfaceFormVM,
+  useWgInterfacePermissions,
 } from "@features/manage-wg-interface";
 import { IMainApi } from "@shared/api";
 import type { WgInterfaceDto } from "@shared/api/gen/main/model";
 import { useEntity } from "@shared/lib/holders";
+import { useCloseWhenForbidden } from "@shared/lib/hooks";
 import { useSocketEvent, useSocketRoom } from "@shared/lib/socket";
 import { useNavigate } from "@tanstack/react-router";
 import {
@@ -31,6 +33,7 @@ export const useWgInterfaceDetailVM = (interfaceId: string) => {
   const navigate = useNavigate();
   const canView = userStore.can(WG_PERMISSIONS.INTERFACE_VIEW);
   const liveId = canView ? interfaceId : null;
+  const permissions = useWgInterfacePermissions();
   const [peerFilters, setPeerFilters] = useState<IWgPeersFilters>({});
 
   const iface = useEntity<WgInterfaceDto, string>({
@@ -84,6 +87,15 @@ export const useWgInterfaceDetailVM = (interfaceId: string) => {
     onSaved: iface.setData,
   });
 
+  useCloseWhenForbidden(form.open, permissions.canUpdate, () =>
+    form.setOpen(false),
+  );
+  useCloseWhenForbidden(
+    move.open,
+    move.mode === "copy" ? permissions.canReplicas : permissions.canMove,
+    move.close,
+  );
+
   return {
     iface,
     live: speed.live,
@@ -97,7 +109,7 @@ export const useWgInterfaceDetailVM = (interfaceId: string) => {
       setPeerFilters(previous =>
         compactPeersFilters({ ...previous, ...patch }),
       ),
-    canManage: userStore.can(WG_PERMISSIONS.INTERFACE_MANAGE),
+    permissions,
   };
 };
 

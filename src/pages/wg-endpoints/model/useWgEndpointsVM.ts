@@ -7,6 +7,7 @@ import {
 import { IMainApi } from "@shared/api";
 import type { WgEndpointDto } from "@shared/api/gen/main/model";
 import { useCollection } from "@shared/lib/holders";
+import { useCloseWhenForbidden } from "@shared/lib/hooks";
 import { useSocketEvent, useSocketRoom } from "@shared/lib/socket";
 import { useCallback, useEffect } from "react";
 
@@ -32,14 +33,22 @@ export const useWgEndpointsVM = () => {
     endpoints.upsertItem(endpoint.id, endpoint);
 
   const form = useWgEndpointFormVM({ onSaved: upsert });
+  const canCreate = userStore.can(WG_PERMISSIONS.ENDPOINT_CREATE);
+  const canUpdate = userStore.can(WG_PERMISSIONS.ENDPOINT_UPDATE);
+
+  useCloseWhenForbidden(form.open, form.editing ? canUpdate : canCreate, () =>
+    form.setOpen(false),
+  );
   const remove = useDeleteWgEndpoint({
     onDeleted: endpoint => endpoints.removeItem(endpoint.id),
   });
 
-  // Названия релей-нод для таблицы.
+  // Названия релей-нод для таблицы — при праве видеть ноды.
+  const canViewNodes = userStore.can(WG_PERMISSIONS.NODE_VIEW);
+
   useEffect(() => {
-    if (canView) void nodesStore.load();
-  }, [canView, nodesStore]);
+    if (canView && canViewNodes) void nodesStore.load();
+  }, [canView, canViewNodes, nodesStore]);
 
   useSocketRoom("wg-endpoints", canView ? "all" : null, () =>
     endpoints.refresh(),
@@ -64,7 +73,9 @@ export const useWgEndpointsVM = () => {
     relayNodeName,
     form,
     remove,
-    canManage: userStore.can(WG_PERMISSIONS.ENDPOINT_MANAGE),
+    canCreate,
+    canUpdate,
+    canDelete: userStore.can(WG_PERMISSIONS.ENDPOINT_DELETE),
   };
 };
 

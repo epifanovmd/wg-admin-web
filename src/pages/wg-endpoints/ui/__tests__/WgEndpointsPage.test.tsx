@@ -56,8 +56,8 @@ describe("WgEndpointsPage", () => {
     expect(screen.queryByRole("button", { name: "Новая точка" })).toBeNull();
   });
 
-  it("с правом управления кнопка «Новая точка» есть", () => {
-    bind([WG_PERMISSIONS.ENDPOINT_VIEW, WG_PERMISSIONS.ENDPOINT_MANAGE]);
+  it("с правом создания кнопка «Новая точка» есть", () => {
+    bind([WG_PERMISSIONS.ENDPOINT_VIEW, WG_PERMISSIONS.ENDPOINT_CREATE]);
     renderPage();
 
     expect(screen.getByRole("button", { name: "Новая точка" })).toBeTruthy();

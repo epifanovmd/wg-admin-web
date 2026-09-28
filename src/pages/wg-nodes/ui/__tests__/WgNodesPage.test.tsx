@@ -81,7 +81,8 @@ describe("WgNodesPage", () => {
     name => {
       bind([
         WG_PERMISSIONS.NODE_VIEW,
-        WG_PERMISSIONS.NODE_MANAGE,
+        WG_PERMISSIONS.NODE_UPDATE,
+        WG_PERMISSIONS.NODE_DELETE,
         WG_PERMISSIONS.NODE_PROVISION,
       ]);
       renderPage();
@@ -104,7 +105,7 @@ describe("WgNodesPage", () => {
     });
   });
 
-  it("«Новая нода» — только с правом управления", () => {
+  it("«Новая нода» — только с правом создания", () => {
     bind([WG_PERMISSIONS.NODE_VIEW]);
     const view = renderPage();
 

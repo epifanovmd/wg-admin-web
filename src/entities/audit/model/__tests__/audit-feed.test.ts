@@ -77,4 +77,19 @@ describe("AuditFeed", () => {
     expect(feed.error?.message).toBe("403");
     expect(feed.items).toEqual([]);
   });
+
+  it("новое событие — в начало ленты, повтор того же — без дубля", async () => {
+    const feed = new AuditFeed(
+      vi.fn().mockResolvedValue({
+        data: { items: [event("e-1")], nextCursor: null },
+        error: null,
+      }),
+    );
+
+    await feed.load();
+    feed.prepend(event("e-2"));
+    feed.prepend(event("e-2"));
+
+    expect(feed.items.map(e => e.id)).toEqual(["e-2", "e-1"]);
+  });
 });

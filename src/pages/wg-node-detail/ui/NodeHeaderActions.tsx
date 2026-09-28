@@ -35,7 +35,7 @@ export const NodeHeaderActions: FC<NodeHeaderActionsProps> = observer(
           Удалить агента
         </Button>
       )}
-      {vm.canManage && (
+      {vm.canAgent && (
         <>
           <AgentUpdateButton
             node={node}
@@ -44,21 +44,25 @@ export const NodeHeaderActions: FC<NodeHeaderActionsProps> = observer(
             onUpdate={() => void vm.updateAgent.mutate()}
           />
           <RotateWgAgentKeyButton nodeId={node.id} />
-          <Button
-            variant="outline"
-            leftIcon={<Pencil size={15} />}
-            onClick={() => vm.nodeForm.openEdit(node)}
-          >
-            Изменить
-          </Button>
-          <Button
-            variant="destructive"
-            leftIcon={<Trash2 size={15} />}
-            onClick={() => void vm.removeNode(node)}
-          >
-            Удалить
-          </Button>
         </>
+      )}
+      {vm.canUpdate && (
+        <Button
+          variant="outline"
+          leftIcon={<Pencil size={15} />}
+          onClick={() => vm.nodeForm.openEdit(node)}
+        >
+          Изменить
+        </Button>
+      )}
+      {vm.canDelete && (
+        <Button
+          variant="destructive"
+          leftIcon={<Trash2 size={15} />}
+          onClick={() => void vm.removeNode(node)}
+        >
+          Удалить
+        </Button>
       )}
     </div>
   ),

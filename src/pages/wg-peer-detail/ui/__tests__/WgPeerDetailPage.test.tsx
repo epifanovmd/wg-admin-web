@@ -16,10 +16,12 @@ import { WgPeerDetailPage } from "../WgPeerDetailPage";
 
 // Observable: смена параметра перерисовывает observer-страницу, как роутер.
 const params = observable({ peerId: "p1" });
+const { navigate } = vi.hoisted(() => ({ navigate: vi.fn() }));
 
 vi.mock("@tanstack/react-router", () => ({
   Link: ({ children }: { children: ReactNode }) => <a>{children}</a>,
   useParams: () => params,
+  useNavigate: () => navigate,
 }));
 
 const peer = {
@@ -64,11 +66,15 @@ const live = {
   txTotal: 0,
 };
 
+let socket = createFakeSocket();
+const toast = { error: vi.fn(), success: vi.fn(), warning: vi.fn() };
+
 const bind = (permissions: string[]) => {
   runInAction(() => {
     params.peerId = "p1";
   });
-  iocContainer.bind(ISocketTransport.Tid).toConstantValue(createFakeSocket());
+  socket = createFakeSocket();
+  iocContainer.bind(ISocketTransport.Tid).toConstantValue(socket);
   iocContainer.bind(IMainApi.Tid).toConstantValue({
     getWgPeer: (id: string) => Promise.resolve({ data: PEERS[id] }),
     wgStatsSeries: vi.fn().mockResolvedValue({ data: [] }),
@@ -76,9 +82,7 @@ const bind = (permissions: string[]) => {
       Promise.resolve({ data: id === "p1" ? live : null }),
     wgStatsPeerWindow: vi.fn().mockResolvedValue({ data: [] }),
   });
-  iocContainer
-    .bind(INotificationService.Tid)
-    .toConstantValue({ error: vi.fn(), success: vi.fn() });
+  iocContainer.bind(INotificationService.Tid).toConstantValue(toast);
   iocContainer.bind(IUserStore.Tid).toConstantValue({
     user: { id: "u1" },
     can: (permission: string) => permissions.includes(permission),
@@ -99,6 +103,7 @@ afterEach(() => {
   iocContainer.unbind(IMainApi.Tid);
   iocContainer.unbind(INotificationService.Tid);
   iocContainer.unbind(IUserStore.Tid);
+  vi.clearAllMocks();
 });
 
 describe("WgPeerDetailPage", () => {
@@ -110,8 +115,8 @@ describe("WgPeerDetailPage", () => {
     expect(screen.queryByRole("button", { name: "Изменить" })).toBeNull();
   });
 
-  it("с правом управления пирами «Изменить» есть", async () => {
-    bind([WG_PERMISSIONS.PEER_VIEW, WG_PERMISSIONS.PEER_MANAGE]);
+  it("с правом изменения пиров «Изменить» есть", async () => {
+    bind([WG_PERMISSIONS.PEER_VIEW, WG_PERMISSIONS.PEER_UPDATE]);
     renderPage();
 
     expect(
@@ -133,5 +138,36 @@ describe("WgPeerDetailPage", () => {
 
     await screen.findByText("Телефон");
     expect(screen.queryByText(/5\.0 МБ\/с/)).toBeNull();
+  });
+
+  it("пир удалён — уход к списку пиров с уведомлением", async () => {
+    bind([WG_PERMISSIONS.PEER_VIEW]);
+    renderPage();
+    await screen.findByText("Ноутбук");
+
+    act(() => socket.fire("wg:peer:deleted", { id: "p1" }));
+
+    expect(toast.warning).toHaveBeenCalledOnce();
+    expect(navigate).toHaveBeenCalledWith({ to: "/wg/peers" });
+  });
+
+  it("пир ушёл к другому держателю — прежний держатель уходит к списку", async () => {
+    bind([WG_PERMISSIONS.PEER_OWN]);
+    renderPage();
+    await screen.findByText("Ноутбук");
+
+    act(() => socket.fire("wg:peer:updated", { ...peer, userId: "u2" }));
+
+    expect(navigate).toHaveBeenCalledWith({ to: "/wg/peers" });
+  });
+
+  it("чужое изменение другого пира страницу не трогает", async () => {
+    bind([WG_PERMISSIONS.PEER_VIEW]);
+    renderPage();
+    await screen.findByText("Ноутбук");
+
+    act(() => socket.fire("wg:peer:deleted", { id: "p2" }));
+
+    expect(navigate).not.toHaveBeenCalled();
   });
 });

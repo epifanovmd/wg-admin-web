@@ -6,7 +6,8 @@ import { FC } from "react";
 
 interface InterfaceReplicasCellProps {
   iface: WgInterfaceDto;
-  canManage: boolean;
+  /** Снимать копии и закреплять обслуживающую (право на реплики). */
+  canManageReplicas: boolean;
   /** Закрепить трафик через релей на копии; null — авто. */
   onPin: (iface: WgInterfaceDto, nodeId: string | null) => void;
   onRemoveReplica: (iface: WgInterfaceDto, nodeId: string) => void;
@@ -20,7 +21,7 @@ const AUTO = "auto";
  */
 export const InterfaceReplicasCell: FC<InterfaceReplicasCellProps> = ({
   iface,
-  canManage,
+  canManageReplicas,
   onPin,
   onRemoveReplica,
 }) => {
@@ -66,7 +67,7 @@ export const InterfaceReplicasCell: FC<InterfaceReplicasCellProps> = ({
             message={copy.message}
             enabled={iface.enabled}
           />
-          {!copy.primary && canManage && (
+          {!copy.primary && canManageReplicas && (
             <Tooltip content="Убрать копию">
               <IconButton
                 size="sm"
@@ -85,7 +86,7 @@ export const InterfaceReplicasCell: FC<InterfaceReplicasCellProps> = ({
         <Select
           size="sm"
           aria-label="Трафик через копию"
-          disabled={!canManage}
+          disabled={!canManageReplicas}
           value={iface.activeReplicaNodeId ?? AUTO}
           onChange={value => onPin(iface, value === AUTO ? null : value)}
           options={[

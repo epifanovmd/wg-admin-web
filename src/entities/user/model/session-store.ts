@@ -12,6 +12,9 @@ import { ISessionStore } from "./session-types";
 /** Активных сессий у пользователя немного — одна страница покрывает все. */
 const SESSIONS_LIMIT = 100;
 
+/** `sessionId` события, когда завершены все сессии пользователя. */
+const ALL_SESSIONS = "all";
+
 @injectable()
 export class SessionStore implements ISessionStore {
   public sessionsHolder = new CollectionHolder<SessionDto>({
@@ -83,8 +86,11 @@ export class SessionStore implements ISessionStore {
   handleSessionTerminated(sessionId: string) {
     this.sessionsHolder.removeItem(sessionId);
 
-    // Завершена текущая сессия — выход.
-    if (this._authGuard.isCurrentSession(sessionId)) {
+    // Завершена текущая сессия или все сразу (аккаунт удалён) — выход.
+    if (
+      sessionId === ALL_SESSIONS ||
+      this._authGuard.isCurrentSession(sessionId)
+    ) {
       this._authGuard.signOut();
     }
   }

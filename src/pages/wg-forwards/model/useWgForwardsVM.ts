@@ -7,6 +7,7 @@ import {
 import { IMainApi } from "@shared/api";
 import type { EWgForwardRoute, WgForwardDto } from "@shared/api/gen/main/model";
 import { useCollection } from "@shared/lib/holders";
+import { useCloseWhenForbidden } from "@shared/lib/hooks";
 import { notifyApiError } from "@shared/lib/http";
 import { INotificationService } from "@shared/lib/notifications";
 import { useSocketEvent, useSocketRoom } from "@shared/lib/socket";
@@ -33,6 +34,12 @@ export const useWgForwardsVM = () => {
     forwards.upsertItem(forward.id, forward);
 
   const form = useWgForwardFormVM({ onSaved: upsert });
+  const canCreate = userStore.can(WG_PERMISSIONS.FORWARD_CREATE);
+  const canUpdate = userStore.can(WG_PERMISSIONS.FORWARD_UPDATE);
+
+  useCloseWhenForbidden(form.open, form.editing ? canUpdate : canCreate, () =>
+    form.setOpen(false),
+  );
   const remove = useDeleteWgForward({
     onDeleted: forward => forwards.removeItem(forward.id),
   });
@@ -73,7 +80,9 @@ export const useWgForwardsVM = () => {
       patch(forward, { enabled: !forward.enabled }),
     setRoute: (forward: WgForwardDto, route: EWgForwardRoute) =>
       patch(forward, { route }),
-    canManage: userStore.can(WG_PERMISSIONS.FORWARD_MANAGE),
+    canCreate,
+    canUpdate,
+    canDelete: userStore.can(WG_PERMISSIONS.FORWARD_DELETE),
   };
 };
 

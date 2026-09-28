@@ -32,29 +32,35 @@ export const ServiceCard: FC<ServiceCardProps> = observer(({ vm, service }) => (
       </span>
     }
     extra={
-      vm.canManage && (
+      (vm.canUpdate || vm.canDelete) && (
         <>
-          <WgToggleSwitch
-            enabled={service.enabled}
-            onToggle={() => vm.toggle(service)}
-          />
-          <Tooltip content="Изменить">
-            <IconButton
-              aria-label="Изменить"
-              onClick={() => vm.form.openEdit(service)}
-            >
-              <Pencil size={15} />
-            </IconButton>
-          </Tooltip>
-          <Tooltip content="Удалить">
-            <IconButton
-              aria-label="Удалить"
-              variant="destructive"
-              onClick={() => void vm.remove(service)}
-            >
-              <Trash2 size={15} />
-            </IconButton>
-          </Tooltip>
+          {vm.canUpdate && (
+            <>
+              <WgToggleSwitch
+                enabled={service.enabled}
+                onToggle={() => vm.toggle(service)}
+              />
+              <Tooltip content="Изменить">
+                <IconButton
+                  aria-label="Изменить"
+                  onClick={() => vm.form.openEdit(service)}
+                >
+                  <Pencil size={15} />
+                </IconButton>
+              </Tooltip>
+            </>
+          )}
+          {vm.canDelete && (
+            <Tooltip content="Удалить">
+              <IconButton
+                aria-label="Удалить"
+                variant="destructive"
+                onClick={() => void vm.remove(service)}
+              >
+                <Trash2 size={15} />
+              </IconButton>
+            </Tooltip>
+          )}
         </>
       )
     }

@@ -9,6 +9,7 @@ import type {
   WgSocksUserDto,
 } from "@shared/api/gen/main/model";
 import { useCollection } from "@shared/lib/holders";
+import { useCloseWhenForbidden } from "@shared/lib/hooks";
 import { notifyApiError } from "@shared/lib/http";
 import { INotificationService } from "@shared/lib/notifications";
 import { useSocketEvent, useSocketRoom } from "@shared/lib/socket";
@@ -113,6 +114,11 @@ export const useWgSocksVM = () => {
   };
 
   const namePrompt = useSocksNamePromptVM({ onSubmit: create });
+  const canCreate = userStore.can(WG_PERMISSIONS.SOCKS_CREATE);
+  const canUpdate = userStore.can(WG_PERMISSIONS.SOCKS_UPDATE);
+  const canManageUsers = userStore.can(WG_PERMISSIONS.SOCKS_USERS);
+  const canViewSecrets = userStore.can(WG_PERMISSIONS.SOCKS_SECRETS);
+  const canManageClients = userStore.can(WG_PERMISSIONS.SOCKS_CLIENTS);
 
   const toggleUser = async (service: WgSocksServiceDto, user: WgSocksUserDto) =>
     done(
@@ -179,6 +185,16 @@ export const useWgSocksVM = () => {
     else downloadBlob(res.data, macClientFileName(service.name));
   };
 
+  useCloseWhenForbidden(form.open, form.editing ? canUpdate : canCreate, () =>
+    form.setOpen(false),
+  );
+  useCloseWhenForbidden(
+    !!namePrompt.prompt,
+    namePrompt.prompt?.kind === "client" ? canManageClients : canManageUsers,
+    namePrompt.close,
+  );
+  useCloseWhenForbidden(!!secret, canViewSecrets, () => setSecret(null));
+
   return {
     services,
     form,
@@ -192,7 +208,12 @@ export const useWgSocksVM = () => {
     closeSecret: () => setSecret(null),
     revokeClient,
     downloadMac,
-    canManage: userStore.can(WG_PERMISSIONS.SOCKS_MANAGE),
+    canCreate,
+    canUpdate,
+    canDelete: userStore.can(WG_PERMISSIONS.SOCKS_DELETE),
+    canManageUsers,
+    canViewSecrets,
+    canManageClients,
   };
 };
 

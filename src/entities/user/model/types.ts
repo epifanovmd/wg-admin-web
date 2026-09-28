@@ -1,6 +1,5 @@
 import {
   IProfileUpdateRequestDto,
-  KnownPermission,
   KnownRole,
   ProfileDto,
   UserDto,
@@ -9,6 +8,7 @@ import { createInjectDecorator, SupportInitialize } from "@shared/lib/di";
 import { IEntityHolderResult, IHolderError } from "@shared/lib/holders";
 import { ApiError, ApiResponse } from "@shared/lib/http";
 
+import type { Permission } from "../lib/permissions";
 import { ProfileModel } from "./profile-model";
 import { UserModel } from "./user-model";
 
@@ -26,8 +26,8 @@ export interface IUserStore {
   readonly profile: ProfileModel | null;
   readonly roles: KnownRole[];
   /** Объединение permissions из всех ролей и прямых permissions пользователя. */
-  readonly permissions: KnownPermission[];
-  readonly directPermissions: KnownPermission[];
+  readonly permissions: Permission[];
+  readonly directPermissions: Permission[];
   /** superadmin bypass (роль KnownRole.admin) */
   readonly isAdmin: boolean;
   readonly error: string | undefined;
@@ -35,7 +35,7 @@ export interface IUserStore {
   readonly isReady: boolean;
 
   /** Есть ли у пользователя указанный permission (через роль, напрямую, или wildcard-иерархия). */
-  can(permission: KnownPermission | (string & {})): boolean;
+  can(permission: Permission): boolean;
   /** Есть ли у пользователя указанная роль. */
   hasRole(role: KnownRole): boolean;
 

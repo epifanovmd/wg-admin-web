@@ -19,7 +19,7 @@ export const WgForwardsPage: FC = observer(() => {
           title="Пробросы"
           subtitle="Порт на релее → внешний сервис: напрямую или через IPIP-туннель с аварийным прямым путём"
           actions={
-            vm.canManage && (
+            vm.canCreate && (
               <Button
                 leftIcon={<Plus size={15} />}
                 onClick={vm.form.openCreate}

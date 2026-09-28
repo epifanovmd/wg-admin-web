@@ -56,8 +56,8 @@ describe("WgForwardsPage", () => {
     expect(screen.queryByRole("button", { name: "Новый проброс" })).toBeNull();
   });
 
-  it("с правом управления кнопка «Новый проброс» есть", () => {
-    bind([WG_PERMISSIONS.FORWARD_VIEW, WG_PERMISSIONS.FORWARD_MANAGE]);
+  it("с правом создания кнопка «Новый проброс» есть", () => {
+    bind([WG_PERMISSIONS.FORWARD_VIEW, WG_PERMISSIONS.FORWARD_CREATE]);
     renderPage();
 
     expect(screen.getByRole("button", { name: "Новый проброс" })).toBeTruthy();

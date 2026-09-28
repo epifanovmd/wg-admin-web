@@ -21,7 +21,7 @@ export const WgSocksPage: FC = observer(() => {
           title="Прокси"
           subtitle="SOCKS5 через mTLS на нодах — для Telegram и не только: доступ по сертификату устройства и паролю"
           actions={
-            vm.canManage && (
+            vm.canCreate && (
               <Button
                 leftIcon={<Plus size={15} />}
                 onClick={() => vm.form.openCreate()}

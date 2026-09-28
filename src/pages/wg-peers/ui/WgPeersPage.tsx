@@ -38,7 +38,7 @@ export const WgPeersPage: FC = observer(() => {
               : "Ваши подключения: QR-код, конфиг и включение"
           }
           actions={
-            vm.canManage && (
+            vm.canCreate && (
               <Button
                 leftIcon={<Plus size={15} />}
                 onClick={vm.form.openCreate}

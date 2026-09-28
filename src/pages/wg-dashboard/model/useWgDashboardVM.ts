@@ -26,6 +26,8 @@ export const useWgDashboardVM = () => {
   const nodesStore = IWgNodesStore.useInstance();
   const config = useWgPeerConfigVM();
   const canViewGlobal = userStore.can(WG_PERMISSIONS.STATS_VIEW);
+  // Список нод на дашборде — при праве и на статистику, и на ноды.
+  const canViewNodes = canViewGlobal && userStore.can(WG_PERMISSIONS.NODE_VIEW);
   const [nodeLive, setNodeLive] = useState<Map<string, IWgNodeLive>>(
     () => new Map(),
   );
@@ -51,17 +53,24 @@ export const useWgDashboardVM = () => {
   });
 
   useEffect(() => {
-    if (canViewGlobal) void nodesStore.load();
-  }, [canViewGlobal, nodesStore]);
+    if (canViewNodes) void nodesStore.load();
+  }, [canViewNodes, nodesStore]);
 
   useSocketRoom("wg-overview", canViewGlobal ? OVERVIEW_ID : null, () => {
     void overview.reload();
+  });
+  useSocketRoom("wg-nodes", canViewNodes ? "all" : null, () => {
     void nodesStore.load();
   });
   useSocketEvent<[WgNodeDto]>(
     "wg:node:updated",
     nodesStore.upsert,
-    canViewGlobal,
+    canViewNodes,
+  );
+  useSocketEvent<[{ id: string }]>(
+    "wg:node:deleted",
+    ({ id }) => nodesStore.remove(id),
+    canViewNodes,
   );
   useSocketEvent<[IWgNodeLive]>(
     "wg:node:stats",
@@ -96,7 +105,7 @@ export const useWgDashboardVM = () => {
     canViewGlobal,
     overview: overview.live,
     speedPoints: overview.points,
-    nodes: nodesStore.nodes,
+    nodes: canViewNodes ? nodesStore.nodes : [],
     nodeLive,
     myPeers: myPeers.items,
     isMyPeersLoading: myPeers.isLoading,

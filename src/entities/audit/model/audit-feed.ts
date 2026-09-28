@@ -54,6 +54,13 @@ export class AuditFeed {
     return this._holder.error ?? this._holder.loadMoreError;
   }
 
+  /** Новое событие (из сокета) — в начало ленты; уже показанное не дублируется. */
+  prepend(event: AuditEventDto) {
+    if (this._holder.items.some(item => item.id === event.id)) return;
+
+    this._holder.prependItem(event);
+  }
+
   async load() {
     this._holder.setLoading();
 

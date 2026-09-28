@@ -18,7 +18,8 @@ import type { WgNodesVM } from "../model/useWgNodesVM";
 const column = createColumnHelper<WgNodeDto>();
 
 interface NodeColumnsOptions {
-  canManage: boolean;
+  canUpdate: boolean;
+  canDelete: boolean;
   canProvision: boolean;
   /** VM — через ref: колонки стабильны, ячейки не перемонтируются. */
   vm: RefObject<WgNodesVM>;
@@ -26,7 +27,8 @@ interface NodeColumnsOptions {
 
 /** Колонки таблицы нод. */
 export const createNodeColumns = ({
-  canManage,
+  canUpdate,
+  canDelete,
   canProvision,
   vm,
 }: NodeColumnsOptions) => [
@@ -111,26 +113,26 @@ export const createNodeColumns = ({
             </IconButton>
           </Tooltip>
         )}
-        {canManage && (
-          <>
-            <Tooltip content="Изменить">
-              <IconButton
-                aria-label="Изменить"
-                onClick={() => vm.current.form.openEdit(row.original)}
-              >
-                <Pencil size={15} />
-              </IconButton>
-            </Tooltip>
-            <Tooltip content="Удалить">
-              <IconButton
-                aria-label="Удалить"
-                variant="destructive"
-                onClick={() => void vm.current.remove(row.original)}
-              >
-                <Trash2 size={15} />
-              </IconButton>
-            </Tooltip>
-          </>
+        {canUpdate && (
+          <Tooltip content="Изменить">
+            <IconButton
+              aria-label="Изменить"
+              onClick={() => vm.current.form.openEdit(row.original)}
+            >
+              <Pencil size={15} />
+            </IconButton>
+          </Tooltip>
+        )}
+        {canDelete && (
+          <Tooltip content="Удалить">
+            <IconButton
+              aria-label="Удалить"
+              variant="destructive"
+              onClick={() => void vm.current.remove(row.original)}
+            >
+              <Trash2 size={15} />
+            </IconButton>
+          </Tooltip>
         )}
       </TableRowActions>
     ),

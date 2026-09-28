@@ -16,45 +16,57 @@ interface InterfaceSectionProps {
 export const InterfaceActions: FC<InterfaceSectionProps> = observer(
   ({ vm, iface }) => (
     <div className="flex flex-wrap items-center gap-2">
-      <WgToggleSwitch
-        enabled={iface.enabled}
-        onToggle={() => vm.actions.toggle(iface)}
-      />
-      <Button
-        variant="outline"
-        leftIcon={<Pencil size={15} />}
-        onClick={() => vm.form.openEdit(iface)}
-      >
-        Изменить
-      </Button>
-      <Button
-        variant="outline"
-        leftIcon={<RotateCcw size={15} />}
-        onClick={() => void vm.actions.restart(iface)}
-      >
-        Перезапустить
-      </Button>
-      <Button
-        variant="outline"
-        leftIcon={<ArrowRightLeft size={15} />}
-        onClick={() => vm.move.openFor(iface)}
-      >
-        Перенести
-      </Button>
-      <Button
-        variant="outline"
-        leftIcon={<Copy size={15} />}
-        onClick={() => vm.move.openFor(iface, "copy")}
-      >
-        Копия
-      </Button>
-      <Button
-        variant="destructive"
-        leftIcon={<Trash2 size={15} />}
-        onClick={() => void vm.actions.remove(iface)}
-      >
-        Удалить
-      </Button>
+      {vm.permissions.canControl && (
+        <WgToggleSwitch
+          enabled={iface.enabled}
+          onToggle={() => vm.actions.toggle(iface)}
+        />
+      )}
+      {vm.permissions.canUpdate && (
+        <Button
+          variant="outline"
+          leftIcon={<Pencil size={15} />}
+          onClick={() => vm.form.openEdit(iface)}
+        >
+          Изменить
+        </Button>
+      )}
+      {vm.permissions.canControl && (
+        <Button
+          variant="outline"
+          leftIcon={<RotateCcw size={15} />}
+          onClick={() => void vm.actions.restart(iface)}
+        >
+          Перезапустить
+        </Button>
+      )}
+      {vm.permissions.canMove && (
+        <Button
+          variant="outline"
+          leftIcon={<ArrowRightLeft size={15} />}
+          onClick={() => vm.move.openFor(iface)}
+        >
+          Перенести
+        </Button>
+      )}
+      {vm.permissions.canReplicas && (
+        <Button
+          variant="outline"
+          leftIcon={<Copy size={15} />}
+          onClick={() => vm.move.openFor(iface, "copy")}
+        >
+          Копия
+        </Button>
+      )}
+      {vm.permissions.canDelete && (
+        <Button
+          variant="destructive"
+          leftIcon={<Trash2 size={15} />}
+          onClick={() => void vm.actions.remove(iface)}
+        >
+          Удалить
+        </Button>
+      )}
     </div>
   ),
 );

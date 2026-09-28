@@ -1,59 +1,65 @@
-import { KnownPermission, KnownRole } from "@shared/api/gen/main/model";
+import { KnownRole } from "@shared/api/gen/main/model";
+
+/** Право — строка `домен:действие` или wildcard `домен:*`. */
+export type Permission = string;
+
+/** Полный доступ. */
+export const ALL_PERMISSIONS = "*";
+
+/** Права администрирования (подписи и группы — в каталоге с сервера). */
+export const ADMIN_PERMISSIONS = {
+  USER_VIEW: "user:view",
+  USER_UPDATE: "user:update",
+  USER_DELETE: "user:delete",
+  USER_PRIVILEGES: "user:privileges",
+  ROLE_VIEW: "role:view",
+  ROLE_CREATE: "role:create",
+  ROLE_UPDATE: "role:update",
+  ROLE_DELETE: "role:delete",
+  PROFILE_VIEW: "profile:view",
+  PROFILE_UPDATE: "profile:update",
+  PROFILE_DELETE: "profile:delete",
+  APIKEY_VIEW: "apikey:view",
+  APIKEY_CREATE: "apikey:create",
+  APIKEY_REVOKE: "apikey:revoke",
+  AUDIT_VIEW: "audit:view",
+} as const;
 
 /**
- * Проверяет наличие права с поддержкой wildcard-иерархии.
- * Иерархия wildcards: "chat:manage" → "chat:*" → "*".
+ * Есть ли право с учётом wildcard-иерархии:
+ * `wg:peer:create` ← `wg:peer:*` ← `wg:*` ← `*`.
  */
 const hasPermission = (
-  userPerms: KnownPermission[],
-  required: KnownPermission | (string & {}),
+  userPerms: readonly Permission[],
+  required: Permission,
 ): boolean => {
-  if (userPerms.includes(KnownPermission["*"])) return true;
-  if (userPerms.includes(required as KnownPermission)) return true;
+  if (userPerms.includes(ALL_PERMISSIONS) || userPerms.includes(required)) {
+    return true;
+  }
 
   const parts = required.split(":");
 
   for (let i = parts.length - 1; i >= 1; i--) {
-    const wildcard = [...parts.slice(0, i), "*"].join(":") as KnownPermission;
-
-    if (userPerms.includes(wildcard)) return true;
+    if (userPerms.includes([...parts.slice(0, i), "*"].join(":"))) return true;
   }
 
   return false;
 };
 
-/** Возвращает true, если пользователь имеет роль admin (superadmin bypass). */
-export const isAdminRole = (roles: KnownRole[]): boolean =>
+/** Роль admin — полный доступ. */
+export const isAdminRole = (roles: readonly string[]): boolean =>
   roles.includes(KnownRole.admin);
 
-/** Проверяет доступ: admin bypass ИЛИ конкретное право. */
+/** Доступ: роль admin или право (с wildcard). */
 export const canAccess = (
-  roles: KnownRole[],
-  userPerms: KnownPermission[],
-  required: KnownPermission | (string & {}),
+  roles: readonly string[],
+  userPerms: readonly Permission[],
+  required: Permission,
 ): boolean => isAdminRole(roles) || hasPermission(userPerms, required);
 
-/** Вычисляет effective permissions = union(rolePermissions) ∪ directPermissions. */
+/** Эффективные права: права ролей ∪ прямые права. */
 export const computeEffectivePermissions = (
-  rolePermissions: KnownPermission[],
-  directPermissions: KnownPermission[],
-): KnownPermission[] =>
+  rolePermissions: readonly Permission[],
+  directPermissions: readonly Permission[],
+): Permission[] =>
   Array.from(new Set([...rolePermissions, ...directPermissions]));
-
-/** Человеческие подписи известных прав — для экранов администрирования. */
-export const PERMISSION_LABELS: Record<KnownPermission, string> = {
-  "*": "Все права",
-  "user:view": "Просмотр пользователей",
-  "user:manage": "Управление пользователями",
-  "role:view": "Просмотр ролей",
-  "role:manage": "Управление ролями",
-  "profile:view": "Просмотр профилей",
-  "profile:manage": "Управление профилями",
-  "apikey:manage": "Управление API-ключами",
-  "audit:view": "Просмотр журнала",
-};
-
-/** Все известные права в порядке показа. */
-export const KNOWN_PERMISSIONS = Object.keys(
-  PERMISSION_LABELS,
-) as KnownPermission[];

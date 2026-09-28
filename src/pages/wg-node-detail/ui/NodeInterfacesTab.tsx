@@ -1,5 +1,9 @@
 import { WgToggleSwitch } from "@entities/wg";
-import { InterfaceReplicasCell } from "@features/manage-wg-interface";
+import {
+  hasAnyInterfaceAction,
+  InterfaceReplicasCell,
+  type IWgInterfacePermissions,
+} from "@features/manage-wg-interface";
 import type { WgInterfaceDto } from "@shared/api/gen/main/model";
 import { useLatestRef } from "@shared/lib/hooks";
 import {
@@ -17,7 +21,7 @@ import { FC, RefObject, useMemo } from "react";
 interface NodeInterfacesTabProps {
   interfaces: WgInterfaceDto[];
   isLoading: boolean;
-  canManage: boolean;
+  permissions: IWgInterfacePermissions;
   onEdit: (iface: WgInterfaceDto) => void;
   onToggle: (iface: WgInterfaceDto) => Promise<boolean>;
   onRestart: (iface: WgInterfaceDto) => void;
@@ -43,7 +47,10 @@ type RowActions = Pick<
 >;
 
 /** Обработчики — через ref: колонки стабильны, ячейки не перемонтируются. */
-const createColumns = (canManage: boolean, actions: RefObject<RowActions>) => [
+const createColumns = (
+  permissions: IWgInterfacePermissions,
+  actions: RefObject<RowActions>,
+) => [
   column.display({
     id: "name",
     header: "Интерфейс",
@@ -91,7 +98,7 @@ const createColumns = (canManage: boolean, actions: RefObject<RowActions>) => [
       <div onClick={stopRowClick}>
         <InterfaceReplicasCell
           iface={row.original}
-          canManage={canManage}
+          canManageReplicas={permissions.canReplicas}
           onPin={(iface, nodeId) => actions.current.onPin(iface, nodeId)}
           onRemoveReplica={(iface, nodeId) =>
             actions.current.onRemoveReplica(iface, nodeId)
@@ -105,53 +112,65 @@ const createColumns = (canManage: boolean, actions: RefObject<RowActions>) => [
     size: 240,
     meta: { align: "right" },
     cell: ({ row }) =>
-      canManage ? (
+      hasAnyInterfaceAction(permissions) ? (
         <TableRowActions>
-          <WgToggleSwitch
-            enabled={row.original.enabled}
-            onToggle={() => actions.current.onToggle(row.original)}
-          />
-          <Tooltip content="Перезапустить">
-            <IconButton
-              aria-label="Перезапустить"
-              onClick={() => actions.current.onRestart(row.original)}
-            >
-              <RotateCcw size={15} />
-            </IconButton>
-          </Tooltip>
-          <Tooltip content="Скопировать на ноду (реплика с теми же пирами)">
-            <IconButton
-              aria-label="Скопировать на ноду"
-              onClick={() => actions.current.onCopy(row.original)}
-            >
-              <Copy size={15} />
-            </IconButton>
-          </Tooltip>
-          <Tooltip content="Перенести на другую ноду">
-            <IconButton
-              aria-label="Перенести на другую ноду"
-              onClick={() => actions.current.onMove(row.original)}
-            >
-              <ArrowRightLeft size={15} />
-            </IconButton>
-          </Tooltip>
-          <Tooltip content="Изменить">
-            <IconButton
-              aria-label="Изменить"
-              onClick={() => actions.current.onEdit(row.original)}
-            >
-              <Pencil size={15} />
-            </IconButton>
-          </Tooltip>
-          <Tooltip content="Удалить">
-            <IconButton
-              aria-label="Удалить"
-              variant="destructive"
-              onClick={() => actions.current.onDelete(row.original)}
-            >
-              <Trash2 size={15} />
-            </IconButton>
-          </Tooltip>
+          {permissions.canControl && (
+            <>
+              <WgToggleSwitch
+                enabled={row.original.enabled}
+                onToggle={() => actions.current.onToggle(row.original)}
+              />
+              <Tooltip content="Перезапустить">
+                <IconButton
+                  aria-label="Перезапустить"
+                  onClick={() => actions.current.onRestart(row.original)}
+                >
+                  <RotateCcw size={15} />
+                </IconButton>
+              </Tooltip>
+            </>
+          )}
+          {permissions.canReplicas && (
+            <Tooltip content="Скопировать на ноду (реплика с теми же пирами)">
+              <IconButton
+                aria-label="Скопировать на ноду"
+                onClick={() => actions.current.onCopy(row.original)}
+              >
+                <Copy size={15} />
+              </IconButton>
+            </Tooltip>
+          )}
+          {permissions.canMove && (
+            <Tooltip content="Перенести на другую ноду">
+              <IconButton
+                aria-label="Перенести на другую ноду"
+                onClick={() => actions.current.onMove(row.original)}
+              >
+                <ArrowRightLeft size={15} />
+              </IconButton>
+            </Tooltip>
+          )}
+          {permissions.canUpdate && (
+            <Tooltip content="Изменить">
+              <IconButton
+                aria-label="Изменить"
+                onClick={() => actions.current.onEdit(row.original)}
+              >
+                <Pencil size={15} />
+              </IconButton>
+            </Tooltip>
+          )}
+          {permissions.canDelete && (
+            <Tooltip content="Удалить">
+              <IconButton
+                aria-label="Удалить"
+                variant="destructive"
+                onClick={() => actions.current.onDelete(row.original)}
+              >
+                <Trash2 size={15} />
+              </IconButton>
+            </Tooltip>
+          )}
         </TableRowActions>
       ) : null,
   }),
@@ -161,14 +180,14 @@ const createColumns = (canManage: boolean, actions: RefObject<RowActions>) => [
 export const NodeInterfacesTab: FC<NodeInterfacesTabProps> = ({
   interfaces,
   isLoading,
-  canManage,
+  permissions,
   ...actions
 }) => {
   const navigate = useNavigate();
   const actionsRef = useLatestRef<RowActions>(actions);
   const columns = useMemo(
-    () => createColumns(canManage, actionsRef),
-    [canManage, actionsRef],
+    () => createColumns(permissions, actionsRef),
+    [permissions, actionsRef],
   );
 
   return (

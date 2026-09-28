@@ -93,7 +93,7 @@ export const InterfaceOverviewTab: FC<InterfaceSectionProps> = observer(
         <Card title="Копии на нодах">
           <InterfaceReplicasCell
             iface={iface}
-            canManage={vm.canManage}
+            canManageReplicas={vm.permissions.canReplicas}
             onPin={(target, nodeId) =>
               void vm.actions.pinReplica(target, nodeId)
             }

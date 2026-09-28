@@ -19,7 +19,7 @@ export const WgEndpointsPage: FC = observer(() => {
           title="Точки подключения"
           subtitle="Стабильные адреса клиентов: смена ноды или релея не требует перевыпуска конфигов"
           actions={
-            vm.canManage && (
+            vm.canCreate && (
               <Button
                 leftIcon={<Plus size={15} />}
                 onClick={vm.form.openCreate}

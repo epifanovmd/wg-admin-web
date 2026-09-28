@@ -35,6 +35,7 @@ import type {
   IPaginatedDtoWgInterfaceDto,
   IPaginatedDtoWgNodeDto,
   IPaginatedDtoWgPeerDto,
+  IPermissionCatalogDto,
   IProfileListDto,
   IProfileUpdateRequestDto,
   IProvisionWgNodeBody,
@@ -177,436 +178,15 @@ export const getWgAdmin = () => {
   };
 
   /**
-   * Получить все роли с их правами.
-   * @summary Список ролей
+   * Каталог прав по группам с подписями — для редакторов ролей и прав
+   * пользователей. Первая группа — «Система» (полный доступ `*`).
+   * @summary Каталог прав
    */
-  const getRoles = (
-    options?: SecondParameter<typeof mainMutator<IRoleDto[]>>,
+  const getPermissionCatalog = (
+    options?: SecondParameter<typeof mainMutator<IPermissionCatalogDto>>,
   ) => {
-    return mainMutator<IRoleDto[]>(
-      { url: `/api/v1/roles`, method: "GET" },
-      options,
-    );
-  };
-
-  /**
-   * Создать новую роль.
-   * @summary Создание роли
-   */
-  const createRole = (
-    iCreateRoleRequestDto: ICreateRoleRequestDto,
-    options?: SecondParameter<typeof mainMutator<IRoleDto>>,
-  ) => {
-    return mainMutator<IRoleDto>(
-      {
-        url: `/api/v1/roles`,
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        data: iCreateRoleRequestDto,
-      },
-      options,
-    );
-  };
-
-  /**
-   * Удалить роль.
-   * @summary Удаление роли
-   */
-  const deleteRole = (
-    id: Uuid,
-    options?: SecondParameter<typeof mainMutator<void>>,
-  ) => {
-    return mainMutator<void>(
-      { url: `/api/v1/roles/${id}`, method: "DELETE" },
-      options,
-    );
-  };
-
-  /**
-   * Установить права для роли.
-   * Заменяет текущий набор прав роли указанным. Роль `admin`, право `*` и
-   * собственную роль меняет только суперпользователь. Все пользователи роли
-   * получают `user:privileges-changed`, их сессии завершаются.
-   * @summary Установка прав роли
-   */
-  const setRolePermissions = (
-    id: Uuid,
-    iRolePermissionsRequestDto: IRolePermissionsRequestDto,
-    options?: SecondParameter<typeof mainMutator<IRoleDto>>,
-  ) => {
-    return mainMutator<IRoleDto>(
-      {
-        url: `/api/v1/roles/${id}/permissions`,
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        data: iRolePermissionsRequestDto,
-      },
-      options,
-    );
-  };
-
-  /**
-   * Получить пользователя.
-   * Этот эндпоинт позволяет получить данные пользователя, который выполнил запрос.
-   * @summary Получение данных текущего пользователя
-   */
-  const getMyUser = (
-    options?: SecondParameter<typeof mainMutator<UserDto>>,
-  ) => {
-    return mainMutator<UserDto>(
-      { url: `/api/v1/user/my`, method: "GET" },
-      options,
-    );
-  };
-
-  /**
-   * Обновить email и/или телефон текущего пользователя.
-   * Телефон меняется сразу. Email — нет: создаётся запрос на смену, код
-   * уходит на новый адрес, уведомление — на старый; адрес меняется после
-   * `POST my/email/confirm`. Повторный запрос — не чаще раза в минуту (429).
-   * Занятые email/телефон → 409 (`USER_EMAIL_TAKEN` / `USER_PHONE_TAKEN`).
-   * @summary Обновление данных текущего пользователя
-   */
-  const updateMyUser = (
-    iUserUpdateRequestDto: IUserUpdateRequestDto,
-    options?: SecondParameter<typeof mainMutator<UserDto>>,
-  ) => {
-    return mainMutator<UserDto>(
-      {
-        url: `/api/v1/user/my/update`,
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        data: iUserUpdateRequestDto,
-      },
-      options,
-    );
-  };
-
-  /**
-   * Подтвердить смену email кодом из письма на новый адрес. Email
-   * меняется и считается подтверждённым. Неверный код расходует попытку
-   * (`USER_EMAIL_CHANGE_INVALID_CODE`, в `details.attemptsLeft` — остаток);
-   * после 5 неверных или по истечении 15 минут запрос аннулируется.
-   * @summary Подтверждение смены email
-   */
-  const confirmEmailChange = (
-    iUserConfirmEmailChangeDto: IUserConfirmEmailChangeDto,
-    options?: SecondParameter<typeof mainMutator<UserDto>>,
-  ) => {
-    return mainMutator<UserDto>(
-      {
-        url: `/api/v1/user/my/email/confirm`,
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        data: iUserConfirmEmailChangeDto,
-      },
-      options,
-    );
-  };
-
-  /**
-   * Удалить текущего пользователя. Требуется текущий пароль.
-   * POST, а не DELETE: тело DELETE-запроса не разбирается body-parser-ом.
-   * @summary Удаление текущего пользователя
-   */
-  const deleteMyUser = (
-    iUserDeleteDto: IUserDeleteDto,
-    options?: SecondParameter<typeof mainMutator<void>>,
-  ) => {
-    return mainMutator<void>(
-      {
-        url: `/api/v1/user/my/delete`,
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        data: iUserDeleteDto,
-      },
-      options,
-    );
-  };
-
-  /**
-   * Установить username для текущего пользователя.
-   * @summary Установка username
-   */
-  const setUsername = (
-    setUsernameBody: SetUsernameBody,
-    options?: SecondParameter<typeof mainMutator<UserDto>>,
-  ) => {
-    return mainMutator<UserDto>(
-      {
-        url: `/api/v1/user/my/username`,
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        data: setUsernameBody,
-      },
-      options,
-    );
-  };
-
-  /**
-   * Получить пользователей постранично (администрирование), новые первыми.
-   * @summary Получение всех пользователей
-   */
-  const getUsers = (
-    params?: GetUsersParams,
-    options?: SecondParameter<typeof mainMutator<IUserAdminListDto>>,
-  ) => {
-    return mainMutator<IUserAdminListDto>(
-      { url: `/api/v1/user/all`, method: "GET", params },
-      options,
-    );
-  };
-
-  /**
-   * Получить опции пользователей для выпадающих списков (id + name).
-   * name — имя и фамилия или email если профиль не заполнен.
-   * @summary Опции пользователей
-   */
-  const getUserOptions = (
-    params?: GetUserOptionsParams,
-    options?: SecondParameter<typeof mainMutator<IUserOptionsDto>>,
-  ) => {
-    return mainMutator<IUserOptionsDto>(
-      { url: `/api/v1/user/options`, method: "GET", params },
-      options,
-    );
-  };
-
-  /**
-   * Получить пользователя по ID.
-   * @summary Получение пользователя по ID
-   */
-  const getUserById = (
-    id: Uuid,
-    options?: SecondParameter<typeof mainMutator<UserDto>>,
-  ) => {
-    return mainMutator<UserDto>(
-      { url: `/api/v1/user/${id}`, method: "GET" },
-      options,
-    );
-  };
-
-  /**
-   * Установить роли и прямые права пользователя.
-   * Роли и права должны существовать. Свои привилегии менять нельзя; роль
-   * `admin` и право `*` выдаёт только суперпользователь.
-   * @summary Установка привилегий для пользователя
-   */
-  const setPrivileges = (
-    id: Uuid,
-    iUserPrivilegesRequestDto: IUserPrivilegesRequestDto,
-    options?: SecondParameter<typeof mainMutator<UserDto>>,
-  ) => {
-    return mainMutator<UserDto>(
-      {
-        url: `/api/v1/user/setPrivileges/${id}`,
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        data: iUserPrivilegesRequestDto,
-      },
-      options,
-    );
-  };
-
-  /**
-   * Отправить код подтверждения на email текущего пользователя.
-   * Повторная отправка — не чаще раза в минуту (429).
-   * @summary Запрос подтверждения email
-   */
-  const requestVerifyEmail = (
-    options?: SecondParameter<typeof mainMutator<void>>,
-  ) => {
-    return mainMutator<void>(
-      { url: `/api/v1/user/verify-email/request`, method: "POST" },
-      options,
-    );
-  };
-
-  /**
-   * Подтвердить email текущего пользователя кодом из письма.
-   * @summary Подтверждение email-адреса
-   */
-  const verifyEmail = (
-    iUserVerifyEmailDto: IUserVerifyEmailDto,
-    options?: SecondParameter<typeof mainMutator<void>>,
-  ) => {
-    return mainMutator<void>(
-      {
-        url: `/api/v1/user/verify-email`,
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        data: iUserVerifyEmailDto,
-      },
-      options,
-    );
-  };
-
-  /**
-   * Обновить email/телефон другого пользователя — сразу, без подтверждения
-   * кодом. Новый email сбрасывает `emailVerified`.
-   * @summary Обновление другого пользователя
-   */
-  const updateUser = (
-    id: Uuid,
-    iUserUpdateRequestDto: IUserUpdateRequestDto,
-    options?: SecondParameter<typeof mainMutator<UserDto>>,
-  ) => {
-    return mainMutator<UserDto>(
-      {
-        url: `/api/v1/user/update/${id}`,
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        data: iUserUpdateRequestDto,
-      },
-      options,
-    );
-  };
-
-  /**
-   * Изменить пароль текущего пользователя. Требуется текущий пароль;
-   * остальные сессии завершаются, текущая остаётся.
-   * @summary Изменение пароля
-   */
-  const changePassword = (
-    iUserChangePasswordDto: IUserChangePasswordDto,
-    options?: SecondParameter<typeof mainMutator<void>>,
-  ) => {
-    return mainMutator<void>(
-      {
-        url: `/api/v1/user/changePassword`,
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        data: iUserChangePasswordDto,
-      },
-      options,
-    );
-  };
-
-  /**
-   * Удалить другого пользователя. Себя и суперпользователя удалить нельзя.
-   * @summary Удаление другого пользователя
-   */
-  const deleteUser = (
-    id: Uuid,
-    options?: SecondParameter<typeof mainMutator<void>>,
-  ) => {
-    return mainMutator<void>(
-      { url: `/api/v1/user/delete/${id}`, method: "DELETE" },
-      options,
-    );
-  };
-
-  /**
-   * Получить профиль текущего пользователя.
-   * Этот эндпоинт позволяет получить данные профиля пользователя, который выполнил запрос.
-   * Используется для получения информации о текущем пользователе, например, его имени, email, и других данных.
-   * @summary Получение профиля текущего пользователя
-   */
-  const getMyProfile = (
-    options?: SecondParameter<typeof mainMutator<ProfileDto>>,
-  ) => {
-    return mainMutator<ProfileDto>(
-      { url: `/api/v1/profile/my`, method: "GET" },
-      options,
-    );
-  };
-
-  /**
-   * Обновить профиль текущего пользователя.
-   * Этот эндпоинт позволяет пользователю обновить свои данные, такие как имя, email и другие параметры профиля.
-   * @summary Обновление профиля текущего пользователя
-   */
-  const updateMyProfile = (
-    iProfileUpdateRequestDto: IProfileUpdateRequestDto,
-    options?: SecondParameter<typeof mainMutator<ProfileDto>>,
-  ) => {
-    return mainMutator<ProfileDto>(
-      {
-        url: `/api/v1/profile/my/update`,
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        data: iProfileUpdateRequestDto,
-      },
-      options,
-    );
-  };
-
-  /**
-   * Очистить профиль текущего пользователя.
-   * Личные данные (имя, фамилия, дата рождения, пол) обнуляются,
-   * сама запись профиля остаётся.
-   * @summary Очистка профиля текущего пользователя
-   */
-  const deleteMyProfile = (
-    options?: SecondParameter<typeof mainMutator<void>>,
-  ) => {
-    return mainMutator<void>(
-      { url: `/api/v1/profile/my/delete`, method: "DELETE" },
-      options,
-    );
-  };
-
-  /**
-   * Получить все профили постранично, новые первыми.
-   * @summary Получение всех профилей
-   */
-  const getProfiles = (
-    params?: GetProfilesParams,
-    options?: SecondParameter<typeof mainMutator<IProfileListDto>>,
-  ) => {
-    return mainMutator<IProfileListDto>(
-      { url: `/api/v1/profile/all`, method: "GET", params },
-      options,
-    );
-  };
-
-  /**
-   * Получить профиль по ID.
-   * Этот эндпоинт позволяет получить профиль другого пользователя по его ID. Доступен только для администраторов.
-   * @summary Получение профиля по ID
-   */
-  const getProfileById = (
-    userId: Uuid,
-    options?: SecondParameter<typeof mainMutator<PublicProfileDto>>,
-  ) => {
-    return mainMutator<PublicProfileDto>(
-      { url: `/api/v1/profile/${userId}`, method: "GET" },
-      options,
-    );
-  };
-
-  /**
-   * Обновить профиль другого пользователя.
-   * Этот эндпоинт позволяет администраторам обновлять профиль других пользователей.
-   * @summary Обновление профиля другого пользователя
-   */
-  const updateProfile = (
-    userId: Uuid,
-    iProfileUpdateRequestDto: IProfileUpdateRequestDto,
-    options?: SecondParameter<typeof mainMutator<ProfileDto>>,
-  ) => {
-    return mainMutator<ProfileDto>(
-      {
-        url: `/api/v1/profile/update/${userId}`,
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        data: iProfileUpdateRequestDto,
-      },
-      options,
-    );
-  };
-
-  /**
-   * Очистить профиль другого пользователя.
-   * Личные данные обнуляются, запись профиля остаётся.
-   * @summary Очистка профиля другого пользователя
-   */
-  const deleteProfile = (
-    userId: Uuid,
-    options?: SecondParameter<typeof mainMutator<void>>,
-  ) => {
-    return mainMutator<void>(
-      { url: `/api/v1/profile/delete/${userId}`, method: "DELETE" },
+    return mainMutator<IPermissionCatalogDto>(
+      { url: `/api/v1/permissions`, method: "GET" },
       options,
     );
   };
@@ -1415,6 +995,77 @@ export const getWgAdmin = () => {
   };
 
   /**
+   * Получить все роли с их правами.
+   * @summary Список ролей
+   */
+  const getRoles = (
+    options?: SecondParameter<typeof mainMutator<IRoleDto[]>>,
+  ) => {
+    return mainMutator<IRoleDto[]>(
+      { url: `/api/v1/roles`, method: "GET" },
+      options,
+    );
+  };
+
+  /**
+   * Создать новую роль.
+   * @summary Создание роли
+   */
+  const createRole = (
+    iCreateRoleRequestDto: ICreateRoleRequestDto,
+    options?: SecondParameter<typeof mainMutator<IRoleDto>>,
+  ) => {
+    return mainMutator<IRoleDto>(
+      {
+        url: `/api/v1/roles`,
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        data: iCreateRoleRequestDto,
+      },
+      options,
+    );
+  };
+
+  /**
+   * Удалить роль. Системные роли (`admin`, `user`, `guest`) не удаляются,
+   * собственную роль удаляет только суперпользователь.
+   * @summary Удаление роли
+   */
+  const deleteRole = (
+    id: Uuid,
+    options?: SecondParameter<typeof mainMutator<void>>,
+  ) => {
+    return mainMutator<void>(
+      { url: `/api/v1/roles/${id}`, method: "DELETE" },
+      options,
+    );
+  };
+
+  /**
+   * Установить права для роли.
+   * Заменяет текущий набор прав роли указанным. Роль `admin`, право `*` и
+   * собственную роль меняет только суперпользователь. Все пользователи роли
+   * получают `user:privileges-changed` с новыми правами; их прежние
+   * access-токены отклоняются (`AUTH_PRIVILEGES_CHANGED`), сессии остаются.
+   * @summary Установка прав роли
+   */
+  const setRolePermissions = (
+    id: Uuid,
+    iRolePermissionsRequestDto: IRolePermissionsRequestDto,
+    options?: SecondParameter<typeof mainMutator<IRoleDto>>,
+  ) => {
+    return mainMutator<IRoleDto>(
+      {
+        url: `/api/v1/roles/${id}/permissions`,
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        data: iRolePermissionsRequestDto,
+      },
+      options,
+    );
+  };
+
+  /**
    * Новый прокси на ноде со своим CA и серверным сертификатом.
    * @summary Создание прокси
    */
@@ -1966,6 +1617,257 @@ export const getWgAdmin = () => {
   };
 
   /**
+   * Получить пользователя.
+   * Этот эндпоинт позволяет получить данные пользователя, который выполнил запрос.
+   * @summary Получение данных текущего пользователя
+   */
+  const getMyUser = (
+    options?: SecondParameter<typeof mainMutator<UserDto>>,
+  ) => {
+    return mainMutator<UserDto>(
+      { url: `/api/v1/user/my`, method: "GET" },
+      options,
+    );
+  };
+
+  /**
+   * Обновить email и/или телефон текущего пользователя.
+   * Телефон меняется сразу. Email — нет: создаётся запрос на смену, код
+   * уходит на новый адрес, уведомление — на старый; адрес меняется после
+   * `POST my/email/confirm`. Повторный запрос — не чаще раза в минуту (429).
+   * Занятые email/телефон → 409 (`USER_EMAIL_TAKEN` / `USER_PHONE_TAKEN`).
+   * @summary Обновление данных текущего пользователя
+   */
+  const updateMyUser = (
+    iUserUpdateRequestDto: IUserUpdateRequestDto,
+    options?: SecondParameter<typeof mainMutator<UserDto>>,
+  ) => {
+    return mainMutator<UserDto>(
+      {
+        url: `/api/v1/user/my/update`,
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        data: iUserUpdateRequestDto,
+      },
+      options,
+    );
+  };
+
+  /**
+   * Подтвердить смену email кодом из письма на новый адрес. Email
+   * меняется и считается подтверждённым. Неверный код расходует попытку
+   * (`USER_EMAIL_CHANGE_INVALID_CODE`, в `details.attemptsLeft` — остаток);
+   * после 5 неверных или по истечении 15 минут запрос аннулируется.
+   * @summary Подтверждение смены email
+   */
+  const confirmEmailChange = (
+    iUserConfirmEmailChangeDto: IUserConfirmEmailChangeDto,
+    options?: SecondParameter<typeof mainMutator<UserDto>>,
+  ) => {
+    return mainMutator<UserDto>(
+      {
+        url: `/api/v1/user/my/email/confirm`,
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        data: iUserConfirmEmailChangeDto,
+      },
+      options,
+    );
+  };
+
+  /**
+   * Удалить текущего пользователя. Требуется текущий пароль.
+   * POST, а не DELETE: тело DELETE-запроса не разбирается body-parser-ом.
+   * @summary Удаление текущего пользователя
+   */
+  const deleteMyUser = (
+    iUserDeleteDto: IUserDeleteDto,
+    options?: SecondParameter<typeof mainMutator<void>>,
+  ) => {
+    return mainMutator<void>(
+      {
+        url: `/api/v1/user/my/delete`,
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        data: iUserDeleteDto,
+      },
+      options,
+    );
+  };
+
+  /**
+   * Установить username для текущего пользователя.
+   * @summary Установка username
+   */
+  const setUsername = (
+    setUsernameBody: SetUsernameBody,
+    options?: SecondParameter<typeof mainMutator<UserDto>>,
+  ) => {
+    return mainMutator<UserDto>(
+      {
+        url: `/api/v1/user/my/username`,
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        data: setUsernameBody,
+      },
+      options,
+    );
+  };
+
+  /**
+   * Получить пользователей постранично (администрирование), новые первыми.
+   * @summary Получение всех пользователей
+   */
+  const getUsers = (
+    params?: GetUsersParams,
+    options?: SecondParameter<typeof mainMutator<IUserAdminListDto>>,
+  ) => {
+    return mainMutator<IUserAdminListDto>(
+      { url: `/api/v1/user/all`, method: "GET", params },
+      options,
+    );
+  };
+
+  /**
+   * Получить опции пользователей для выпадающих списков (id + name).
+   * name — имя и фамилия или email если профиль не заполнен.
+   * @summary Опции пользователей
+   */
+  const getUserOptions = (
+    params?: GetUserOptionsParams,
+    options?: SecondParameter<typeof mainMutator<IUserOptionsDto>>,
+  ) => {
+    return mainMutator<IUserOptionsDto>(
+      { url: `/api/v1/user/options`, method: "GET", params },
+      options,
+    );
+  };
+
+  /**
+   * Получить пользователя по ID.
+   * @summary Получение пользователя по ID
+   */
+  const getUserById = (
+    id: Uuid,
+    options?: SecondParameter<typeof mainMutator<UserDto>>,
+  ) => {
+    return mainMutator<UserDto>(
+      { url: `/api/v1/user/${id}`, method: "GET" },
+      options,
+    );
+  };
+
+  /**
+   * Установить роли и прямые права пользователя.
+   * Роли и права должны существовать. Свои привилегии менять нельзя; роль
+   * `admin` и право `*` выдаёт только суперпользователь.
+   * @summary Установка привилегий для пользователя
+   */
+  const setPrivileges = (
+    id: Uuid,
+    iUserPrivilegesRequestDto: IUserPrivilegesRequestDto,
+    options?: SecondParameter<typeof mainMutator<UserDto>>,
+  ) => {
+    return mainMutator<UserDto>(
+      {
+        url: `/api/v1/user/setPrivileges/${id}`,
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        data: iUserPrivilegesRequestDto,
+      },
+      options,
+    );
+  };
+
+  /**
+   * Отправить код подтверждения на email текущего пользователя.
+   * Повторная отправка — не чаще раза в минуту (429).
+   * @summary Запрос подтверждения email
+   */
+  const requestVerifyEmail = (
+    options?: SecondParameter<typeof mainMutator<void>>,
+  ) => {
+    return mainMutator<void>(
+      { url: `/api/v1/user/verify-email/request`, method: "POST" },
+      options,
+    );
+  };
+
+  /**
+   * Подтвердить email текущего пользователя кодом из письма.
+   * @summary Подтверждение email-адреса
+   */
+  const verifyEmail = (
+    iUserVerifyEmailDto: IUserVerifyEmailDto,
+    options?: SecondParameter<typeof mainMutator<void>>,
+  ) => {
+    return mainMutator<void>(
+      {
+        url: `/api/v1/user/verify-email`,
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        data: iUserVerifyEmailDto,
+      },
+      options,
+    );
+  };
+
+  /**
+   * Обновить email/телефон другого пользователя — сразу, без подтверждения
+   * кодом. Новый email сбрасывает `emailVerified`.
+   * @summary Обновление другого пользователя
+   */
+  const updateUser = (
+    id: Uuid,
+    iUserUpdateRequestDto: IUserUpdateRequestDto,
+    options?: SecondParameter<typeof mainMutator<UserDto>>,
+  ) => {
+    return mainMutator<UserDto>(
+      {
+        url: `/api/v1/user/update/${id}`,
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        data: iUserUpdateRequestDto,
+      },
+      options,
+    );
+  };
+
+  /**
+   * Изменить пароль текущего пользователя. Требуется текущий пароль;
+   * остальные сессии завершаются, текущая остаётся.
+   * @summary Изменение пароля
+   */
+  const changePassword = (
+    iUserChangePasswordDto: IUserChangePasswordDto,
+    options?: SecondParameter<typeof mainMutator<void>>,
+  ) => {
+    return mainMutator<void>(
+      {
+        url: `/api/v1/user/changePassword`,
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        data: iUserChangePasswordDto,
+      },
+      options,
+    );
+  };
+
+  /**
+   * Удалить другого пользователя. Себя и суперпользователя удалить нельзя.
+   * @summary Удаление другого пользователя
+   */
+  const deleteUser = (
+    id: Uuid,
+    options?: SecondParameter<typeof mainMutator<void>>,
+  ) => {
+    return mainMutator<void>(
+      { url: `/api/v1/user/delete/${id}`, method: "DELETE" },
+      options,
+    );
+  };
+
+  /**
    * Получить список активных сессий пользователя (последние активные — первыми).
    * @summary Список сессий
    */
@@ -2002,6 +1904,121 @@ export const getWgAdmin = () => {
   ) => {
     return mainMutator<void>(
       { url: `/api/v1/session/terminate-others`, method: "POST" },
+      options,
+    );
+  };
+
+  /**
+   * Получить профиль текущего пользователя.
+   * Этот эндпоинт позволяет получить данные профиля пользователя, который выполнил запрос.
+   * Используется для получения информации о текущем пользователе, например, его имени, email, и других данных.
+   * @summary Получение профиля текущего пользователя
+   */
+  const getMyProfile = (
+    options?: SecondParameter<typeof mainMutator<ProfileDto>>,
+  ) => {
+    return mainMutator<ProfileDto>(
+      { url: `/api/v1/profile/my`, method: "GET" },
+      options,
+    );
+  };
+
+  /**
+   * Обновить профиль текущего пользователя.
+   * Этот эндпоинт позволяет пользователю обновить свои данные, такие как имя, email и другие параметры профиля.
+   * @summary Обновление профиля текущего пользователя
+   */
+  const updateMyProfile = (
+    iProfileUpdateRequestDto: IProfileUpdateRequestDto,
+    options?: SecondParameter<typeof mainMutator<ProfileDto>>,
+  ) => {
+    return mainMutator<ProfileDto>(
+      {
+        url: `/api/v1/profile/my/update`,
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        data: iProfileUpdateRequestDto,
+      },
+      options,
+    );
+  };
+
+  /**
+   * Очистить профиль текущего пользователя.
+   * Личные данные (имя, фамилия, дата рождения, пол) обнуляются,
+   * сама запись профиля остаётся.
+   * @summary Очистка профиля текущего пользователя
+   */
+  const deleteMyProfile = (
+    options?: SecondParameter<typeof mainMutator<void>>,
+  ) => {
+    return mainMutator<void>(
+      { url: `/api/v1/profile/my/delete`, method: "DELETE" },
+      options,
+    );
+  };
+
+  /**
+   * Получить все профили постранично, новые первыми.
+   * @summary Получение всех профилей
+   */
+  const getProfiles = (
+    params?: GetProfilesParams,
+    options?: SecondParameter<typeof mainMutator<IProfileListDto>>,
+  ) => {
+    return mainMutator<IProfileListDto>(
+      { url: `/api/v1/profile/all`, method: "GET", params },
+      options,
+    );
+  };
+
+  /**
+   * Получить профиль по ID.
+   * Этот эндпоинт позволяет получить профиль другого пользователя по его ID. Доступен только для администраторов.
+   * @summary Получение профиля по ID
+   */
+  const getProfileById = (
+    userId: Uuid,
+    options?: SecondParameter<typeof mainMutator<PublicProfileDto>>,
+  ) => {
+    return mainMutator<PublicProfileDto>(
+      { url: `/api/v1/profile/${userId}`, method: "GET" },
+      options,
+    );
+  };
+
+  /**
+   * Обновить профиль другого пользователя.
+   * Этот эндпоинт позволяет администраторам обновлять профиль других пользователей.
+   * @summary Обновление профиля другого пользователя
+   */
+  const updateProfile = (
+    userId: Uuid,
+    iProfileUpdateRequestDto: IProfileUpdateRequestDto,
+    options?: SecondParameter<typeof mainMutator<ProfileDto>>,
+  ) => {
+    return mainMutator<ProfileDto>(
+      {
+        url: `/api/v1/profile/update/${userId}`,
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        data: iProfileUpdateRequestDto,
+      },
+      options,
+    );
+  };
+
+  /**
+   * Очистить профиль другого пользователя.
+   * Личные данные обнуляются, запись профиля остаётся.
+   * @summary Очистка профиля другого пользователя
+   */
+  const deleteProfile = (
+    userId: Uuid,
+    options?: SecondParameter<typeof mainMutator<void>>,
+  ) => {
+    return mainMutator<void>(
+      { url: `/api/v1/profile/delete/${userId}`, method: "DELETE" },
       options,
     );
   };
@@ -2326,31 +2343,7 @@ export const getWgAdmin = () => {
     createApiKey,
     listApiKeys,
     revokeApiKey,
-    getRoles,
-    createRole,
-    deleteRole,
-    setRolePermissions,
-    getMyUser,
-    updateMyUser,
-    confirmEmailChange,
-    deleteMyUser,
-    setUsername,
-    getUsers,
-    getUserOptions,
-    getUserById,
-    setPrivileges,
-    requestVerifyEmail,
-    verifyEmail,
-    updateUser,
-    changePassword,
-    deleteUser,
-    getMyProfile,
-    updateMyProfile,
-    deleteMyProfile,
-    getProfiles,
-    getProfileById,
-    updateProfile,
-    deleteProfile,
+    getPermissionCatalog,
     createWgNode,
     listWgNodes,
     wgNodeOptions,
@@ -2402,6 +2395,10 @@ export const getWgAdmin = () => {
     wgStatsMesh,
     wgStatsNodeLinks,
     wgNodeMetrics,
+    getRoles,
+    createRole,
+    deleteRole,
+    setRolePermissions,
     createWgSocks,
     listWgSocks,
     getWgSocks,
@@ -2434,9 +2431,30 @@ export const getWgAdmin = () => {
     wgAgentInstallScript,
     wgAgentRelease,
     updateWgAgent,
+    getMyUser,
+    updateMyUser,
+    confirmEmailChange,
+    deleteMyUser,
+    setUsername,
+    getUsers,
+    getUserOptions,
+    getUserById,
+    setPrivileges,
+    requestVerifyEmail,
+    verifyEmail,
+    updateUser,
+    changePassword,
+    deleteUser,
     getSessions,
     terminateSession,
     terminateOtherSessions,
+    getMyProfile,
+    updateMyProfile,
+    deleteMyProfile,
+    getProfiles,
+    getProfileById,
+    updateProfile,
+    deleteProfile,
     signUp,
     signIn,
     requestResetPassword,
@@ -2466,80 +2484,8 @@ export type ListApiKeysResult = NonNullable<
 export type RevokeApiKeyResult = NonNullable<
   Awaited<ReturnType<ReturnType<typeof getWgAdmin>["revokeApiKey"]>>
 >;
-export type GetRolesResult = NonNullable<
-  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["getRoles"]>>
->;
-export type CreateRoleResult = NonNullable<
-  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["createRole"]>>
->;
-export type DeleteRoleResult = NonNullable<
-  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["deleteRole"]>>
->;
-export type SetRolePermissionsResult = NonNullable<
-  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["setRolePermissions"]>>
->;
-export type GetMyUserResult = NonNullable<
-  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["getMyUser"]>>
->;
-export type UpdateMyUserResult = NonNullable<
-  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["updateMyUser"]>>
->;
-export type ConfirmEmailChangeResult = NonNullable<
-  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["confirmEmailChange"]>>
->;
-export type DeleteMyUserResult = NonNullable<
-  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["deleteMyUser"]>>
->;
-export type SetUsernameResult = NonNullable<
-  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["setUsername"]>>
->;
-export type GetUsersResult = NonNullable<
-  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["getUsers"]>>
->;
-export type GetUserOptionsResult = NonNullable<
-  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["getUserOptions"]>>
->;
-export type GetUserByIdResult = NonNullable<
-  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["getUserById"]>>
->;
-export type SetPrivilegesResult = NonNullable<
-  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["setPrivileges"]>>
->;
-export type RequestVerifyEmailResult = NonNullable<
-  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["requestVerifyEmail"]>>
->;
-export type VerifyEmailResult = NonNullable<
-  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["verifyEmail"]>>
->;
-export type UpdateUserResult = NonNullable<
-  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["updateUser"]>>
->;
-export type ChangePasswordResult = NonNullable<
-  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["changePassword"]>>
->;
-export type DeleteUserResult = NonNullable<
-  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["deleteUser"]>>
->;
-export type GetMyProfileResult = NonNullable<
-  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["getMyProfile"]>>
->;
-export type UpdateMyProfileResult = NonNullable<
-  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["updateMyProfile"]>>
->;
-export type DeleteMyProfileResult = NonNullable<
-  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["deleteMyProfile"]>>
->;
-export type GetProfilesResult = NonNullable<
-  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["getProfiles"]>>
->;
-export type GetProfileByIdResult = NonNullable<
-  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["getProfileById"]>>
->;
-export type UpdateProfileResult = NonNullable<
-  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["updateProfile"]>>
->;
-export type DeleteProfileResult = NonNullable<
-  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["deleteProfile"]>>
+export type GetPermissionCatalogResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["getPermissionCatalog"]>>
 >;
 export type CreateWgNodeResult = NonNullable<
   Awaited<ReturnType<ReturnType<typeof getWgAdmin>["createWgNode"]>>
@@ -2694,6 +2640,18 @@ export type WgStatsNodeLinksResult = NonNullable<
 export type WgNodeMetricsResult = NonNullable<
   Awaited<ReturnType<ReturnType<typeof getWgAdmin>["wgNodeMetrics"]>>
 >;
+export type GetRolesResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["getRoles"]>>
+>;
+export type CreateRoleResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["createRole"]>>
+>;
+export type DeleteRoleResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["deleteRole"]>>
+>;
+export type SetRolePermissionsResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["setRolePermissions"]>>
+>;
 export type CreateWgSocksResult = NonNullable<
   Awaited<ReturnType<ReturnType<typeof getWgAdmin>["createWgSocks"]>>
 >;
@@ -2790,6 +2748,48 @@ export type WgAgentReleaseResult = NonNullable<
 export type UpdateWgAgentResult = NonNullable<
   Awaited<ReturnType<ReturnType<typeof getWgAdmin>["updateWgAgent"]>>
 >;
+export type GetMyUserResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["getMyUser"]>>
+>;
+export type UpdateMyUserResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["updateMyUser"]>>
+>;
+export type ConfirmEmailChangeResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["confirmEmailChange"]>>
+>;
+export type DeleteMyUserResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["deleteMyUser"]>>
+>;
+export type SetUsernameResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["setUsername"]>>
+>;
+export type GetUsersResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["getUsers"]>>
+>;
+export type GetUserOptionsResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["getUserOptions"]>>
+>;
+export type GetUserByIdResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["getUserById"]>>
+>;
+export type SetPrivilegesResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["setPrivileges"]>>
+>;
+export type RequestVerifyEmailResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["requestVerifyEmail"]>>
+>;
+export type VerifyEmailResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["verifyEmail"]>>
+>;
+export type UpdateUserResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["updateUser"]>>
+>;
+export type ChangePasswordResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["changePassword"]>>
+>;
+export type DeleteUserResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["deleteUser"]>>
+>;
 export type GetSessionsResult = NonNullable<
   Awaited<ReturnType<ReturnType<typeof getWgAdmin>["getSessions"]>>
 >;
@@ -2798,6 +2798,27 @@ export type TerminateSessionResult = NonNullable<
 >;
 export type TerminateOtherSessionsResult = NonNullable<
   Awaited<ReturnType<ReturnType<typeof getWgAdmin>["terminateOtherSessions"]>>
+>;
+export type GetMyProfileResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["getMyProfile"]>>
+>;
+export type UpdateMyProfileResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["updateMyProfile"]>>
+>;
+export type DeleteMyProfileResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["deleteMyProfile"]>>
+>;
+export type GetProfilesResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["getProfiles"]>>
+>;
+export type GetProfileByIdResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["getProfileById"]>>
+>;
+export type UpdateProfileResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["updateProfile"]>>
+>;
+export type DeleteProfileResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["deleteProfile"]>>
 >;
 export type SignUpResult = NonNullable<
   Awaited<ReturnType<ReturnType<typeof getWgAdmin>["signUp"]>>

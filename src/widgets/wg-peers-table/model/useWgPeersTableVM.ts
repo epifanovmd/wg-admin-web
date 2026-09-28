@@ -5,6 +5,7 @@ import { useWgPeerConfigVM } from "@features/wg-peer-config";
 import { IMainApi } from "@shared/api";
 import type { ListWgPeersParams, WgPeerDto } from "@shared/api/gen/main/model";
 import { usePaged } from "@shared/lib/holders";
+import { useCloseWhenForbidden } from "@shared/lib/hooks";
 import { notifyApiError } from "@shared/lib/http";
 import { INotificationService } from "@shared/lib/notifications";
 import { useSocketEvent, useSocketRoom } from "@shared/lib/socket";
@@ -23,6 +24,11 @@ export const useWgPeersTableVM = (filters: IWgPeersFilters) => {
   const config = useWgPeerConfigVM();
   const canViewAll = userStore.can(WG_PERMISSIONS.PEER_VIEW);
   const canView = canViewAll || userStore.can(WG_PERMISSIONS.PEER_OWN);
+  const canViewStats = userStore.can(WG_PERMISSIONS.STATS_VIEW);
+  const canCreate = userStore.can(WG_PERMISSIONS.PEER_CREATE);
+  const canUpdate = userStore.can(WG_PERMISSIONS.PEER_UPDATE);
+  const canToggleAny = userStore.can(WG_PERMISSIONS.PEER_TOGGLE);
+  const isOwnPeerAllowed = userStore.can(WG_PERMISSIONS.PEER_OWN);
 
   // Фильтры — аргумент watch: их смена перезапрашивает список.
   const params = JSON.stringify(compactPeersFilters(filters));
@@ -65,10 +71,12 @@ export const useWgPeersTableVM = (filters: IWgPeersFilters) => {
     }
   };
 
-  // Админ получает изменения из комнаты overview, держатель — адресно.
-  useSocketRoom("wg-overview", canViewAll ? "all" : null, () =>
+  // Все пиры — из комнаты списка, свои — адресно держателю.
+  useSocketRoom("wg-peers", canViewAll ? "all" : null, () =>
     peers.reload({ refresh: true }),
   );
+  // Живая статистика всех пиров — из комнаты обзора (право на статистику).
+  useSocketRoom("wg-overview", canViewAll && canViewStats ? "all" : null);
   // Держатель — статистика своих пиров из комнаты «мои пиры».
   useSocketRoom(
     "wg-peers-own",
@@ -178,6 +186,10 @@ export const useWgPeersTableVM = (filters: IWgPeersFilters) => {
     else await peers.reload({ refresh: true });
   };
 
+  useCloseWhenForbidden(form.open, form.editing ? canUpdate : canCreate, () =>
+    form.setOpen(false),
+  );
+
   return {
     peers,
     config,
@@ -185,8 +197,17 @@ export const useWgPeersTableVM = (filters: IWgPeersFilters) => {
     rotatePsk,
     remove,
     form,
+    canView,
     canViewAll,
-    canManage: userStore.can(WG_PERMISSIONS.PEER_MANAGE),
+    canCreate,
+    canUpdate,
+    canDelete: userStore.can(WG_PERMISSIONS.PEER_DELETE),
+    canPsk: userStore.can(WG_PERMISSIONS.PEER_PSK),
+    /** Включать и выключать любой пир. */
+    canToggleAny,
+    /** Включать и выключать свои пиры (держатель). */
+    canToggleOwn: isOwnPeerAllowed,
+    currentUserId: userStore.user?.id ?? null,
   };
 };
 

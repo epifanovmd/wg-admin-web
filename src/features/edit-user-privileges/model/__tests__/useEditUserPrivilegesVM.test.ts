@@ -1,3 +1,4 @@
+import { IUserStore } from "@entities/user";
 import { IMainApi } from "@shared/api";
 import type { UserDto } from "@shared/api/gen/main/model";
 import { iocContainer } from "@shared/lib/di";
@@ -22,11 +23,13 @@ beforeEach(() => {
   iocContainer
     .bind(INotificationService.Tid)
     .toConstantValue({ error: vi.fn(), success: vi.fn() });
+  iocContainer.bind(IUserStore.Tid).toConstantValue({ can: () => true });
 });
 
 afterEach(() => {
   iocContainer.unbind(IMainApi.Tid);
   iocContainer.unbind(INotificationService.Tid);
+  iocContainer.unbind(IUserStore.Tid);
   vi.clearAllMocks();
 });
 
@@ -50,5 +53,17 @@ describe("useEditUserPrivilegesVM", () => {
       permissions: [],
     });
     expect(onSaved).toHaveBeenCalledWith(user);
+  });
+
+  it("без права просмотра ролей — роли не грузятся и не меняются", () => {
+    iocContainer.rebind(IUserStore.Tid).toConstantValue({ can: () => false });
+
+    const { result } = renderHook(() =>
+      useEditUserPrivilegesVM({ user, onSaved: vi.fn() }),
+    );
+
+    expect(api.getRoles).not.toHaveBeenCalled();
+    expect(result.current.roleOptions).toEqual(["user"]);
+    expect(result.current.canEditRoles).toBe(false);
   });
 });

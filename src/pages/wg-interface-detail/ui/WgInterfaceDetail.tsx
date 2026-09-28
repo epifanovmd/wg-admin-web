@@ -1,6 +1,7 @@
 import { PermissionGate } from "@entities/user";
 import { WG_PERMISSIONS, WgInterfaceStatusBadge } from "@entities/wg";
 import {
+  hasAnyInterfaceAction,
   MoveWgInterfaceModal,
   WgInterfaceFormModal,
 } from "@features/manage-wg-interface";
@@ -65,7 +66,9 @@ export const WgInterfaceDetail: FC<WgInterfaceDetailProps> = observer(
                 </Link>
               }
               actions={
-                vm.canManage && <InterfaceActions vm={vm} iface={iface} />
+                hasAnyInterfaceAction(vm.permissions) && (
+                  <InterfaceActions vm={vm} iface={iface} />
+                )
               }
             />
           )
@@ -93,9 +96,11 @@ export const WgInterfaceDetail: FC<WgInterfaceDetailProps> = observer(
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <TabsList>
                     <TabsTrigger value="overview">Обзор</TabsTrigger>
-                    <TabsTrigger value="peers">Пиры</TabsTrigger>
+                    {vm.peers.canView && (
+                      <TabsTrigger value="peers">Пиры</TabsTrigger>
+                    )}
                   </TabsList>
-                  {tab === "peers" && vm.peers.canManage && (
+                  {tab === "peers" && vm.peers.canCreate && (
                     <Button
                       leftIcon={<Plus size={15} />}
                       onClick={vm.peers.form.openCreate}

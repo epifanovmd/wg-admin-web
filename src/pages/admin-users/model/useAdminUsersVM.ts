@@ -1,10 +1,11 @@
-import { IUserStore } from "@entities/user";
+import { ADMIN_PERMISSIONS, IUserStore } from "@entities/user";
 import { useDebouncedValue } from "@mantine/hooks";
 import { IMainApi } from "@shared/api";
-import { KnownPermission, type UserDto } from "@shared/api/gen/main/model";
+import type { UserDto } from "@shared/api/gen/main/model";
 import { usePaged } from "@shared/lib/holders";
 import { notifyApiError } from "@shared/lib/http";
 import { INotificationService } from "@shared/lib/notifications";
+import { useSocketEvent, useSocketRoom } from "@shared/lib/socket";
 import { useConfirm } from "@shared/ui";
 import { useState } from "react";
 
@@ -19,11 +20,13 @@ export const useAdminUsersVM = () => {
   const [search, setSearch] = useState("");
   const [query] = useDebouncedValue(search.trim(), SEARCH_DEBOUNCE);
   const [editing, setEditing] = useState<UserDto | null>(null);
+  const canView = userStore.can(ADMIN_PERMISSIONS.USER_VIEW);
 
   const users = usePaged<UserDto, string>({
     pageSize: PAGE_SIZE,
     keyExtractor: u => u.id,
     watch: [query],
+    enabled: canView,
     queryFn: async ({ offset, limit }, q) => {
       const { data, error } = await api.getUsers({
         offset,
@@ -37,6 +40,31 @@ export const useAdminUsersVM = () => {
       };
     },
   });
+
+  // Новый пользователь может попасть на любую страницу выдачи — перезапрос.
+  useSocketRoom("users", canView ? "all" : null, () =>
+    users.reload({ refresh: true }),
+  );
+  useSocketEvent<[UserDto]>(
+    "user:updated",
+    user => {
+      if (users.items.some(item => item.id === user.id)) {
+        users.updateItem(user.id, user);
+      } else {
+        void users.reload({ refresh: true });
+      }
+    },
+    canView,
+  );
+  useSocketEvent<[{ id: string }]>(
+    "user:deleted",
+    ({ id }) => {
+      if (users.items.some(item => item.id === id)) {
+        void users.reload({ refresh: true });
+      }
+    },
+    canView,
+  );
 
   const remove = async (user: UserDto) => {
     const ok = await confirm({
@@ -68,7 +96,8 @@ export const useAdminUsersVM = () => {
     closeEdit: () => setEditing(null),
     onSaved: (saved: UserDto) => users.updateItem(saved.id, saved),
     remove,
-    canManage: userStore.can(KnownPermission["user:manage"]),
+    canEditPrivileges: userStore.can(ADMIN_PERMISSIONS.USER_PRIVILEGES),
+    canDelete: userStore.can(ADMIN_PERMISSIONS.USER_DELETE),
     currentUserId: userStore.user?.id,
   };
 };

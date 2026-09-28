@@ -62,7 +62,8 @@ export const sumStatsSeries = (series: IWgSeriesDto[]): IStatsChartRow[] => {
  */
 export const useWgStatsVM = () => {
   const api = IMainApi.useInstance();
-  const canView = IUserStore.useInstance().can(WG_PERMISSIONS.STATS_VIEW);
+  const userStore = IUserStore.useInstance();
+  const canView = userStore.can(WG_PERMISSIONS.STATS_VIEW);
   const [preset, setPreset] = useState<TStatsPreset>("24h");
   const [groupBy, setGroupBy] = useState<TStatsGroupBy>("total");
   const [nodeId, setNodeId] = useState<string | null>(null);
@@ -104,8 +105,13 @@ export const useWgStatsVM = () => {
     enabled: canView,
   });
 
-  const nodeOptions = useWgNodeOptions({ enabled: canView });
-  const interfaceOptions = useWgInterfaceOptions({ enabled: canView });
+  // Фильтры по сущностям — при праве видеть их списки.
+  const nodeOptions = useWgNodeOptions({
+    enabled: canView && userStore.can(WG_PERMISSIONS.NODE_VIEW),
+  });
+  const interfaceOptions = useWgInterfaceOptions({
+    enabled: canView && userStore.can(WG_PERMISSIONS.INTERFACE_VIEW),
+  });
   const peerOptions = useCollection<SelectOption>({
     queryFn: async () => {
       const { data, error } = await api.wgPeerOptions();

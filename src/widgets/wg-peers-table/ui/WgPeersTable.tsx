@@ -32,9 +32,19 @@ import type { WgPeersTableVM } from "../model/useWgPeersTableVM";
 
 const column = createColumnHelper<WgPeerDto>();
 
+/** Доступные действия со строкой; колонки пересобираются при их смене. */
+interface IRowAccess {
+  canUpdate: boolean;
+  canPsk: boolean;
+  canDelete: boolean;
+  canToggleAny: boolean;
+  canToggleOwn: boolean;
+  currentUserId: string | null;
+}
+
 /** VM — через ref: колонки стабильны, ячейки не перемонтируются. */
 const createColumns = (
-  canManage: boolean,
+  access: IRowAccess,
   vmRef: RefObject<WgPeersTableVM>,
 ) => [
   column.display({
@@ -123,6 +133,10 @@ const createColumns = (
     cell: ({ row }) => {
       const peer = row.original;
       const vm = vmRef.current;
+      const canToggle =
+        access.canToggleAny ||
+        (access.canToggleOwn && peer.userId === access.currentUserId);
+      const hasMenu = access.canUpdate || access.canPsk || access.canDelete;
 
       return (
         <TableRowActions>
@@ -136,11 +150,13 @@ const createColumns = (
               </IconButton>
             </Tooltip>
           )}
-          <WgToggleSwitch
-            enabled={peer.enabled}
-            onToggle={() => vmRef.current.toggle(peer)}
-          />
-          {canManage && (
+          {canToggle && (
+            <WgToggleSwitch
+              enabled={peer.enabled}
+              onToggle={() => vmRef.current.toggle(peer)}
+            />
+          )}
+          {hasMenu && (
             <DropdownMenu>
               <Tooltip content="Действия">
                 <span className="inline-flex">
@@ -152,18 +168,24 @@ const createColumns = (
                 </span>
               </Tooltip>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onSelect={() => vm.form.openEdit(peer)}>
-                  Изменить
-                </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => void vm.rotatePsk(peer)}>
-                  Перевыпустить PSK
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  variant="destructive"
-                  onSelect={() => void vm.remove(peer)}
-                >
-                  Удалить
-                </DropdownMenuItem>
+                {access.canUpdate && (
+                  <DropdownMenuItem onSelect={() => vm.form.openEdit(peer)}>
+                    Изменить
+                  </DropdownMenuItem>
+                )}
+                {access.canPsk && (
+                  <DropdownMenuItem onSelect={() => void vm.rotatePsk(peer)}>
+                    Перевыпустить PSK
+                  </DropdownMenuItem>
+                )}
+                {access.canDelete && (
+                  <DropdownMenuItem
+                    variant="destructive"
+                    onSelect={() => void vm.remove(peer)}
+                  >
+                    Удалить
+                  </DropdownMenuItem>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           )}
@@ -181,11 +203,38 @@ export interface WgPeersTableProps {
 /** Таблица пиров с пагинацией; строка ведёт на карточку пира. */
 export const WgPeersTable: FC<WgPeersTableProps> = observer(
   ({ vm, onRowClick }) => {
-    const { peers, canManage } = vm;
+    const {
+      peers,
+      canUpdate,
+      canPsk,
+      canDelete,
+      canToggleAny,
+      canToggleOwn,
+      currentUserId,
+    } = vm;
     const vmRef = useLatestRef(vm);
     const columns = useMemo(
-      () => createColumns(canManage, vmRef),
-      [canManage, vmRef],
+      () =>
+        createColumns(
+          {
+            canUpdate,
+            canPsk,
+            canDelete,
+            canToggleAny,
+            canToggleOwn,
+            currentUserId,
+          },
+          vmRef,
+        ),
+      [
+        canUpdate,
+        canPsk,
+        canDelete,
+        canToggleAny,
+        canToggleOwn,
+        currentUserId,
+        vmRef,
+      ],
     );
 
     return (

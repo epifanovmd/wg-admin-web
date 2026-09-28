@@ -5,11 +5,17 @@ interface IRoomAck {
   error?: { code: string; message: string };
 }
 
+interface IRoomPayload {
+  type: string;
+  id: string;
+}
+
 /**
  * Подписка на серверную комнату (`room:subscribe { type, id }`) с
  * автоматическим восстановлением после reconnect. `onRejoin` — после
  * повторного входа: события за время обрыва потеряны, данные нужно
- * перечитать. Возвращает отписку.
+ * перечитать. Отказ сервера или `room:revoked` (права больше нет) —
+ * подписка прекращается. Возвращает отписку.
  */
 export const subscribeSocketRoom = (
   socket: ISocketTransport,
@@ -18,6 +24,7 @@ export const subscribeSocketRoom = (
   onRejoin?: () => void,
 ): (() => void) => {
   let active = true;
+  let joined = false;
 
   const join = (): void => {
     if (!active) return;
@@ -30,16 +37,29 @@ export const subscribeSocketRoom = (
     });
   };
 
-  join();
+  // Не подключён — войдём по connect: иначе запрос ушёл бы дважды (из
+  // очереди отправки и из обработчика подключения).
+  if (socket.state.status === "connected") {
+    join();
+    joined = true;
+  }
 
   const offConnect = socket.onConnect(() => {
+    const isRejoin = joined;
+
     join();
-    if (active) onRejoin?.();
+    joined = true;
+    if (active && isRejoin) onRejoin?.();
+  });
+
+  const offRevoked = socket.on<[IRoomPayload]>("room:revoked", room => {
+    if (room.type === type && room.id === id) active = false;
   });
 
   return () => {
     active = false;
     offConnect();
+    offRevoked();
     socket.emit("room:unsubscribe", { type, id });
   };
 };

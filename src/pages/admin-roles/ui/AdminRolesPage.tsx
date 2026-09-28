@@ -1,5 +1,4 @@
-import { PermissionGate } from "@entities/user";
-import { KnownPermission } from "@shared/api/gen/main/model";
+import { ADMIN_PERMISSIONS, PermissionGate } from "@entities/user";
 import { PageHeader, PageLayout } from "@shared/ui";
 import { FC } from "react";
 
@@ -11,7 +10,7 @@ const header = (
 
 export const AdminRolesPage: FC = () => (
   <PageLayout header={header}>
-    <PermissionGate permission={KnownPermission["role:view"]}>
+    <PermissionGate permission={ADMIN_PERMISSIONS.ROLE_VIEW}>
       <AdminRolesContent />
     </PermissionGate>
   </PageLayout>

@@ -16,10 +16,12 @@ import { WgNodeDetailPage } from "../WgNodeDetailPage";
 
 // Observable: смена параметра перерисовывает observer-страницу, как роутер.
 const params = observable({ nodeId: "n1" });
+const { navigate } = vi.hoisted(() => ({ navigate: vi.fn() }));
+let socket = createFakeSocket();
 
 vi.mock("@tanstack/react-router", () => ({
   Link: ({ children }: { children: ReactNode }) => <a>{children}</a>,
-  useNavigate: () => vi.fn(),
+  useNavigate: () => navigate,
   useParams: () => params,
 }));
 
@@ -81,7 +83,8 @@ beforeEach(() => {
   runInAction(() => {
     params.nodeId = "n1";
   });
-  iocContainer.bind(ISocketTransport.Tid).toConstantValue(createFakeSocket());
+  socket = createFakeSocket();
+  iocContainer.bind(ISocketTransport.Tid).toConstantValue(socket);
   iocContainer.bind(IMainApi.Tid).toConstantValue(
     createApi({
       getWgNode: (id: string) => Promise.resolve({ data: NODES[id] }),
@@ -100,7 +103,7 @@ beforeEach(() => {
   );
   iocContainer
     .bind(INotificationService.Tid)
-    .toConstantValue({ error: vi.fn(), success: vi.fn() });
+    .toConstantValue({ error: vi.fn(), success: vi.fn(), warning: vi.fn() });
   iocContainer.bind(IUserStore.Tid).toConstantValue({
     user: { id: "u1" },
     can: (permission: string) => permissions.includes(permission),
@@ -116,6 +119,7 @@ afterEach(() => {
   iocContainer.unbind(INotificationService.Tid);
   iocContainer.unbind(IUserStore.Tid);
   iocContainer.unbind(IWgNodesStore.Tid);
+  navigate.mockClear();
 });
 
 const page = () => (
@@ -146,7 +150,7 @@ describe("WgNodeDetailPage", () => {
   });
 
   it("журнал агента запрашивается при каждом открытии вкладки", async () => {
-    permissions = [WG_PERMISSIONS.NODE_VIEW, WG_PERMISSIONS.NODE_MANAGE];
+    permissions = [WG_PERMISSIONS.NODE_VIEW, WG_PERMISSIONS.NODE_LOGS];
     render(page());
 
     await screen.findByText("Альфа");
@@ -159,5 +163,23 @@ describe("WgNodeDetailPage", () => {
     fireEvent.mouseDown(logsTab);
 
     expect(wgNodeLogs).toHaveBeenCalledTimes(2);
+  });
+
+  it("нода удалена — уход к списку нод", async () => {
+    permissions = [WG_PERMISSIONS.NODE_VIEW];
+    render(page());
+    await screen.findByText("Альфа");
+
+    act(() => socket.fire("wg:node:deleted", { id: "n1" }));
+
+    expect(navigate).toHaveBeenCalledWith({ to: "/wg/nodes" });
+  });
+
+  it("без права на интерфейсы вкладки «Интерфейсы» нет, список не грузится", async () => {
+    permissions = [WG_PERMISSIONS.NODE_VIEW];
+    render(page());
+    await screen.findByText("Альфа");
+
+    expect(screen.queryByRole("tab", { name: "Интерфейсы" })).toBeNull();
   });
 });

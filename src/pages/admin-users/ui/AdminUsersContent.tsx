@@ -19,7 +19,8 @@ import { FC, useMemo } from "react";
 import { useAdminUsersVM } from "../model/useAdminUsersVM";
 
 interface ColumnActions {
-  canManage: boolean;
+  canEditPrivileges: boolean;
+  canDelete: boolean;
   currentUserId?: string;
   onEdit: (user: UserDto) => void;
   onDelete: (user: UserDto) => void;
@@ -35,7 +36,8 @@ const displayName = (user: UserDto): string =>
   "Без имени";
 
 const createColumns = ({
-  canManage,
+  canEditPrivileges,
+  canDelete,
   currentUserId,
   onEdit,
   onDelete,
@@ -93,22 +95,29 @@ const createColumns = ({
     size: 100,
     meta: { align: "right" },
     cell: ({ row }) =>
-      canManage && row.original.id !== currentUserId ? (
+      row.original.id !== currentUserId && (canEditPrivileges || canDelete) ? (
         <div className="flex justify-end gap-1">
-          <Tooltip content="Права">
-            <IconButton aria-label="Права" onClick={() => onEdit(row.original)}>
-              <ShieldCheck size={15} />
-            </IconButton>
-          </Tooltip>
-          <Tooltip content="Удалить">
-            <IconButton
-              aria-label="Удалить"
-              variant="destructive"
-              onClick={() => onDelete(row.original)}
-            >
-              <Trash2 size={15} />
-            </IconButton>
-          </Tooltip>
+          {canEditPrivileges && (
+            <Tooltip content="Права">
+              <IconButton
+                aria-label="Права"
+                onClick={() => onEdit(row.original)}
+              >
+                <ShieldCheck size={15} />
+              </IconButton>
+            </Tooltip>
+          )}
+          {canDelete && (
+            <Tooltip content="Удалить">
+              <IconButton
+                aria-label="Удалить"
+                variant="destructive"
+                onClick={() => onDelete(row.original)}
+              >
+                <Trash2 size={15} />
+              </IconButton>
+            </Tooltip>
+          )}
         </div>
       ) : null,
   }),
@@ -120,13 +129,14 @@ export const AdminUsersContent: FC = observer(() => {
   const columns = useMemo(
     () =>
       createColumns({
-        canManage: vm.canManage,
+        canEditPrivileges: vm.canEditPrivileges,
+        canDelete: vm.canDelete,
         currentUserId: vm.currentUserId,
         onEdit: vm.edit,
         onDelete: vm.remove,
       }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [vm.canManage, vm.currentUserId],
+    [vm.canEditPrivileges, vm.canDelete, vm.currentUserId],
   );
 
   return (
@@ -166,7 +176,7 @@ export const AdminUsersContent: FC = observer(() => {
         />
       )}
       <EditUserPrivilegesModal
-        user={vm.editing}
+        user={vm.canEditPrivileges ? vm.editing : null}
         onClose={vm.closeEdit}
         onSaved={vm.onSaved}
       />

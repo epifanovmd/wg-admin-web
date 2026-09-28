@@ -1,9 +1,10 @@
-import { IUserStore } from "@entities/user";
+import { ADMIN_PERMISSIONS, IUserStore } from "@entities/user";
 import { IMainApi } from "@shared/api";
-import { type IRoleDto, KnownPermission } from "@shared/api/gen/main/model";
+import type { IRoleDto } from "@shared/api/gen/main/model";
 import { useCollection } from "@shared/lib/holders";
 import { notifyApiError } from "@shared/lib/http";
 import { INotificationService } from "@shared/lib/notifications";
+import { useSocketEvent, useSocketRoom } from "@shared/lib/socket";
 import { useConfirm, useZodForm } from "@shared/ui";
 import { z } from "zod";
 
@@ -27,11 +28,26 @@ export const useAdminRolesVM = () => {
   const confirm = useConfirm();
   const form = useZodForm(newRoleSchema, { defaultValues: { name: "" } });
 
+  const canView = userStore.can(ADMIN_PERMISSIONS.ROLE_VIEW);
+
   const roles = useCollection<IRoleDto>({
     queryFn: () => api.getRoles(),
     keyExtractor: r => r.id,
     autoLoad: true,
+    enabled: canView,
   });
+
+  useSocketRoom("roles", canView ? "all" : null, () => roles.refresh());
+  useSocketEvent<[IRoleDto]>(
+    "role:updated",
+    role => roles.upsertItem(role.id, role),
+    canView,
+  );
+  useSocketEvent<[{ id: string }]>(
+    "role:deleted",
+    ({ id }) => roles.removeItem(id),
+    canView,
+  );
 
   const create = async ({ name }: TNewRoleForm) => {
     const res = await api.createRole({ name });
@@ -42,7 +58,7 @@ export const useAdminRolesVM = () => {
       return;
     }
 
-    roles.appendItem(res.data);
+    roles.upsertItem(res.data.id, res.data);
     form.reset({ name: "" });
     toast.success(`Роль ${name} создана`);
   };
@@ -86,7 +102,10 @@ export const useAdminRolesVM = () => {
   return {
     roles: roles.items,
     isLoading: roles.isLoading,
-    canManage: userStore.can(KnownPermission["role:manage"]),
+    canCreate: userStore.can(ADMIN_PERMISSIONS.ROLE_CREATE),
+    canUpdate: userStore.can(ADMIN_PERMISSIONS.ROLE_UPDATE),
+    canDelete: userStore.can(ADMIN_PERMISSIONS.ROLE_DELETE),
+    isSuperUser: userStore.isAdmin || userStore.can("*"),
     form,
     create,
     savePermissions,

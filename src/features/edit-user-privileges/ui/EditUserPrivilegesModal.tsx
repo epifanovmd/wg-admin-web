@@ -1,4 +1,4 @@
-import { KNOWN_PERMISSIONS, PERMISSION_LABELS } from "@entities/user";
+import { PermissionPicker } from "@entities/permission";
 import type { UserDto } from "@shared/api/gen/main/model";
 import { Button, Checkbox, Modal, ModalContent } from "@shared/ui";
 import { observer } from "mobx-react-lite";
@@ -26,7 +26,7 @@ export const EditUserPrivilegesModal: FC<EditUserPrivilegesModalProps> =
     return (
       <Modal open={!!user} onOpenChange={open => !open && onClose()}>
         <ModalContent
-          size="md"
+          size="lg"
           title="Права пользователя"
           description={user?.email ?? user?.username ?? undefined}
           footer={
@@ -40,32 +40,26 @@ export const EditUserPrivilegesModal: FC<EditUserPrivilegesModalProps> =
             </>
           }
         >
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+          <div className="flex flex-col gap-6">
             <fieldset className="flex flex-col gap-2">
               <legend className="mb-2 text-sm font-semibold">Роли</legend>
               {vm.roleOptions.map(name => (
                 <Checkbox
                   key={name}
                   label={name}
+                  disabled={!vm.canEditRoles}
                   checked={vm.roles.includes(name)}
                   onCheckedChange={on => vm.toggleRole(name, on === true)}
                 />
               ))}
             </fieldset>
-            <fieldset className="flex flex-col gap-2">
-              <legend className="mb-2 text-sm font-semibold">
-                Прямые права
-              </legend>
-              {KNOWN_PERMISSIONS.map(name => (
-                <Checkbox
-                  key={name}
-                  label={PERMISSION_LABELS[name]}
-                  description={name}
-                  checked={vm.permissions.includes(name)}
-                  onCheckedChange={on => vm.togglePermission(name, on === true)}
-                />
-              ))}
-            </fieldset>
+            <section className="flex flex-col gap-3">
+              <h3 className="text-sm font-semibold">Прямые права</h3>
+              <PermissionPicker
+                selected={vm.permissions}
+                onToggle={vm.togglePermission}
+              />
+            </section>
           </div>
         </ModalContent>
       </Modal>

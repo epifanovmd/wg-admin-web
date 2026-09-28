@@ -33,7 +33,7 @@ const renderCell = (
     <TooltipProvider>
       <InterfaceReplicasCell
         iface={iface}
-        canManage
+        canManageReplicas
         onPin={vi.fn()}
         onRemoveReplica={vi.fn()}
         {...props}

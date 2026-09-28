@@ -22,7 +22,7 @@ const isExpired = (key: ApiKeyDto) =>
 
 const column = createColumnHelper<ApiKeyDto>();
 
-const createColumns = (onRevoke: (key: ApiKeyDto) => void) => [
+const createColumns = (onRevoke: ((key: ApiKeyDto) => void) | null) => [
   column.accessor("name", {
     header: "Ключ",
     cell: ({ row }) => (
@@ -82,7 +82,7 @@ const createColumns = (onRevoke: (key: ApiKeyDto) => void) => [
     size: 60,
     meta: { align: "right" },
     cell: ({ row }) =>
-      row.original.revokedAt ? null : (
+      row.original.revokedAt || !onRevoke ? null : (
         <Tooltip content="Отозвать">
           <IconButton
             aria-label="Отозвать"
@@ -97,14 +97,19 @@ const createColumns = (onRevoke: (key: ApiKeyDto) => void) => [
 ];
 
 export const AdminApiKeysContent: FC = observer(() => {
-  const { keys, revoke, onCreated } = useAdminApiKeysVM();
-  const columns = useMemo(() => createColumns(revoke), [revoke]);
+  const { keys, revoke, onCreated, canCreate, canRevoke } = useAdminApiKeysVM();
+  const columns = useMemo(
+    () => createColumns(canRevoke ? revoke : null),
+    [canRevoke, revoke],
+  );
 
   return (
     <>
-      <div>
-        <CreateApiKeyButton onCreated={onCreated} />
-      </div>
+      {canCreate && (
+        <div>
+          <CreateApiKeyButton onCreated={onCreated} />
+        </div>
+      )}
       <Table
         className="min-h-0 flex-initial"
         stickyHeader

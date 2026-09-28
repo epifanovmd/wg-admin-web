@@ -13,10 +13,10 @@ interface WgForwardsTableProps {
 /** Таблица пробросов портов. */
 export const WgForwardsTable: FC<WgForwardsTableProps> = observer(({ vm }) => {
   const vmRef = useLatestRef(vm);
-  const { canManage, forwards } = vm;
+  const { canUpdate, canDelete, forwards } = vm;
   const columns = useMemo(
-    () => createForwardColumns({ canManage, vm: vmRef }),
-    [canManage, vmRef],
+    () => createForwardColumns({ canUpdate, canDelete, vm: vmRef }),
+    [canUpdate, canDelete, vmRef],
   );
 
   return (

@@ -18,7 +18,7 @@ export const ServiceUsers: FC<ServiceSectionProps> = observer(
     <section className="flex flex-col gap-2">
       <div className="flex items-center justify-between gap-2">
         <h3 className="text-sm font-medium">Пользователи SOCKS5</h3>
-        {vm.canManage && (
+        {vm.canManageUsers && (
           <Button
             size="sm"
             variant="outline"
@@ -41,16 +41,18 @@ export const ServiceUsers: FC<ServiceSectionProps> = observer(
                 {user.username}
               </span>
               {!user.enabled && <Badge variant="muted">выключен</Badge>}
-              {vm.canManage && (
+              {vm.canViewSecrets && (
+                <Tooltip content="Пароль и ссылка для Telegram">
+                  <IconButton
+                    aria-label="Пароль"
+                    onClick={() => void vm.showSecret(service, user)}
+                  >
+                    <KeyRound size={15} />
+                  </IconButton>
+                </Tooltip>
+              )}
+              {vm.canManageUsers && (
                 <>
-                  <Tooltip content="Пароль и ссылка для Telegram">
-                    <IconButton
-                      aria-label="Пароль"
-                      onClick={() => void vm.showSecret(service, user)}
-                    >
-                      <KeyRound size={15} />
-                    </IconButton>
-                  </Tooltip>
                   <WgToggleSwitch
                     enabled={user.enabled}
                     onToggle={() => vm.toggleUser(service, user)}

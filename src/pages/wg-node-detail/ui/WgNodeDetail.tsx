@@ -23,7 +23,7 @@ import {
 } from "@shared/ui";
 import { Plus } from "lucide-react";
 import { observer } from "mobx-react-lite";
-import { FC, useState } from "react";
+import { FC, useEffect, useState } from "react";
 
 import { useWgNodeDetailVM } from "../model/useWgNodeDetailVM";
 import { NodeHeaderActions } from "./NodeHeaderActions";
@@ -49,6 +49,15 @@ export const WgNodeDetail: FC<WgNodeDetailProps> = observer(({ nodeId }) => {
     // Журнал запрашивается при каждом открытии вкладки.
     if (next === "logs") vm.loadLogs();
   };
+
+  // Вкладка без права (отозвано на открытой странице) — к обзору.
+  const tabAllowed =
+    (tab !== "logs" || vm.canLogs) &&
+    (tab !== "interfaces" || vm.canViewInterfaces);
+
+  useEffect(() => {
+    if (!tabAllowed) setTab("overview");
+  }, [tabAllowed]);
 
   return (
     <PageLayout
@@ -97,12 +106,14 @@ export const WgNodeDetail: FC<WgNodeDetailProps> = observer(({ nodeId }) => {
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <TabsList>
                   <TabsTrigger value="overview">Обзор</TabsTrigger>
-                  <TabsTrigger value="interfaces">Интерфейсы</TabsTrigger>
-                  {vm.canManage && (
+                  {vm.canViewInterfaces && (
+                    <TabsTrigger value="interfaces">Интерфейсы</TabsTrigger>
+                  )}
+                  {vm.canLogs && (
                     <TabsTrigger value="logs">Журнал агента</TabsTrigger>
                   )}
                 </TabsList>
-                {tab === "interfaces" && vm.canManageInterfaces && (
+                {tab === "interfaces" && vm.interfacePermissions.canCreate && (
                   <Button
                     leftIcon={<Plus size={15} />}
                     onClick={vm.interfaceForm.openCreate}
@@ -131,7 +142,7 @@ export const WgNodeDetail: FC<WgNodeDetailProps> = observer(({ nodeId }) => {
                 <NodeInterfacesTab
                   interfaces={vm.interfaces.items}
                   isLoading={vm.interfaces.isLoading}
-                  canManage={vm.canManageInterfaces}
+                  permissions={vm.interfacePermissions}
                   onEdit={vm.interfaceForm.openEdit}
                   onToggle={vm.interfaceActions.toggle}
                   onRestart={vm.interfaceActions.restart}
@@ -146,7 +157,7 @@ export const WgNodeDetail: FC<WgNodeDetailProps> = observer(({ nodeId }) => {
                   }
                 />
               </TabsContent>
-              {vm.canManage && (
+              {vm.canLogs && (
                 <TabsContent
                   value="logs"
                   className="flex min-h-0 flex-1 flex-col pt-4"
