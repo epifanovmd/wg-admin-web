@@ -75,7 +75,9 @@ export const createEndpointColumns = ({
     id: "targets",
     header: "Куда ведёт",
     size: 240,
-    cell: ({ row }) => <EndpointTargets interfaces={row.original.interfaces} />,
+    cell: ({ row }) => (
+      <EndpointTargets interfaces={row.original.interfaces} dense />
+    ),
   }),
   column.display({
     id: "description",
