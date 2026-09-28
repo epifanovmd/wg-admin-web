@@ -8,9 +8,10 @@ coverage/
 # Временные файлы плагина TanStack Router
 .tanstack/
 
-# Локальные env: деплой, настройки сервера и переопределения
-.env.deploy
-.env.production
+# Env: локальные настройки разработки, сервера и деплоя (образец — .env.example)
+.env*
+!.env.example
+!.env.deploy.example
 *.local
 
 # Локальные настройки и память Claude Code
