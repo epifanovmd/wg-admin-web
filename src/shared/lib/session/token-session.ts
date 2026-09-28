@@ -240,7 +240,7 @@ export class TokenSession implements ITokenSession {
     const locks =
       typeof navigator === "undefined" ? undefined : navigator.locks;
 
-    return lockName && locks ? locks.request(lockName, task) : task();
+    return lockName && locks ? locks.request<void>(lockName, task) : task();
   }
 
   private async _doRefresh(startedWith: string): Promise<void> {
