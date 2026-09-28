@@ -123,9 +123,22 @@
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border;
     scrollbar-width: thin;
     scrollbar-color: var(--muted) transparent;
+  }
+
+  /* Системная рамка фокуса браузера отключена везде; видимый фокус — кольцо
+     компонентов (`focus-visible:ring-*`). */
+  *:focus,
+  *:focus-visible {
+    outline: none;
+  }
+
+  /* Отдельно: Chrome отбрасывает список с незнакомым `:-moz-focusring`
+     целиком; перекрывает рамку Firefox из normalize.css. */
+  :is(button, [type="button"], [type="reset"], [type="submit"]):-moz-focusring {
+    outline: none;
   }
 
   /**
