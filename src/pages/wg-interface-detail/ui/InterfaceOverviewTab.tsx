@@ -94,9 +94,6 @@ export const InterfaceOverviewTab: FC<InterfaceSectionProps> = observer(
           <InterfaceReplicasCell
             iface={iface}
             canManageReplicas={vm.permissions.canReplicas}
-            onPin={(target, nodeId) =>
-              void vm.actions.pinReplica(target, nodeId)
-            }
             onRemoveReplica={(target, nodeId) =>
               void vm.actions.removeReplica(target, nodeId)
             }

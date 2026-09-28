@@ -53,7 +53,14 @@ export const useWgEndpointsVM = () => {
   useSocketRoom("wg-endpoints", canView ? "all" : null, () =>
     endpoints.refresh(),
   );
-  useSocketEvent<[WgEndpointDto]>("wg:endpoint:updated", upsert, canView);
+  useSocketEvent<[WgEndpointDto]>(
+    "wg:endpoint:updated",
+    endpoint => {
+      upsert(endpoint);
+      form.syncEditing(endpoint);
+    },
+    canView,
+  );
   useSocketEvent<[{ id: string }]>(
     "wg:endpoint:deleted",
     ({ id }) => endpoints.removeItem(id),

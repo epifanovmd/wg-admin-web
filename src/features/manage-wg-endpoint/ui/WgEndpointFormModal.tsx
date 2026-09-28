@@ -14,11 +14,13 @@ import { FC } from "react";
 import {
   ENDPOINT_FORWARD_MODE_OPTIONS,
   ENDPOINT_MODE_OPTIONS,
+  ENDPOINT_ROUTE_OPTIONS,
 } from "../model/endpoint-options";
 import type {
   TWgEndpointForm,
   WgEndpointFormVM,
 } from "../model/useWgEndpointFormVM";
+import { EndpointTargets } from "./EndpointTargets";
 
 interface WgEndpointFormModalProps {
   vm: WgEndpointFormVM;
@@ -82,10 +84,23 @@ export const WgEndpointFormModal: FC<WgEndpointFormModalProps> = observer(
               />
               <SegmentedFormField<TWgEndpointForm>
                 name="forwardMode"
-                label="Проброс до целевой ноды"
+                label="Пересылка до ноды интерфейса"
                 options={ENDPOINT_FORWARD_MODE_OPTIONS}
               />
+              {vm.forwardMode === "ipip" && (
+                <SegmentedFormField<TWgEndpointForm>
+                  name="route"
+                  label="Маршрут"
+                  options={ENDPOINT_ROUTE_OPTIONS}
+                />
+              )}
             </>
+          )}
+          {vm.editing && (
+            <div className="flex flex-col gap-1.5">
+              <p className="text-sm font-medium">Интерфейсы через точку</p>
+              <EndpointTargets interfaces={vm.editing.interfaces} />
+            </div>
           )}
           <TextareaFormField<TWgEndpointForm>
             name="description"

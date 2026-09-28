@@ -28,7 +28,6 @@ interface NodeInterfacesTabProps {
   onDelete: (iface: WgInterfaceDto) => void;
   onMove: (iface: WgInterfaceDto) => void;
   onCopy: (iface: WgInterfaceDto) => void;
-  onPin: (iface: WgInterfaceDto, nodeId: string | null) => void;
   onRemoveReplica: (iface: WgInterfaceDto, nodeId: string) => void;
 }
 
@@ -42,7 +41,6 @@ type RowActions = Pick<
   | "onDelete"
   | "onMove"
   | "onCopy"
-  | "onPin"
   | "onRemoveReplica"
 >;
 
@@ -99,7 +97,6 @@ const createColumns = (
         <InterfaceReplicasCell
           iface={row.original}
           canManageReplicas={permissions.canReplicas}
-          onPin={(iface, nodeId) => actions.current.onPin(iface, nodeId)}
           onRemoveReplica={(iface, nodeId) =>
             actions.current.onRemoveReplica(iface, nodeId)
           }

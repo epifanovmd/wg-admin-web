@@ -1,5 +1,6 @@
 import type { EWgInterfaceStatus } from "./eWgInterfaceStatus.ts";
 import type { EWgNodeStatus } from "./eWgNodeStatus.ts";
+import type { IWgInterfaceEndpointDto } from "./iWgInterfaceEndpointDto.ts";
 import type { IWgInterfaceReplicaDto } from "./iWgInterfaceReplicaDto.ts";
 
 export interface WgInterfaceDto {
@@ -24,6 +25,8 @@ export interface WgInterfaceDto {
   mtu: number | null;
   /** @nullable */
   endpointId: string | null;
+  /** Точка подключения (если загружена связь). */
+  endpoint: IWgInterfaceEndpointDto | null;
   /** @nullable */
   endpointPort: number | null;
   /**

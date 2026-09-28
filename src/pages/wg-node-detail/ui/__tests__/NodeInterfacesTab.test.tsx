@@ -16,11 +16,13 @@ vi.mock("@features/manage-wg-interface", () => ({
   hasAnyInterfaceAction: () => true,
   InterfaceReplicasCell: ({
     iface,
-    onPin,
+    onRemoveReplica,
   }: {
     iface: WgInterfaceDto;
-    onPin: (iface: WgInterfaceDto, nodeId: string | null) => void;
-  }) => <button onClick={() => onPin(iface, null)}>Закрепить</button>,
+    onRemoveReplica: (iface: WgInterfaceDto, nodeId: string) => void;
+  }) => (
+    <button onClick={() => onRemoveReplica(iface, "n2")}>Убрать копию</button>
+  ),
 }));
 
 const iface = {
@@ -44,7 +46,6 @@ const handlers = {
   onDelete: vi.fn(),
   onMove: vi.fn(),
   onCopy: vi.fn(),
-  onPin: vi.fn(),
   onRemoveReplica: vi.fn(),
 };
 
@@ -85,10 +86,10 @@ describe("NodeInterfacesTab", () => {
   it("кнопки действий и копий строку не открывают", () => {
     renderTab();
     fireEvent.click(screen.getByLabelText("Перезапустить"));
-    fireEvent.click(screen.getByText("Закрепить"));
+    fireEvent.click(screen.getByText("Убрать копию"));
 
     expect(handlers.onRestart).toHaveBeenCalledOnce();
-    expect(handlers.onPin).toHaveBeenCalledOnce();
+    expect(handlers.onRemoveReplica).toHaveBeenCalledOnce();
     expect(navigate).not.toHaveBeenCalled();
   });
 });

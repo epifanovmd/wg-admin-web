@@ -2,6 +2,7 @@ import { useWgNodeOptions } from "@entities/wg";
 import { IMainApi } from "@shared/api";
 import {
   EWgEndpointMode,
+  EWgEndpointRoute,
   EWgForwardMode,
   type WgEndpointDto,
 } from "@shared/api/gen/main/model";
@@ -24,6 +25,7 @@ export const wgEndpointFormSchema = z
     mode: z.enum(["direct", "relay"]),
     relayNodeId: z.string().nullable().optional(),
     forwardMode: z.enum(["dnat", "ipip"]),
+    route: z.enum(["auto", "tunnel", "direct"]),
     description: z.string().trim().max(2000).optional(),
   })
   .refine(data => data.mode !== "relay" || Boolean(data.relayNodeId), {
@@ -46,6 +48,7 @@ export const useWgEndpointFormVM = ({ onSaved }: UseWgEndpointFormOptions) => {
   const [editing, setEditing] = useState<WgEndpointDto | null>(null);
   const form = useZodForm(wgEndpointFormSchema);
   const mode = form.watch("mode");
+  const forwardMode = form.watch("forwardMode");
 
   const nodes = useWgNodeOptions({ enabled: open });
 
@@ -56,7 +59,8 @@ export const useWgEndpointFormVM = ({ onSaved }: UseWgEndpointFormOptions) => {
       host: "",
       mode: EWgEndpointMode.direct,
       relayNodeId: null,
-      forwardMode: EWgForwardMode.dnat,
+      forwardMode: EWgForwardMode.ipip,
+      route: EWgEndpointRoute.auto,
       description: "",
     });
     setOpen(true);
@@ -70,6 +74,7 @@ export const useWgEndpointFormVM = ({ onSaved }: UseWgEndpointFormOptions) => {
       mode: endpoint.mode,
       relayNodeId: endpoint.relayNodeId,
       forwardMode: endpoint.forwardMode,
+      route: endpoint.route,
       description: endpoint.description ?? "",
     });
     setOpen(true);
@@ -82,6 +87,7 @@ export const useWgEndpointFormVM = ({ onSaved }: UseWgEndpointFormOptions) => {
       mode: data.mode,
       relayNodeId: data.mode === "relay" ? data.relayNodeId : null,
       forwardMode: data.forwardMode,
+      route: data.route,
       description: data.description || null,
     };
     const res = editing
@@ -98,15 +104,21 @@ export const useWgEndpointFormVM = ({ onSaved }: UseWgEndpointFormOptions) => {
     setOpen(false);
   };
 
+  /** Точка изменилась на сервере (живое обновление) — открытая форма видит её. */
+  const syncEditing = (endpoint: WgEndpointDto) =>
+    setEditing(current => (current?.id === endpoint.id ? endpoint : current));
+
   return {
     open,
     setOpen,
+    syncEditing,
     openCreate,
     openEdit,
     editing,
     form,
     submit,
     mode,
+    forwardMode,
     nodeOptions: nodes.items,
   };
 };

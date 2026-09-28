@@ -149,9 +149,6 @@ export const WgNodeDetail: FC<WgNodeDetailProps> = observer(({ nodeId }) => {
                   onDelete={vm.interfaceActions.remove}
                   onMove={iface => vm.move.openFor(iface)}
                   onCopy={iface => vm.move.openFor(iface, "copy")}
-                  onPin={(iface, pinned) =>
-                    void vm.interfaceActions.pinReplica(iface, pinned)
-                  }
                   onRemoveReplica={(iface, replicaNodeId) =>
                     void vm.interfaceActions.removeReplica(iface, replicaNodeId)
                   }

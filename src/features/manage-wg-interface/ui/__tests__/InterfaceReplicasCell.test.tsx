@@ -1,9 +1,14 @@
 import { TooltipProvider } from "@radix-ui/react-tooltip";
 import type { WgInterfaceDto } from "@shared/api/gen/main/model";
 import { fireEvent, render, screen } from "@testing-library/react";
+import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
 
 import { InterfaceReplicasCell } from "../InterfaceReplicasCell";
+
+vi.mock("@tanstack/react-router", () => ({
+  Link: ({ children }: { children: ReactNode }) => <a>{children}</a>,
+}));
 
 const iface = {
   id: "i1",
@@ -34,7 +39,6 @@ const renderCell = (
       <InterfaceReplicasCell
         iface={iface}
         canManageReplicas
-        onPin={vi.fn()}
         onRemoveReplica={vi.fn()}
         {...props}
       />
@@ -59,10 +63,22 @@ describe("InterfaceReplicasCell", () => {
     expect(onRemoveReplica).toHaveBeenCalledWith(iface, "d");
   });
 
-  it("без реплик — только основная, без выбора трафика", () => {
-    renderCell({ iface: { ...iface, replicas: [], servingNodeId: null } });
+  it("выбора копии здесь нет — только куда идёт трафик, управление у релея", () => {
+    renderCell({
+      iface: {
+        ...iface,
+        endpoint: {
+          name: "msk-relay",
+          mode: "relay",
+          relayNodeId: "r",
+          relayNodeName: "MSK",
+        },
+      } as unknown as WgInterfaceDto,
+    });
 
     expect(screen.queryByLabelText("Трафик через копию")).toBeNull();
+    expect(screen.getByText(/релей MSK/)).toBeTruthy();
+    expect(screen.getByText("Управление — в пробросах")).toBeTruthy();
   });
 
   it("копия на ноде без агента — «Ожидает агента» вместо статуса интерфейса", () => {

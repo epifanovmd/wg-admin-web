@@ -1,4 +1,8 @@
-import type { WgEndpointDto } from "@shared/api/gen/main/model";
+import { EndpointTargets } from "@features/manage-wg-endpoint";
+import type {
+  EWgEndpointRoute,
+  WgEndpointDto,
+} from "@shared/api/gen/main/model";
 import {
   Badge,
   createColumnHelper,
@@ -12,6 +16,12 @@ import type { RefObject } from "react";
 import type { WgEndpointsVM } from "../model/useWgEndpointsVM";
 
 const column = createColumnHelper<WgEndpointDto>();
+
+const ROUTE_LABEL: Record<EWgEndpointRoute, string> = {
+  auto: "авто",
+  tunnel: "только туннель",
+  direct: "напрямую",
+};
 
 interface EndpointColumnsOptions {
   canUpdate: boolean;
@@ -48,7 +58,11 @@ export const createEndpointColumns = ({
       const endpoint = row.original;
 
       if (endpoint.mode === "direct") {
-        return <Badge variant="outline">напрямую</Badge>;
+        return (
+          <Tooltip content="Панель трафик не пересылает: хост должен вести прямо на ноду интерфейса">
+            <Badge variant="outline">адрес ноды</Badge>
+          </Tooltip>
+        );
       }
 
       return (
@@ -57,11 +71,19 @@ export const createEndpointColumns = ({
             релей: {relayNodeName(endpoint.relayNodeId) ?? "—"}
           </Badge>
           <Badge variant={endpoint.forwardMode === "ipip" ? "purple" : "muted"}>
-            {endpoint.forwardMode === "ipip" ? "IPIP" : "DNAT"}
+            {endpoint.forwardMode === "ipip"
+              ? `IPIP · ${ROUTE_LABEL[endpoint.route]}`
+              : "DNAT"}
           </Badge>
         </div>
       );
     },
+  }),
+  column.display({
+    id: "targets",
+    header: "Куда ведёт",
+    size: 240,
+    cell: ({ row }) => <EndpointTargets interfaces={row.original.interfaces} />,
   }),
   column.display({
     id: "description",

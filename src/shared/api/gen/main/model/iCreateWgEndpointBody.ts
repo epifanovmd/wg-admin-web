@@ -1,4 +1,5 @@
 import type { EWgEndpointMode } from "./eWgEndpointMode.ts";
+import type { EWgEndpointRoute } from "./eWgEndpointRoute.ts";
 import type { EWgForwardMode } from "./eWgForwardMode.ts";
 
 export interface ICreateWgEndpointBody {
@@ -14,4 +15,6 @@ export interface ICreateWgEndpointBody {
    */
   relayNodeId?: string | null;
   forwardMode?: EWgForwardMode;
+  /** Маршрут при IPIP: по умолчанию `auto` (запасной прямой путь). */
+  route?: EWgEndpointRoute;
 }
