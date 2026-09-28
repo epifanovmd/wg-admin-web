@@ -1,5 +1,9 @@
 import type { ReactElement } from "react";
-import type { FieldPathByValue, FieldValues } from "react-hook-form";
+import {
+  type FieldPathByValue,
+  type FieldValues,
+  useWatch,
+} from "react-hook-form";
 
 import { Segmented, type SegmentedProps } from "../../segmented";
 import { FormField } from "../primitives/FormField";
@@ -16,7 +20,10 @@ export type SegmentedFormFieldProps<
 > = FormAdapterProps<TFormData, TName> &
   Omit<SegmentedProps, ManagedControlProps>;
 
-/** @example <SegmentedFormField<TForm> name="view" label="Вид" options={options} /> */
+/**
+ * Описание под полем — `description` поля, иначе описание выбранного варианта.
+ * @example <SegmentedFormField<TForm> name="view" label="Вид" options={options} />
+ */
 export const SegmentedFormField = <
   TFormData extends FieldValues,
   TName extends FieldPathByValue<TFormData, TextFieldValue> = FieldPathByValue<
@@ -30,10 +37,19 @@ export const SegmentedFormField = <
     formFieldProps,
     controlProps: { onValueChange, onBlur, ...segmentedProps },
   } = splitFormAdapterProps(props);
+  const selected = useWatch({
+    control: formFieldProps.control,
+    name: formFieldProps.name,
+  });
+  const description =
+    formFieldProps.description ??
+    segmentedProps.options.find(option => option.value === selected)
+      ?.description;
 
   return (
     <FormField
       {...formFieldProps}
+      description={description}
       render={({ field, controlProps }) => (
         <Segmented
           {...segmentedProps}

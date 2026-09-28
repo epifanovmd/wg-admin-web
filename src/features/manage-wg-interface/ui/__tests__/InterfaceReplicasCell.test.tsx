@@ -64,4 +64,25 @@ describe("InterfaceReplicasCell", () => {
 
     expect(screen.queryByLabelText("Трафик через копию")).toBeNull();
   });
+
+  it("копия на ноде без агента — «Ожидает агента» вместо статуса интерфейса", () => {
+    renderCell({
+      iface: {
+        ...iface,
+        replicas: [
+          {
+            nodeId: "n",
+            nodeName: "Алматы",
+            nodeStatus: "created",
+            priority: 1,
+            status: "unknown",
+            statusMessage: null,
+          },
+        ],
+      } as unknown as WgInterfaceDto,
+    });
+
+    expect(screen.getByText("Ожидает агента")).toBeTruthy();
+    expect(screen.queryByText("Неизвестно")).toBeNull();
+  });
 });

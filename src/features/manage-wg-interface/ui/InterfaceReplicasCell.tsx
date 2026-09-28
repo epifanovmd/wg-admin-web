@@ -1,6 +1,7 @@
 import { WgInterfaceStatusBadge } from "@entities/wg";
+import type { EWgNodeStatus } from "@shared/api/gen/main/model";
 import type { WgInterfaceDto } from "@shared/api/gen/main/model";
-import { IconButton, Select, Tooltip } from "@shared/ui";
+import { Badge, IconButton, Select, Tooltip } from "@shared/ui";
 import { Radio, X } from "lucide-react";
 import { FC } from "react";
 
@@ -14,6 +15,10 @@ interface InterfaceReplicasCellProps {
 }
 
 const AUTO = "auto";
+
+/** Агента на ноде копии ещё нет: интерфейс там не поднят и статуса нет. */
+const awaitsAgent = (status: EWgNodeStatus | null | undefined) =>
+  status === "created" || status === "provisioning";
 
 /**
  * Копии интерфейса (основная и реплики) со статусами, отметкой копии, через
@@ -31,6 +36,7 @@ export const InterfaceReplicasCell: FC<InterfaceReplicasCellProps> = ({
       name: iface.nodeName ?? "основная",
       status: iface.status,
       message: iface.statusMessage,
+      nodeStatus: iface.nodeStatus,
       primary: true,
     },
     ...iface.replicas.map(replica => ({
@@ -38,6 +44,7 @@ export const InterfaceReplicasCell: FC<InterfaceReplicasCellProps> = ({
       name: replica.nodeName ?? replica.nodeId.slice(0, 8),
       status: replica.status,
       message: replica.statusMessage,
+      nodeStatus: replica.nodeStatus,
       primary: false,
     })),
   ];
@@ -62,11 +69,17 @@ export const InterfaceReplicasCell: FC<InterfaceReplicasCellProps> = ({
           {copy.primary && hasReplicas && (
             <span className="text-muted-foreground">· основная</span>
           )}
-          <WgInterfaceStatusBadge
-            status={copy.status}
-            message={copy.message}
-            enabled={iface.enabled}
-          />
+          {awaitsAgent(copy.nodeStatus) ? (
+            <Tooltip content="Копия поднимется, когда на ноде будет установлен агент">
+              <Badge variant="muted">Ожидает агента</Badge>
+            </Tooltip>
+          ) : (
+            <WgInterfaceStatusBadge
+              status={copy.status}
+              message={copy.message}
+              enabled={iface.enabled}
+            />
+          )}
           {!copy.primary && canManageReplicas && (
             <Tooltip content="Убрать копию">
               <IconButton

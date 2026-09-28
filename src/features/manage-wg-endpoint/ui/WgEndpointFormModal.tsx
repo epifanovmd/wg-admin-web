@@ -1,5 +1,4 @@
 import {
-  Alert,
   Button,
   Form,
   InputFormField,
@@ -12,6 +11,10 @@ import {
 import { observer } from "mobx-react-lite";
 import { FC } from "react";
 
+import {
+  ENDPOINT_FORWARD_MODE_OPTIONS,
+  ENDPOINT_MODE_OPTIONS,
+} from "../model/endpoint-options";
 import type {
   TWgEndpointForm,
   WgEndpointFormVM,
@@ -67,10 +70,7 @@ export const WgEndpointFormModal: FC<WgEndpointFormModalProps> = observer(
           <SegmentedFormField<TWgEndpointForm>
             name="mode"
             label="Режим"
-            options={[
-              { value: "direct", label: "Напрямую" },
-              { value: "relay", label: "Через релей" },
-            ]}
+            options={ENDPOINT_MODE_OPTIONS}
           />
           {vm.mode === "relay" && (
             <>
@@ -83,15 +83,8 @@ export const WgEndpointFormModal: FC<WgEndpointFormModalProps> = observer(
               <SegmentedFormField<TWgEndpointForm>
                 name="forwardMode"
                 label="Проброс до целевой ноды"
-                options={[
-                  { value: "dnat", label: "DNAT" },
-                  { value: "ipip", label: "IPIP-туннель" },
-                ]}
+                options={ENDPOINT_FORWARD_MODE_OPTIONS}
               />
-              <Alert variant="info">
-                IPIP-туннель обходит потери UDP у хостера; агенты настроят
-                туннель и проброс автоматически.
-              </Alert>
             </>
           )}
           <TextareaFormField<TWgEndpointForm>

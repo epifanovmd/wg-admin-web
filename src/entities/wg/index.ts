@@ -10,6 +10,7 @@ export {
   formatTraffic,
 } from "./lib/format";
 export { WG_PERMISSIONS } from "./lib/permissions";
+export { nodeSyncView } from "./lib/status";
 export {
   type ISpeedPoint,
   type IWgInterfaceLive,

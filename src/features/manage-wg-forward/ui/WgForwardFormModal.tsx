@@ -1,5 +1,4 @@
 import {
-  Alert,
   Button,
   Form,
   InputFormField,
@@ -15,6 +14,10 @@ import {
 import { observer } from "mobx-react-lite";
 import { FC } from "react";
 
+import {
+  FORWARD_PATH_OPTIONS,
+  FORWARD_ROUTE_OPTIONS,
+} from "../model/forward-options";
 import type {
   TWgForwardForm,
   WgForwardFormVM,
@@ -104,28 +107,14 @@ export const WgForwardFormModal: FC<WgForwardFormModalProps> = observer(
           <SegmentedFormField<TWgForwardForm>
             name="path"
             label="Путь"
-            options={[
-              { value: "ipip", label: "Через IPIP-туннель" },
-              { value: "direct", label: "Напрямую" },
-            ]}
+            options={FORWARD_PATH_OPTIONS}
           />
           {vm.path === "ipip" && (
-            <>
-              <SegmentedFormField<TWgForwardForm>
-                name="route"
-                label="Маршрут"
-                options={[
-                  { value: "auto", label: "Авто" },
-                  { value: "tunnel", label: "Только туннель" },
-                  { value: "direct", label: "Напрямую" },
-                ]}
-              />
-              <Alert variant="info">
-                Авто: если туннель не отвечает ~30 с, релей сам шлёт напрямую и
-                возвращается в туннель, когда он оживёт. Агент ноды-цели
-                поднимет свой конец туннеля.
-              </Alert>
-            </>
+            <SegmentedFormField<TWgForwardForm>
+              name="route"
+              label="Маршрут"
+              options={FORWARD_ROUTE_OPTIONS}
+            />
           )}
           <SwitchFormField<TWgForwardForm>
             name="enabled"

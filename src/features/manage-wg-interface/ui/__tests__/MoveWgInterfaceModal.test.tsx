@@ -37,11 +37,11 @@ const api = {
   }),
 };
 
+const toast = { error: vi.fn(), success: vi.fn() };
+
 beforeEach(() => {
   iocContainer.bind(IMainApi.Tid).toConstantValue(api);
-  iocContainer
-    .bind(INotificationService.Tid)
-    .toConstantValue({ error: vi.fn(), success: vi.fn() });
+  iocContainer.bind(INotificationService.Tid).toConstantValue(toast);
 });
 
 afterEach(() => {
@@ -103,5 +103,26 @@ describe("перенос интерфейса", () => {
     });
     expect(api.moveWgInterface).not.toHaveBeenCalled();
     expect(onMoved).toHaveBeenCalled();
+  });
+
+  it("копия на ноде без агента — уведомление, что поднимется после установки агента", async () => {
+    api.addWgInterfaceReplica.mockResolvedValueOnce({
+      data: {
+        ...iface,
+        replicas: [{ nodeId: "c", nodeStatus: "created" }],
+      },
+    });
+
+    const { result } = renderHook(() =>
+      useMoveWgInterfaceVM({ onMoved: vi.fn() }),
+    );
+
+    act(() => result.current.openFor(iface, "copy"));
+    act(() => result.current.setNodeId("c"));
+    await act(async () => result.current.submit());
+
+    expect(toast.success).toHaveBeenCalledWith(
+      "Копия wg0 добавлена — поднимется, когда на ноде будет установлен агент",
+    );
   });
 });

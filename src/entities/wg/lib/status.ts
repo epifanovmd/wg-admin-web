@@ -19,6 +19,50 @@ export const NODE_STATUS: Record<EWgNodeStatus, StatusView> = {
   error: { label: "Ошибка", variant: "destructive" },
 };
 
+/** Нода без агента: установка ещё не выполнена или идёт. */
+const AWAITING_AGENT: ReadonlySet<EWgNodeStatus> = new Set([
+  "created",
+  "provisioning",
+]);
+
+/** Нода не отвечает: агент не выходит на связь или установка не удалась. */
+const UNREACHABLE: ReadonlySet<EWgNodeStatus> = new Set(["offline", "error"]);
+
+/**
+ * Состояние конфигурации ноды: без агента и на недоступной ноде
+ * «Применяется…» висело бы бесконечно — применить некому.
+ */
+export const nodeSyncView = (node: {
+  status: EWgNodeStatus;
+  inSync: boolean;
+  applyError: string | null;
+}): StatusView & { hint?: string } => {
+  if (AWAITING_AGENT.has(node.status)) {
+    return {
+      label: "Ожидает агента",
+      variant: "muted",
+      hint: "Конфигурация применится, когда на ноде будет установлен агент",
+    };
+  }
+  if (node.applyError) {
+    return {
+      label: "Ошибка применения",
+      variant: "destructive",
+      hint: node.applyError,
+    };
+  }
+  if (node.inSync) return { label: "Актуальна", variant: "success" };
+  if (UNREACHABLE.has(node.status)) {
+    return {
+      label: "Не применена",
+      variant: "muted",
+      hint: "Нода недоступна: конфигурация применится, когда агент выйдет на связь",
+    };
+  }
+
+  return { label: "Применяется…", variant: "warning" };
+};
+
 export const INTERFACE_STATUS: Record<EWgInterfaceStatus, StatusView> = {
   up: { label: "Up", variant: "success" },
   down: { label: "Down", variant: "muted" },

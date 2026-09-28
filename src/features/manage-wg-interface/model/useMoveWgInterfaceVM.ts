@@ -12,6 +12,24 @@ interface UseMoveWgInterfaceVMOptions {
   onMoved: (iface: WgInterfaceDto) => void;
 }
 
+/** Нода копии без агента: копия поднимется только после его установки. */
+const AWAITING_AGENT = new Set(["created", "provisioning"]);
+
+const successMessage = (
+  mode: TWgInterfaceCopyMode,
+  name: string,
+  result: WgInterfaceDto,
+  nodeId: string,
+) => {
+  if (mode === "move") return `Интерфейс ${name} перенесён`;
+
+  const replica = result.replicas?.find(copy => copy.nodeId === nodeId);
+
+  return replica?.nodeStatus && AWAITING_AGENT.has(replica.nodeStatus)
+    ? `Копия ${name} добавлена — поднимется, когда на ноде будет установлен агент`
+    : `Копия ${name} добавлена`;
+};
+
 /**
  * Перенос интерфейса или его копия на другой ноде: ключ и пиры сохраняются,
  * у реплик набор пиров всегда тот же, что у основной копии.
@@ -60,11 +78,7 @@ export const useMoveWgInterfaceVM = ({
       return;
     }
 
-    toast.success(
-      mode === "copy"
-        ? `Копия ${iface.name} добавлена`
-        : `Интерфейс ${iface.name} перенесён`,
-    );
+    toast.success(successMessage(mode, iface.name, res.data, nodeId));
     setIface(null);
     onMoved(res.data);
   };

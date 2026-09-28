@@ -1,4 +1,5 @@
 import type { EWgInterfaceStatus } from "./eWgInterfaceStatus.ts";
+import type { EWgNodeStatus } from "./eWgNodeStatus.ts";
 import type { IWgInterfaceReplicaDto } from "./iWgInterfaceReplicaDto.ts";
 
 export interface WgInterfaceDto {
@@ -9,6 +10,8 @@ export interface WgInterfaceDto {
    * @nullable
    */
   nodeName: string | null;
+  /** Статус ноды (если загружена связь): `created` — агента ещё нет. */
+  nodeStatus: EWgNodeStatus | null;
   name: string;
   listenPort: number;
   addressCidr: string;

@@ -1,4 +1,8 @@
-import { resolveAgentUpdate, WgNodeStatusBadge } from "@entities/wg";
+import {
+  nodeSyncView,
+  resolveAgentUpdate,
+  WgNodeStatusBadge,
+} from "@entities/wg";
 import type {
   IWgAgentReleaseInfo,
   WgNodeDto,
@@ -96,21 +100,10 @@ export const createNodeColumns = ({
     header: "Конфигурация",
     size: 140,
     cell: ({ row }) => {
-      const node = row.original;
+      const view = nodeSyncView(row.original);
+      const badge = <Badge variant={view.variant}>{view.label}</Badge>;
 
-      if (node.applyError) {
-        return (
-          <Tooltip content={node.applyError}>
-            <Badge variant="destructive">Ошибка применения</Badge>
-          </Tooltip>
-        );
-      }
-
-      return node.inSync ? (
-        <Badge variant="success">Актуальна</Badge>
-      ) : (
-        <Badge variant="warning">Применяется…</Badge>
-      );
+      return view.hint ? <Tooltip content={view.hint}>{badge}</Tooltip> : badge;
     },
   }),
   column.display({

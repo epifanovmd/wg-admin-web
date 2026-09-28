@@ -221,6 +221,59 @@ describe("form field adapters", () => {
     expect(onValueChange).toHaveBeenCalledWith("comfortable");
   });
 
+  it("Segmented: под полем — описание выбранного варианта", () => {
+    const form = createForm();
+
+    render(
+      <Form form={form.result.current} onSubmit={vi.fn()}>
+        <SegmentedFormField<Values>
+          name="view"
+          label="View"
+          options={[
+            {
+              value: "compact",
+              label: "Compact",
+              description: "Плотные строки",
+            },
+            {
+              value: "comfortable",
+              label: "Comfortable",
+              description: "Строки с отступами",
+            },
+          ]}
+        />
+      </Form>,
+    );
+
+    expect(screen.getByText("Плотные строки")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("radio", { name: "Comfortable" }));
+
+    expect(screen.getByText("Строки с отступами")).toBeInTheDocument();
+    expect(screen.queryByText("Плотные строки")).not.toBeInTheDocument();
+  });
+
+  it("Segmented: явное описание поля важнее описаний вариантов", () => {
+    const form = createForm();
+
+    render(
+      <Form form={form.result.current} onSubmit={vi.fn()}>
+        <SegmentedFormField<Values>
+          name="view"
+          label="View"
+          description="Общее описание"
+          options={[
+            { value: "compact", label: "Compact", description: "Плотные" },
+            { value: "comfortable", label: "Comfortable" },
+          ]}
+        />
+      </Form>,
+    );
+
+    expect(screen.getByText("Общее описание")).toBeInTheDocument();
+    expect(screen.queryByText("Плотные")).not.toBeInTheDocument();
+  });
+
   it("wires Switch value with its own label and shows the error", async () => {
     const form = createForm();
 

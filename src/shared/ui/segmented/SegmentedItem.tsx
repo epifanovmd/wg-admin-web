@@ -8,6 +8,8 @@ export interface SegmentedOption<V extends string = string> {
   value: V;
   icon?: React.ReactNode;
   disabled?: boolean;
+  /** Краткое описание варианта: `SegmentedFormField` показывает его под полем, пока вариант выбран. */
+  description?: React.ReactNode;
 }
 
 export interface SegmentedItemProps<V extends string = string> extends Pick<
