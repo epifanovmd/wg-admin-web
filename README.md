@@ -56,16 +56,16 @@ src/
 git clone <repository-url>
 cd <project-directory>
 yarn
+cp .env.example .env.development
 yarn dev            # http://localhost:3000
 ```
 
-Настройки окружения:
+Настройки окружения — файлы `.env.*` вне git, общий образец — `.env.example`:
 
-- `.env.development` — значения по умолчанию для разработки (в git): адрес бэкенда
-  `VITE_BASE_URL` (цель прокси `/api` dev-сервера), адрес Socket.IO
-  `VITE_SOCKET_BASE_URL`, порт dev-сервера;
-- `.env.development.local` — свои переопределения (не в git), например адрес
-  удалённого бэкенда.
+- `.env.development` — для разработки: адрес бэкенда `VITE_BASE_URL` (цель прокси
+  `/api` dev-сервера), адрес Socket.IO `VITE_SOCKET_BASE_URL`, хост и порт
+  dev-сервера;
+- `.env.development.local` — необязательные переопределения поверх него.
 
 ## Сборка
 
@@ -74,8 +74,10 @@ yarn build          # статика в dist/
 yarn prod           # локальный предпросмотр прод-сборки
 ```
 
-`VITE_*` встраиваются при сборке: `.env.production` (значения по умолчанию), поверх —
-`.env.production.local` с адресом API конкретного сервера (не в git).
+`VITE_*` встраиваются при сборке из `.env.production` (вне git, образец —
+`.env.example`) с адресом API сервера. Версия сборки (тег или SHA, коммит, время) —
+из переменных окружения `APP_VERSION`, `APP_COMMIT`, `APP_BUILT_AT`, без них — версия
+из `package.json`; видна в меню профиля вместе с версиями API и агента.
 
 ## Генерация API-клиента
 
@@ -123,20 +125,24 @@ yarn prettier:fix
 
 ```sh
 cp .env.deploy.example .env.deploy   # хост, каталог, порт (файл не в git)
-make env                             # один раз: .env.production.local на хост
+make env                             # .env.production (ENV_FILE) на хост
 make deploy                          # sync → build → up
 make status | logs | restart | down
 make local-up | local-down | local-logs   # то же на этой машине, без .env.deploy
 ```
 
 Любое значение из `.env.deploy` переопределяется в команде: `make deploy SSH_HOST=…`.
+Версию сборки make берёт из git этой копии (`git describe`, коммит, время) и передаёт в
+образ аргументами сборки.
 `up` запускается с `--remove-orphans`: контейнеры прежних имён сервиса в том же
 compose-проекте удаляются.
 
 GitHub Actions: после проверок на push в `main` workflow `CI` вызывает `Deploy`
-(в том же запуске; вручную — только с `main`), и тот выполняет `make deploy`. Нужны переменная репозитория `DEPLOY_ENV` —
-содержимое `.env.deploy` (хост, каталог на хосте, порт) — и секрет `SSH_PRIVATE_KEY`.
-Адрес API для сборки берётся из `.env.production.local` на хосте (`make env`).
+(в том же запуске; вручную — только с `main`), и тот выполняет sync, env, build и up.
+Нужны переменная репозитория `DEPLOY_ENV` — содержимое `.env.deploy` (хост, каталог на
+хосте, порт) — и секрет `SSH_PRIVATE_KEY`. Адрес API для сборки — секрет
+`PRODUCTION_ENV` (содержимое `.env.production`): кладётся на хост при каждом деплое;
+без него используется файл, уже лежащий на хосте (`make env`).
 
 ## Лицензия
 
