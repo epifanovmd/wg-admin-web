@@ -1,5 +1,5 @@
 # Сборка статики и раздача nginx. Адрес API и прочие VITE_* встраиваются при
-# сборке: .env.production, поверх — .env.production.local (кладёт `make env`).
+# сборке из .env.production (на хост кладёт `make env` или деплой из CI).
 ARG NODE_VERSION=22-alpine
 
 FROM node:${NODE_VERSION} AS deps

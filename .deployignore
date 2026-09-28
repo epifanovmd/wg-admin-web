@@ -1,4 +1,4 @@
-# Не уходит на хост при `make sync`. Исключённое не удаляется на хосте (.env.production.local там сохраняется).
+# Не уходит на хост при `make sync`. Исключённое не удаляется на хосте (.env.production там сохраняется).
 .git
 node_modules
 dist
@@ -11,3 +11,4 @@ coverage
 .env.local
 .env.*.local
 .env.deploy
+.env.production
