@@ -26,7 +26,7 @@ const iface = {
 } as unknown as WgInterfaceDto;
 
 describe("InterfaceTrafficSelect", () => {
-  it("неподнятую копию закрепить нельзя — вариант неактивен и с причиной", () => {
+  it("неподнятую копию закрепить нельзя — вариант неактивен", () => {
     render(
       <TooltipProvider>
         <InterfaceTrafficSelect iface={iface} onPin={vi.fn()} />
@@ -38,7 +38,7 @@ describe("InterfaceTrafficSelect", () => {
     });
 
     const option = screen.getByRole("option", {
-      name: "Только Алматы — ожидает агента",
+      name: "Только Алматы",
     });
 
     expect(option.getAttribute("aria-disabled")).toBe("true");
