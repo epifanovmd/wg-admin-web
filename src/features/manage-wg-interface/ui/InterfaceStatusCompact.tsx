@@ -11,6 +11,8 @@ import {
 
 interface InterfaceStatusCompactProps {
   iface: WgInterfaceDto;
+  /** Нода строки: для копии — её статус и отметка трафика. */
+  hostNodeId?: string;
 }
 
 const copiesLabel = (count: number) =>
@@ -22,9 +24,31 @@ const copiesLabel = (count: number) =>
  */
 export const InterfaceStatusCompact: FC<InterfaceStatusCompactProps> = ({
   iface,
+  hostNodeId = iface.nodeId,
 }) => {
-  const replicas = interfaceCopies(iface).filter(copy => !copy.primary);
+  const copies = interfaceCopies(iface);
+  const host = copies.find(copy => copy.nodeId === hostNodeId) ?? copies[0];
+  const replicas = copies.filter(copy => copy.nodeId !== host.nodeId);
   const traffic = interfaceTraffic(iface);
+
+  if (!host.primary) {
+    return (
+      <div className="flex flex-wrap items-center gap-1.5 text-xs">
+        {awaitsAgent(host.nodeStatus) ? (
+          <Badge variant="muted">Ожидает агента</Badge>
+        ) : (
+          <WgInterfaceStatusBadge
+            status={host.status}
+            message={host.message}
+            enabled={iface.enabled}
+          />
+        )}
+        {traffic?.kind === "relay" && iface.servingNodeId === host.nodeId && (
+          <Badge variant="warning">трафик здесь</Badge>
+        )}
+      </div>
+    );
+  }
   const onReplica =
     traffic?.kind === "relay" &&
     iface.servingNodeId !== null &&

@@ -140,6 +140,7 @@ export const WgNodeDetail: FC<WgNodeDetailProps> = observer(({ nodeId }) => {
               </TabsContent>
               <TabsContent value="interfaces" className="pt-4">
                 <NodeInterfacesTab
+                  nodeId={nodeId}
                   interfaces={vm.interfaces.items}
                   isLoading={vm.interfaces.isLoading}
                   permissions={vm.interfacePermissions}

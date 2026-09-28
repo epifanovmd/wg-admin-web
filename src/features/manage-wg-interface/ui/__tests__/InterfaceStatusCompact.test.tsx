@@ -33,10 +33,10 @@ const iface = (patch: Partial<WgInterfaceDto> = {}) =>
     ...patch,
   }) as unknown as WgInterfaceDto;
 
-const renderCell = (value: WgInterfaceDto) =>
+const renderCell = (value: WgInterfaceDto, hostNodeId?: string) =>
   render(
     <TooltipProvider>
-      <InterfaceStatusCompact iface={value} />
+      <InterfaceStatusCompact iface={value} hostNodeId={hostNodeId} />
     </TooltipProvider>,
   );
 
@@ -60,5 +60,28 @@ describe("InterfaceStatusCompact", () => {
     renderCell(iface({ replicas: [] }));
 
     expect(screen.queryByText(/копи/)).toBeNull();
+  });
+
+  it("строка копии на её ноде — статус копии; трафик на ней — отметка", () => {
+    renderCell(
+      iface({
+        replicas: [
+          {
+            nodeId: "kz",
+            nodeName: "Алматы",
+            nodeStatus: "online",
+            priority: 1,
+            status: "down",
+            statusMessage: null,
+          },
+        ],
+        servingNodeId: "kz",
+      } as Partial<WgInterfaceDto>),
+      "kz",
+    );
+
+    expect(screen.getByText("Down")).toBeTruthy();
+    expect(screen.queryByText("Up")).toBeNull();
+    expect(screen.getByText("трафик здесь")).toBeTruthy();
   });
 });

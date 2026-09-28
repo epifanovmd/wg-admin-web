@@ -50,7 +50,7 @@ describe("useWgForwardFormVM", () => {
       expect(result.current.panelInterface?.name).toBe("wg0"),
     );
     expect(api.listWgInterfaces).toHaveBeenCalledWith({
-      nodeId: "nl",
+      hostNodeId: "nl",
       limit: 100,
     });
 

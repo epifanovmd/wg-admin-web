@@ -49,11 +49,12 @@ const ALL_ACTIONS = {
   canReplicas: true,
 };
 
-const renderTab = () =>
+const renderTab = (interfaces: WgInterfaceDto[] = [iface]) =>
   render(
     <TooltipProvider>
       <NodeInterfacesTab
-        interfaces={[iface]}
+        nodeId="n1"
+        interfaces={interfaces}
         isLoading={false}
         permissions={ALL_ACTIONS}
         {...handlers}
@@ -80,5 +81,19 @@ describe("NodeInterfacesTab", () => {
 
     expect(handlers.onRestart).toHaveBeenCalledOnce();
     expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it("копия чужого интерфейса на ноде — помечена, действий нет", () => {
+    renderTab([
+      {
+        ...iface,
+        id: "i2",
+        nodeId: "nl",
+        nodeName: "Нидерланды",
+      } as unknown as WgInterfaceDto,
+    ]);
+
+    expect(screen.getByText("копия · основная — Нидерланды")).toBeTruthy();
+    expect(screen.queryByLabelText("Перезапустить")).toBeNull();
   });
 });

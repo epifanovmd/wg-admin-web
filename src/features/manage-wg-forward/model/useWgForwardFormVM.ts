@@ -70,7 +70,7 @@ export const useWgForwardFormVM = ({ onSaved }: UseWgForwardFormOptions) => {
   const targetInterfaces = useEntity<WgInterfaceDto[], string>({
     queryFn: async nodeId => {
       const { data, error } = await api.listWgInterfaces({
-        nodeId,
+        hostNodeId: nodeId,
         limit: 100,
       });
 
@@ -162,10 +162,8 @@ export const useWgForwardFormVM = ({ onSaved }: UseWgForwardFormOptions) => {
       if (protocol !== "udp" || !targetNodeId) return null;
 
       return (
-        targetInterfaces.data?.find(
-          iface =>
-            iface.nodeId === targetNodeId && iface.listenPort === targetPort,
-        ) ?? null
+        targetInterfaces.data?.find(iface => iface.listenPort === targetPort) ??
+        null
       );
     },
     nodeOptions: nodes.items,

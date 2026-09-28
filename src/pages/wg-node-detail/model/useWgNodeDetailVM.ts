@@ -62,8 +62,9 @@ export const useWgNodeDetailVM = (nodeId: string) => {
 
   const interfaces = useCollection<WgInterfaceDto, string>({
     queryFn: async id => {
+      // Всё, что работает на ноде: свои интерфейсы и копии чужих.
       const { data, error } = await api.listWgInterfaces({
-        nodeId: id,
+        hostNodeId: id,
         limit: 100,
       });
 
@@ -169,8 +170,12 @@ export const useWgNodeDetailVM = (nodeId: string) => {
   useSocketEvent<[WgInterfaceDto]>(
     "wg:interface:updated",
     iface => {
-      // Перенесённый на другую ноду — пропадает из списка этой.
-      if (iface.nodeId === nodeId) interfaces.upsertItem(iface.id, iface);
+      // Перенесённый или копия убрана — пропадает из списка этой ноды.
+      const hosted =
+        iface.nodeId === nodeId ||
+        iface.replicas.some(replica => replica.nodeId === nodeId);
+
+      if (hosted) interfaces.upsertItem(iface.id, iface);
       else interfaces.removeItem(iface.id);
     },
     canViewInterfaces,

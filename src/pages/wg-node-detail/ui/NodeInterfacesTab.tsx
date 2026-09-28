@@ -19,6 +19,8 @@ import { ArrowRightLeft, Copy, Pencil, RotateCcw, Trash2 } from "lucide-react";
 import { FC, RefObject, useMemo } from "react";
 
 interface NodeInterfacesTabProps {
+  /** Нода страницы: строки-копии чужих интерфейсов — только просмотр. */
+  nodeId: string;
   interfaces: WgInterfaceDto[];
   isLoading: boolean;
   permissions: IWgInterfacePermissions;
@@ -39,6 +41,7 @@ type RowActions = Pick<
 
 /** Обработчики — через ref: колонки стабильны, ячейки не перемонтируются. */
 const createColumns = (
+  nodeId: string,
   permissions: IWgInterfacePermissions,
   actions: RefObject<RowActions>,
 ) => [
@@ -55,6 +58,11 @@ const createColumns = (
         >
           {row.original.name}
         </Link>
+        {row.original.nodeId !== nodeId && (
+          <p className="text-xs text-muted-foreground">
+            копия · основная — {row.original.nodeName ?? "—"}
+          </p>
+        )}
         <p className="text-xs text-muted-foreground">
           {row.original.addressCidr}
           {row.original.addressV6Cidr && `, ${row.original.addressV6Cidr}`}
@@ -85,14 +93,18 @@ const createColumns = (
     id: "status",
     header: "Статус",
     size: 200,
-    cell: ({ row }) => <InterfaceStatusCompact iface={row.original} />,
+    cell: ({ row }) => (
+      <InterfaceStatusCompact iface={row.original} hostNodeId={nodeId} />
+    ),
   }),
   column.display({
     id: "actions",
     size: 240,
     meta: { align: "right" },
+    // Действия — у основной копии: перезапуск, перенос и удаление копии здесь
+    // не про неё.
     cell: ({ row }) =>
-      hasAnyInterfaceAction(permissions) ? (
+      row.original.nodeId === nodeId && hasAnyInterfaceAction(permissions) ? (
         <TableRowActions>
           {permissions.canControl && (
             <>
@@ -158,6 +170,7 @@ const createColumns = (
 
 /** Интерфейсы ноды: статусы, включение, перезапуск; строка открывает интерфейс. */
 export const NodeInterfacesTab: FC<NodeInterfacesTabProps> = ({
+  nodeId,
   interfaces,
   isLoading,
   permissions,
@@ -166,8 +179,8 @@ export const NodeInterfacesTab: FC<NodeInterfacesTabProps> = ({
   const navigate = useNavigate();
   const actionsRef = useLatestRef<RowActions>(actions);
   const columns = useMemo(
-    () => createColumns(permissions, actionsRef),
-    [permissions, actionsRef],
+    () => createColumns(nodeId, permissions, actionsRef),
+    [nodeId, permissions, actionsRef],
   );
 
   return (
