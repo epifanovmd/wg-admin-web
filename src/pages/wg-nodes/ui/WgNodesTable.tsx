@@ -15,10 +15,17 @@ interface WgNodesTableProps {
 export const WgNodesTable: FC<WgNodesTableProps> = observer(({ vm }) => {
   const navigate = useNavigate();
   const vmRef = useLatestRef(vm);
-  const { canUpdate, canDelete, canProvision } = vm;
+  const { canUpdate, canDelete, canProvision, release } = vm;
   const columns = useMemo(
-    () => createNodeColumns({ canUpdate, canDelete, canProvision, vm: vmRef }),
-    [canUpdate, canDelete, canProvision, vmRef],
+    () =>
+      createNodeColumns({
+        canUpdate,
+        canDelete,
+        canProvision,
+        release,
+        vm: vmRef,
+      }),
+    [canUpdate, canDelete, canProvision, release, vmRef],
   );
 
   return (

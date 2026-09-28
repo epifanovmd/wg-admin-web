@@ -1,11 +1,12 @@
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vitest/config";
 
-import { alias } from "./vite.config";
+import { alias, define } from "./vite.config";
 
 export default defineConfig({
   plugins: [react()],
   resolve: { alias },
+  define,
   test: {
     include: ["./src/**/*.{spec,test}.{ts,tsx}"],
     globals: true,

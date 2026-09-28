@@ -13,12 +13,16 @@ import { ChevronDown, User } from "lucide-react";
 import { FC } from "react";
 
 import { ACCOUNT_NAV_ITEMS } from "../model/constants";
+import type { IVersionLine } from "../model/versions";
+import { AppVersions } from "./AppVersions";
 import { ProfileAvatar } from "./ProfileAvatar";
 
 interface ProfileMenuProps {
   displayName: string;
   initials: string;
   subtitle?: string;
+  /** Версии веба, API и агента — внизу меню. */
+  versions: IVersionLine[];
 }
 
 const SIGN_OUT_CLASS =
@@ -28,6 +32,7 @@ export const ProfileMenu: FC<ProfileMenuProps> = ({
   displayName,
   initials,
   subtitle,
+  versions,
 }) => (
   <DropdownMenu>
     <DropdownMenuTrigger asChild>
@@ -85,6 +90,10 @@ export const ProfileMenu: FC<ProfileMenuProps> = ({
       <DropdownMenuItem asChild className={SIGN_OUT_CLASS}>
         <SignOutButton />
       </DropdownMenuItem>
+
+      <DropdownMenuSeparator />
+
+      <AppVersions lines={versions} />
     </DropdownMenuContent>
   </DropdownMenu>
 );

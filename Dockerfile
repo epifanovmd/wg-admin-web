@@ -13,7 +13,11 @@ FROM node:${NODE_VERSION} AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-RUN yarn build
+# Версия сборки (подпись версий в админке) — из make: git describe, коммит, время.
+ARG APP_VERSION=""
+ARG APP_COMMIT=""
+ARG APP_BUILT_AT=""
+RUN APP_VERSION=$APP_VERSION APP_COMMIT=$APP_COMMIT APP_BUILT_AT=$APP_BUILT_AT yarn build
 
 FROM nginx:1.27-alpine AS runner
 COPY nginx.conf /etc/nginx/conf.d/default.conf

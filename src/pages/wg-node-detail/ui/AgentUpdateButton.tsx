@@ -1,9 +1,8 @@
+import { resolveAgentUpdate, type TAgentNode } from "@entities/wg";
 import type { IWgAgentReleaseInfo } from "@shared/api/gen/main/model";
 import { Button, Tooltip } from "@shared/ui";
 import { ArrowUpCircle } from "lucide-react";
 import { FC } from "react";
-
-import { resolveAgentUpdate, TAgentNode } from "../model/agent-update";
 
 interface AgentUpdateButtonProps {
   node: TAgentNode;

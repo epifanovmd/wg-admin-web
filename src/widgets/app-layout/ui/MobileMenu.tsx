@@ -11,7 +11,9 @@ import { Link } from "@tanstack/react-router";
 import { User, X } from "lucide-react";
 
 import { NavGroup } from "../model/constants";
+import type { IVersionLine } from "../model/versions";
 import { AppLogo } from "./AppLogo";
+import { AppVersions } from "./AppVersions";
 import { HeaderNavItem } from "./HeaderNavItem";
 
 interface MobileMenuProps {
@@ -21,6 +23,8 @@ interface MobileMenuProps {
   displayName: string;
   initials: string;
   subtitle?: string;
+  /** Версии веба, API и агента — внизу меню. */
+  versions: IVersionLine[];
 }
 
 export const MobileMenu = ({
@@ -30,6 +34,7 @@ export const MobileMenu = ({
   displayName,
   initials,
   subtitle,
+  versions,
 }: MobileMenuProps) => {
   const close = () => onOpenChange(false);
 
@@ -108,6 +113,11 @@ export const MobileMenu = ({
           <SignOutButton
             onBeforeSignOut={close}
             className="flex items-center gap-2.5 rounded-lg px-2 py-2 text-sm font-medium text-foreground/80 transition-colors hover:bg-destructive/10 hover:text-destructive"
+          />
+
+          <AppVersions
+            lines={versions}
+            className="border-t border-border pt-2"
           />
         </div>
       </DrawerContent>

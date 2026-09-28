@@ -39,6 +39,7 @@ export * from "./getUsersParams.ts";
 export * from "./getWgSocksMacClientParams.ts";
 export * from "./i2FARequiredDto.ts";
 export * from "./iAddWgInterfaceReplicaBody.ts";
+export * from "./iAppVersionDto.ts";
 export * from "./iAssignWgPeerBody.ts";
 export * from "./iCreateApiKeyBody.ts";
 export * from "./iCreatedApiKeyDto.ts";

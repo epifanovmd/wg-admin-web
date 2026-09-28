@@ -1,5 +1,8 @@
-import { WgNodeStatusBadge } from "@entities/wg";
-import type { WgNodeDto } from "@shared/api/gen/main/model";
+import { resolveAgentUpdate, WgNodeStatusBadge } from "@entities/wg";
+import type {
+  IWgAgentReleaseInfo,
+  WgNodeDto,
+} from "@shared/api/gen/main/model";
 import { formatter } from "@shared/lib/utils";
 import {
   Badge,
@@ -21,6 +24,8 @@ interface NodeColumnsOptions {
   canUpdate: boolean;
   canDelete: boolean;
   canProvision: boolean;
+  /** Раздаваемая бэкендом версия агента; null — не загружена или нет права. */
+  release: IWgAgentReleaseInfo | null;
   /** VM — через ref: колонки стабильны, ячейки не перемонтируются. */
   vm: RefObject<WgNodesVM>;
 }
@@ -30,6 +35,7 @@ export const createNodeColumns = ({
   canUpdate,
   canDelete,
   canProvision,
+  release,
   vm,
 }: NodeColumnsOptions) => [
   column.display({
@@ -64,8 +70,18 @@ export const createNodeColumns = ({
     size: 190,
     cell: ({ row }) => (
       <div className="text-xs text-muted-foreground">
-        <p>
+        <p className="flex items-center gap-1.5">
           {row.original.agentVersion ? `v${row.original.agentVersion}` : "—"}
+          {resolveAgentUpdate(row.original, release) === "available" && (
+            <Tooltip content={`Доступна версия агента v${release?.version}`}>
+              <Badge
+                variant="warning"
+                aria-label={`Доступна версия агента v${release?.version}`}
+              >
+                обновление
+              </Badge>
+            </Tooltip>
+          )}
         </p>
         <p>
           {row.original.lastSeenAt

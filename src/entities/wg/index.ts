@@ -1,3 +1,4 @@
+export { resolveAgentUpdate, type TAgentNode } from "./lib/agent-update";
 export { WG_RX_COLOR, WG_TX_COLOR } from "./lib/colors";
 export {
   byteAxisDomain,

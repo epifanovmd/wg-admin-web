@@ -6,7 +6,11 @@ import {
   useWgNodeFormVM,
 } from "@features/manage-wg-node";
 import { IMainApi } from "@shared/api";
-import type { IWgMeshMatrix, WgNodeDto } from "@shared/api/gen/main/model";
+import type {
+  IWgAgentReleaseInfo,
+  IWgMeshMatrix,
+  WgNodeDto,
+} from "@shared/api/gen/main/model";
 import { useEntity } from "@shared/lib/holders";
 import { useCloseWhenForbidden } from "@shared/lib/hooks";
 import { useSocketEvent, useSocketRoom } from "@shared/lib/socket";
@@ -23,6 +27,7 @@ export const useWgNodesVM = () => {
   const canUpdate = userStore.can(WG_PERMISSIONS.NODE_UPDATE);
   const canDelete = userStore.can(WG_PERMISSIONS.NODE_DELETE);
   const canProvision = userStore.can(WG_PERMISSIONS.NODE_PROVISION);
+  const canAgent = canView && userStore.can(WG_PERMISSIONS.NODE_AGENT);
 
   const form = useWgNodeFormVM({ onSaved: nodes.upsert });
   const provision = useProvisionWgNodeVM({});
@@ -33,6 +38,13 @@ export const useWgNodesVM = () => {
     queryFn: () => api.wgStatsMesh(),
     autoLoad: true,
     enabled: canViewMesh,
+  });
+
+  // Раздаваемая бэкендом версия агента: какие ноды отстают.
+  const release = useEntity<IWgAgentReleaseInfo>({
+    queryFn: () => api.wgAgentRelease(),
+    autoLoad: true,
+    enabled: canAgent,
   });
 
   useEffect(() => {
@@ -61,6 +73,7 @@ export const useWgNodesVM = () => {
     isLoading: nodes.isLoading,
     error: nodes.error,
     mesh: mesh.data,
+    release: release.data ?? null,
     form,
     provision,
     remove,

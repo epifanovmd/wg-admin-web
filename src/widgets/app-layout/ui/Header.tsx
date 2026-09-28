@@ -16,6 +16,7 @@ export const Header: FC = observer(() => {
     initials,
     subtitle,
     visibleGroups,
+    versions,
     mobileOpen,
     setMobileOpen,
   } = useHeaderVM();
@@ -56,6 +57,7 @@ export const Header: FC = observer(() => {
             displayName={displayName}
             initials={initials}
             subtitle={subtitle}
+            versions={versions}
           />
         </div>
       </div>
@@ -67,6 +69,7 @@ export const Header: FC = observer(() => {
         displayName={displayName}
         initials={initials}
         subtitle={subtitle}
+        versions={versions}
       />
     </header>
   );

@@ -10,3 +10,10 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
+
+/** Версия сборки фронта (`define` в vite.config): тег или SHA, иначе package.json. */
+declare const __APP_VERSION__: string;
+/** Короткий SHA коммита сборки; пусто — вне сборки образа. */
+declare const __APP_COMMIT__: string;
+/** Время сборки (ISO 8601); пусто — вне сборки образа. */
+declare const __APP_BUILT_AT__: string;

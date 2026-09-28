@@ -8,6 +8,7 @@ import type {
   GetUsersParams,
   GetWgSocksMacClientParams,
   IAddWgInterfaceReplicaBody,
+  IAppVersionDto,
   IAssignWgPeerBody,
   ICreateApiKeyBody,
   ICreateRoleRequestDto,
@@ -2339,6 +2340,21 @@ export const getWgAdmin = () => {
     );
   };
 
+  /**
+   * Версия запущенного бэкенда (тег или SHA сборки, коммит, время сборки и
+   * запуска процесса) и агента, которого он раздаёт, — для подписи версий в
+   * админке.
+   * @summary Версия бэкенда
+   */
+  const getAppVersion = (
+    options?: SecondParameter<typeof mainMutator<IAppVersionDto>>,
+  ) => {
+    return mainMutator<IAppVersionDto>(
+      { url: `/api/v1/app/version`, method: "GET" },
+      options,
+    );
+  };
+
   return {
     createApiKey,
     listApiKeys,
@@ -2473,6 +2489,7 @@ export const getWgAdmin = () => {
     verifyAuthentication,
     getMyAudit,
     listAuditEvents,
+    getAppVersion,
   };
 };
 export type CreateApiKeyResult = NonNullable<
@@ -2877,4 +2894,7 @@ export type GetMyAuditResult = NonNullable<
 >;
 export type ListAuditEventsResult = NonNullable<
   Awaited<ReturnType<ReturnType<typeof getWgAdmin>["listAuditEvents"]>>
+>;
+export type GetAppVersionResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["getAppVersion"]>>
 >;

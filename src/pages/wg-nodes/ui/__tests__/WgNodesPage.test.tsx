@@ -27,17 +27,25 @@ const node = {
   description: null,
   status: "online",
   agentVersion: "2.0.0",
+  agentCodeHash: "old",
+  osInfo: { arch: "amd64" },
   lastSeenAt: null,
   applyError: null,
   inSync: true,
   hasAgentKey: true,
 } as unknown as WgNodeDto;
 
+const wgAgentRelease = vi.fn();
+
 const bind = (permissions: string[]) => {
+  wgAgentRelease.mockReset().mockResolvedValue({
+    data: { version: "2.2.2", hashes: { amd64: "new" } },
+  });
   iocContainer.bind(ISocketTransport.Tid).toConstantValue(createFakeSocket());
   iocContainer.bind(IMainApi.Tid).toConstantValue({
     wgStatsMesh: vi.fn().mockResolvedValue({ data: null }),
     deleteWgNode: vi.fn().mockResolvedValue({ data: null }),
+    wgAgentRelease,
   });
   iocContainer
     .bind(INotificationService.Tid)
@@ -119,5 +127,21 @@ describe("WgNodesPage", () => {
     renderPage();
 
     expect(screen.getByRole("button", { name: "Новая нода" })).toBeTruthy();
+  });
+
+  it("агент отстаёт от релиза бэкенда — значок обновления с версией", async () => {
+    bind([WG_PERMISSIONS.NODE_VIEW, WG_PERMISSIONS.NODE_AGENT]);
+    renderPage();
+
+    expect(await screen.findByText("обновление")).toBeTruthy();
+    expect(screen.getByLabelText("Доступна версия агента v2.2.2")).toBeTruthy();
+  });
+
+  it("без права на агента — релиз не запрашивается, значка нет", () => {
+    bind([WG_PERMISSIONS.NODE_VIEW]);
+    renderPage();
+
+    expect(wgAgentRelease).not.toHaveBeenCalled();
+    expect(screen.queryByText("обновление")).toBeNull();
   });
 });

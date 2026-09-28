@@ -1,6 +1,12 @@
 services:
   wg-admin-web:
-    build: .
+    build:
+      context: .
+      # Версия сборки — из make (git describe, коммит, время сборки).
+      args:
+        APP_VERSION: ${APP_VERSION:-}
+        APP_COMMIT: ${APP_COMMIT:-}
+        APP_BUILT_AT: ${APP_BUILT_AT:-}
     image: wg-admin-web:latest
     container_name: wg-admin-web
     ports:

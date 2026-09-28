@@ -1,6 +1,7 @@
 import tailwindcss from "@tailwindcss/vite";
 import { tanstackRouter } from "@tanstack/router-plugin/vite";
 import react from "@vitejs/plugin-react";
+import { readFileSync } from "fs";
 import path from "path";
 import { defineConfig, loadEnv } from "vite";
 import { cjsInterop } from "vite-plugin-cjs-interop";
@@ -15,6 +16,20 @@ export const alias = {
   "@features": path.resolve(root, "src/features"),
   "@entities": path.resolve(root, "src/entities"),
   "@shared": path.resolve(root, "src/shared"),
+};
+
+const packageVersion: string = JSON.parse(
+  readFileSync(path.resolve(root, "package.json"), "utf8"),
+).version;
+
+/**
+ * Версия сборки фронта (`WEB_BUILD`): из окружения сборки (make — git
+ * describe, коммит, время), вне её — версия package.json.
+ */
+export const define = {
+  __APP_VERSION__: JSON.stringify(process.env.APP_VERSION || packageVersion),
+  __APP_COMMIT__: JSON.stringify(process.env.APP_COMMIT || ""),
+  __APP_BUILT_AT__: JSON.stringify(process.env.APP_BUILT_AT || ""),
 };
 
 export default defineConfig(({ mode }) => {
@@ -34,6 +49,7 @@ export default defineConfig(({ mode }) => {
       tailwindcss(),
     ],
     resolve: { alias },
+    define,
     server: {
       host,
       port: port ?? 3000,
