@@ -9,6 +9,11 @@ export interface IDataModel<TData> {
   readonly data: TData;
 }
 
+/**
+ * Модель поверх DTO. Сам DTO не копируется и не оборачивается: `_data` —
+ * `observable.ref`, реакция идёт на замену объекта целиком. Геттеры
+ * наследников помечаются `computed` явно в их `makeObservable`.
+ */
 export class DataModelBase<TData> implements IDataModel<TData> {
   private readonly _data: LambdaValue<TData>;
 
@@ -17,7 +22,7 @@ export class DataModelBase<TData> implements IDataModel<TData> {
 
     makeObservable(this, {
       // @ts-expect-error _data
-      _data: observable,
+      _data: observable.ref,
       data: computed,
       hasLambda: computed,
     });

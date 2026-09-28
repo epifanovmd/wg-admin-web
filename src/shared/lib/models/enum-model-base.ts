@@ -2,7 +2,6 @@ import { Maybe } from "@shared/lib/di/types";
 import { getEnumNamesAndValues } from "@shared/lib/utils/enum-values";
 import { LambdaValue } from "@shared/lib/utils/lambda-value";
 import { stringCapitalize } from "@shared/lib/utils/string";
-import { computed } from "mobx";
 
 import { DataModelBase } from "./data-model-base";
 
@@ -28,9 +27,8 @@ export const createEnumModelBase = <TEnum>(enm: any) => {
       get() {
         return this.data === item.value;
       },
+      configurable: true,
     });
-
-    computed(EnumModel, key);
   });
 
   return EnumModel as TEnumModelBase<TEnum>;
