@@ -26,4 +26,21 @@ describe("Entity React integration", () => {
     expect(hook.result.current.holder).toBe(first);
     hook.unmount();
   });
+
+  it("calls the queryFn of the latest render", async () => {
+    const hook = renderHook(
+      ({ prefix }: { prefix: string }) =>
+        useEntity<string, string>({
+          queryFn: async id => ({ data: `${prefix}:${id}` }),
+        }),
+      { initialProps: { prefix: "first" } },
+    );
+
+    hook.rerender({ prefix: "second" });
+    await act(async () => {
+      await hook.result.current.load("x");
+    });
+    expect(hook.result.current.data).toBe("second:x");
+    hook.unmount();
+  });
 });

@@ -46,4 +46,19 @@ describe("Polling React integration", () => {
 
     watch.unmount();
   });
+
+  it("calls the queryFn of the latest render", async () => {
+    const hook = renderHook(
+      ({ value }: { value: string }) =>
+        usePolling<string>({ queryFn: async () => ({ data: value }) }),
+      { initialProps: { value: "first" } },
+    );
+
+    hook.rerender({ value: "second" });
+    await act(async () => {
+      await hook.result.current.load();
+    });
+    expect(hook.result.current.data).toBe("second");
+    hook.unmount();
+  });
 });

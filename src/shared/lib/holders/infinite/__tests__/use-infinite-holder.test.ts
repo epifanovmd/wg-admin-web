@@ -23,4 +23,21 @@ describe("Infinite React integration", () => {
     hook.result.current.reset();
     hook.unmount();
   });
+
+  it("calls the queryFn of the latest render", async () => {
+    const hook = renderHook(
+      ({ value }: { value: string }) =>
+        useInfinite<string>({
+          queryFn: async () => ({ data: { data: [value], totalCount: 1 } }),
+        }),
+      { initialProps: { value: "first" } },
+    );
+
+    hook.rerender({ value: "second" });
+    await act(async () => {
+      await hook.result.current.load();
+    });
+    expect(hook.result.current.items).toEqual(["second"]);
+    hook.unmount();
+  });
 });
