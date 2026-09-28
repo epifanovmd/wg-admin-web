@@ -28,6 +28,23 @@ export const endpointWarnings = (
   const warnings: string[] = [];
 
   if (endpoint.mode === "relay") {
+    const relayId = endpoint.relayNodeId;
+    const onRelay = relayId
+      ? endpoint.interfaces.filter(
+          target =>
+            target.nodeId === relayId || target.copyNodeIds.includes(relayId),
+        )
+      : [];
+
+    if (onRelay.length > 0) {
+      const names = onRelay
+        .map(target => `${target.interfaceName} на «${target.nodeName ?? "—"}»`)
+        .join(", ");
+
+      warnings.push(
+        `Через точку работает ${names} — на самой релей-ноде (или её копия), а релей не пересылает трафик на свои же интерфейсы: сохранить не получится. Оставьте эту точку «Адрес ноды» и создайте для остальных интерфейсов отдельную точку через релей.`,
+      );
+    }
     if (
       hostNode &&
       endpoint.relayNodeId &&

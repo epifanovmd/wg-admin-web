@@ -74,4 +74,27 @@ describe("endpointWarnings", () => {
       ),
     ).toEqual([]);
   });
+
+  it("релей — нода одного из интерфейсов точки: сервер не примет (409), подсказка заранее", () => {
+    const [warning] = endpointWarnings(
+      {
+        mode: "relay",
+        host: "147.45.245.104",
+        relayNodeId: "msk",
+        interfaces: [
+          target(),
+          target({
+            interfaceId: "i2",
+            nodeId: "msk",
+            nodeName: "MSK",
+            port: 51821,
+          }),
+        ],
+      },
+      nodes,
+    );
+
+    expect(warning).toContain("wg0 на «MSK»");
+    expect(warning).toContain("отдельную точку");
+  });
 });
