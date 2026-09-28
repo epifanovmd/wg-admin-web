@@ -2,6 +2,7 @@ import { WgInterfaceStatusBadge } from "@entities/wg";
 import type { WgInterfaceDto } from "@shared/api/gen/main/model";
 import { cn } from "@shared/lib/utils";
 import { Badge, IconButton, Tooltip } from "@shared/ui";
+import { Link } from "@tanstack/react-router";
 import { Radio, Trash2 } from "lucide-react";
 import { FC } from "react";
 
@@ -56,7 +57,14 @@ export const InterfaceReplicasCell: FC<InterfaceReplicasCellProps> = ({
               ) : (
                 <span className="inline-block w-[14px] shrink-0" />
               )}
-              <span className="truncate font-medium">{copy.name}</span>
+              <Link
+                to="/wg/nodes/$nodeId"
+                params={{ nodeId: copy.nodeId }}
+                className="truncate font-medium hover:underline"
+                onClick={event => event.stopPropagation()}
+              >
+                {copy.name}
+              </Link>
               <span className="shrink-0 text-xs text-muted-foreground">
                 {copy.primary ? "основная" : "копия"}
               </span>

@@ -8,7 +8,13 @@ import { InterfaceReplicasCell } from "../InterfaceReplicasCell";
 import { InterfaceTrafficNote } from "../InterfaceTrafficNote";
 
 vi.mock("@tanstack/react-router", () => ({
-  Link: ({ children }: { children: ReactNode }) => <a>{children}</a>,
+  Link: ({
+    children,
+    params,
+  }: {
+    children: ReactNode;
+    params: { nodeId: string };
+  }) => <a href={`/wg/nodes/${params.nodeId}`}>{children}</a>,
 }));
 
 const iface = {
@@ -113,5 +119,16 @@ describe("InterfaceReplicasCell", () => {
 
     expect(screen.getByText("Ожидает агента")).toBeTruthy();
     expect(screen.queryByText("Неизвестно")).toBeNull();
+  });
+
+  it("копии — ссылки на страницу ноды", () => {
+    renderCell({});
+
+    expect(screen.getByText("Бета").closest("a")?.getAttribute("href")).toBe(
+      "/wg/nodes/d",
+    );
+    expect(screen.getByText("Альфа").closest("a")?.getAttribute("href")).toBe(
+      "/wg/nodes/a",
+    );
   });
 });
