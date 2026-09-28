@@ -2,7 +2,7 @@ import type { WgInterfaceDto } from "@shared/api/gen/main/model";
 import { Select } from "@shared/ui";
 import { FC } from "react";
 
-import { interfaceCopies } from "../model/interface-traffic";
+import { awaitsAgent, interfaceCopies } from "../model/interface-traffic";
 
 interface InterfaceTrafficSelectProps {
   iface: WgInterfaceDto;
@@ -27,10 +27,22 @@ export const InterfaceTrafficSelect: FC<InterfaceTrafficSelectProps> = ({
     onChange={value => onPin(iface, value === AUTO ? null : value)}
     options={[
       { value: AUTO, label: "Авто" },
-      ...interfaceCopies(iface).map(copy => ({
-        value: copy.nodeId,
-        label: `Только ${copy.name}`,
-      })),
+      ...interfaceCopies(iface).map(copy => {
+        const reason = awaitsAgent(copy.nodeStatus)
+          ? "ожидает агента"
+          : copy.status !== "up"
+            ? "не поднята"
+            : null;
+
+        return {
+          value: copy.nodeId,
+          label: reason
+            ? `Только ${copy.name} — ${reason}`
+            : `Только ${copy.name}`,
+          // Закреплённая — единственный путь релея: на неподнятую нельзя.
+          disabled: !!reason && iface.activeReplicaNodeId !== copy.nodeId,
+        };
+      }),
     ]}
     className="w-full max-w-48"
   />
