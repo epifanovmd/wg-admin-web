@@ -145,6 +145,38 @@ describe("TokenSession", () => {
     expect(onExpired).toHaveBeenCalledTimes(1);
   });
 
+  it("временная ошибка refresh сессию не завершает", async () => {
+    const error = new Error("offline");
+    const { session, refresh } = createSession({
+      isSessionRejected: () => false,
+    });
+    const onExpired = vi.fn();
+
+    refresh.mockRejectedValue(error);
+    session.onSessionExpired(onExpired);
+    session.setTokens(pair("1"));
+
+    await expect(session.refreshToken()).rejects.toBe(error);
+    expect(session.tokens).toEqual(pair("1"));
+    expect(onExpired).not.toHaveBeenCalled();
+    session.dispose();
+  });
+
+  it("отказ бэкенда по предикату завершает сессию", async () => {
+    const { session, refresh } = createSession({
+      isSessionRejected: error => (error as Error).message === "401",
+    });
+    const onExpired = vi.fn();
+
+    refresh.mockRejectedValue(new Error("401"));
+    session.onSessionExpired(onExpired);
+    session.setTokens(pair("1"));
+
+    await expect(session.refreshToken()).rejects.toThrow("401");
+    expect(session.isAuthorized).toBe(false);
+    expect(onExpired).toHaveBeenCalledTimes(1);
+  });
+
   it("refresh без токена бросает, но сессию протухшей не объявляет", async () => {
     const { session, refresh } = createSession();
     const onExpired = vi.fn();
@@ -250,6 +282,25 @@ describe("TokenSession", () => {
       await vi.advanceTimersByTimeAsync(0);
 
       expect(refresh).toHaveBeenCalledTimes(1);
+      session.dispose();
+    });
+
+    it("после временной ошибки повторяет обновление позже", async () => {
+      const { session, refresh } = createSession({
+        isSessionRejected: () => false,
+      });
+
+      session.setTokens(grant("1", 900));
+      refresh.mockRejectedValueOnce(new Error("offline"));
+      refresh.mockResolvedValueOnce(grant("2", 900));
+
+      await vi.advanceTimersByTimeAsync(840_000);
+      expect(refresh).toHaveBeenCalledTimes(1);
+      expect(session.accessToken).toBe("access-1");
+
+      await vi.advanceTimersByTimeAsync(10_000);
+      expect(refresh).toHaveBeenCalledTimes(2);
+      expect(session.accessToken).toBe("access-2");
       session.dispose();
     });
 

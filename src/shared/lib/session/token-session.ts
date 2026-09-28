@@ -13,7 +13,12 @@ import { MemoryTokenStorage } from "./storage/memory-token-storage";
 /** Предел `setTimeout` (~24,8 суток): большее значение сработало бы сразу. */
 const MAX_TIMER_DELAY = 2 ** 31 - 1;
 
+/** Пауза перед повтором после временной ошибки refresh. */
+const TRANSIENT_RETRY_MS = 10_000;
+
 const noop = () => {};
+
+const rejectAll = () => true;
 
 const isPageHidden = () =>
   typeof document !== "undefined" && document.visibilityState === "hidden";
@@ -31,7 +36,8 @@ const hasSession = (tokens: TokenPair) =>
  * - Параллельные вызовы делят одно обновление, вкладки — одну блокировку
  *   (Web Locks): кто дождался её, сперва проверяет, не обновила ли токены
  *   другая вкладка.
- * - Неудачное обновление очищает сессию и поднимает `onSessionExpired`.
+ * - Отказ бэкенда (`isSessionRejected`) очищает сессию и поднимает
+ *   `onSessionExpired`; временная ошибка оставляет токены и повторяется.
  */
 export class TokenSession implements ITokenSession {
   private _tokens: TokenPair = EMPTY_TOKENS;
@@ -177,6 +183,16 @@ export class TokenSession implements ITokenSession {
     }, delay);
   }
 
+  /** Временная ошибка: проверить срок ещё раз чуть позже. */
+  private _scheduleRetry(): void {
+    if (!this._autoRefresh) return;
+
+    clearTimeout(this._timer);
+    this._timer = setTimeout(() => {
+      if (!isPageHidden()) this.ensureFreshToken().catch(noop);
+    }, TRANSIENT_RETRY_MS);
+  }
+
   /**
    * Токены изменились в другой вкладке. Обратно не пишем, а их пропажу
    * считаем концом сессии — так выход в одной вкладке доходит до остальных.
@@ -250,8 +266,13 @@ export class TokenSession implements ITokenSession {
     try {
       this.setTokens(await this._config.refresh(refreshToken));
     } catch (error) {
-      this.clear();
-      this._notifyExpired();
+      if ((this._config.isSessionRejected ?? rejectAll)(error)) {
+        this.clear();
+        this._notifyExpired();
+      } else {
+        this._scheduleRetry();
+      }
+
       throw error;
     }
   }

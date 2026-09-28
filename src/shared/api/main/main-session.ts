@@ -1,4 +1,5 @@
 import { createInjectDecorator } from "@shared/lib/di";
+import { HttpError } from "@shared/lib/http";
 import {
   CrossTabTokenStorage,
   ITokenSession,
@@ -21,6 +22,10 @@ const REFRESH_LOCK = "app:token-refresh";
 /** Запас до истечения access-токена, при котором пора обновляться. */
 const REFRESH_BUFFER_SECONDS = 60;
 
+/** Сессии нет, только если бэкенд ответил 4xx; сеть, таймаут, 5xx и 429 — временные. */
+const isSessionRejected = (error: unknown): boolean =>
+  error instanceof HttpError && error.status < 500 && error.status !== 429;
+
 /**
  * Сессия основного бэкенда: refresh-токен переживает перезапуск, access живёт
  * в памяти и обновляется заранее по `expiresIn` из ответа. Вкладки делятся
@@ -39,6 +44,7 @@ export const createMainSession = (
     ),
     refreshBufferSeconds: REFRESH_BUFFER_SECONDS,
     lockName: REFRESH_LOCK,
+    isSessionRejected,
     refresh: async refreshToken => {
       const { data, error } = await api.refresh(refreshToken);
 
