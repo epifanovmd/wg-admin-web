@@ -10,7 +10,7 @@ import {
 } from "@shared/lib/http";
 import type { TokenPair } from "@shared/lib/session";
 
-export const IMainAuthApi = createInjectDecorator<IMainAuthApi>();
+export const IMainAuthApi = createInjectDecorator<IMainAuthApi>("IMainAuthApi");
 
 export interface IMainAuthApi {
   refresh(refreshToken: string): CancelablePromise<ApiResponse<TokenPair>>;

@@ -10,4 +10,5 @@ export interface ITokenProvider {
   onTokenChange(cb: (token: string) => void): () => void;
 }
 
-export const ITokenProvider = createInjectDecorator<ITokenProvider>();
+export const ITokenProvider =
+  createInjectDecorator<ITokenProvider>("ITokenProvider");

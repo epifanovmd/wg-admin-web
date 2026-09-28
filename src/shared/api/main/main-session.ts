@@ -11,7 +11,8 @@ import type { IStorageService } from "@shared/lib/storage";
 import type { IMainAuthApi } from "./main-auth.api";
 
 /** DI-токен сессии основного бэкенда; её же получает сокет. */
-export const IMainSession = createInjectDecorator<ITokenSession>();
+export const IMainSession =
+  createInjectDecorator<ITokenSession>("IMainSession");
 
 const REFRESH_TOKEN_KEY = "app:refresh_token";
 /** Канал, по которому вкладки делятся полной парой токенов в памяти. */

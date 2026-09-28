@@ -2,7 +2,7 @@ import { createInjectDecorator } from "@shared/lib/di";
 
 export type ThemeMode = "light" | "dark";
 
-export const IThemeStore = createInjectDecorator<IThemeStore>();
+export const IThemeStore = createInjectDecorator<IThemeStore>("IThemeStore");
 
 export interface IThemeStore {
   readonly theme: ThemeMode;

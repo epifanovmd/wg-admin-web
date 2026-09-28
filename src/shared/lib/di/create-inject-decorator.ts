@@ -25,15 +25,13 @@ export interface IInjectDecorator<T> {
 const { lazyInject } = decorators(iocContainer);
 
 /**
- * Идентификатору нужна только уникальность внутри страницы — счётчик.
- * `crypto.randomUUID` есть лишь в защищённом контексте (HTTPS, localhost):
- * по http на IP приложение не запустилось бы.
+ * `name` — идентификатор сервиса в контейнере, обычно имя константы
+ * (`"IAuthStore"`). Литерал стабилен при HMR: модуль переисполняется, а
+ * забинженный сервис по-прежнему находится.
  */
-let nextTokenId = 0;
-
-const createInjectDecorator = <TInterface>(): IInjectDecorator<TInterface> => {
-  const name = `ioc:${++nextTokenId}`;
-
+const createInjectDecorator = <TInterface>(
+  name: string,
+): IInjectDecorator<TInterface> => {
   const injectDecoratorFactory = (options?: IIoCDecoratorOptions) => {
     return (target: any, targetKey?: string, index?: number) => {
       if (index !== undefined) {

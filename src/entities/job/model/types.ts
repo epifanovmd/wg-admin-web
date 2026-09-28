@@ -2,7 +2,7 @@ import type { JobRunDto } from "@shared/api/gen/main/model";
 import { createInjectDecorator } from "@shared/lib/di";
 import type { IHolderError } from "@shared/lib/holders";
 
-export const IJobStore = createInjectDecorator<IJobStore>();
+export const IJobStore = createInjectDecorator<IJobStore>("IJobStore");
 
 /** Фоновые задачи текущего пользователя; список — запросом, обновления — по сокету. */
 export interface IJobStore {

@@ -7,7 +7,7 @@ import { injectable } from "inversify";
 import { jobErrorText } from "../lib/job";
 import { IJobStore } from "../model/types";
 
-export const IJobRealtime = createInjectDecorator<IJobRealtime>();
+export const IJobRealtime = createInjectDecorator<IJobRealtime>("IJobRealtime");
 
 export type IJobRealtime = SupportInitialize;
 

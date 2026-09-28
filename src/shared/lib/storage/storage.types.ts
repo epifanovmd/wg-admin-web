@@ -1,6 +1,7 @@
 import { createInjectDecorator } from "@shared/lib/di";
 
-export const IStorageService = createInjectDecorator<IStorageService>();
+export const IStorageService =
+  createInjectDecorator<IStorageService>("IStorageService");
 
 export interface IStorageService {
   getItem(key: string): string | null;

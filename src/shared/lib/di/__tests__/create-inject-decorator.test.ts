@@ -18,8 +18,8 @@ describe("createInjectDecorator", () => {
       configurable: true,
     });
 
-    const first = createInjectDecorator<object>();
-    const second = createInjectDecorator<object>();
+    const first = createInjectDecorator<object>("first");
+    const second = createInjectDecorator<object>("second");
 
     expect(first.Tid).toBeTruthy();
     expect(first.Tid).not.toBe(second.Tid);

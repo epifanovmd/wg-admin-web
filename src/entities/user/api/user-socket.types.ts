@@ -34,7 +34,8 @@ export interface UserSocketHandlers {
   onPasswordChanged?: (data: UserPasswordChangedPayload) => void;
 }
 
-export const IUserSocketService = createInjectDecorator<IUserSocketService>();
+export const IUserSocketService =
+  createInjectDecorator<IUserSocketService>("IUserSocketService");
 
 export interface IUserSocketService {
   subscribe(handlers: UserSocketHandlers): () => void;

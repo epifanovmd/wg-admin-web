@@ -9,7 +9,8 @@ import { ApiError, ApiResponse } from "@shared/lib/http";
 
 import { SessionModel } from "./session-model";
 
-export const ISessionStore = createInjectDecorator<ISessionStore>();
+export const ISessionStore =
+  createInjectDecorator<ISessionStore>("ISessionStore");
 
 export interface ISessionStore {
   sessionsHolder: CollectionHolder<SessionDto>;
