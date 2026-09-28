@@ -1,7 +1,7 @@
 import { WgToggleSwitch } from "@entities/wg";
 import {
   hasAnyInterfaceAction,
-  InterfaceReplicasCell,
+  InterfaceStatusCompact,
   type IWgInterfacePermissions,
 } from "@features/manage-wg-interface";
 import type { WgInterfaceDto } from "@shared/api/gen/main/model";
@@ -28,20 +28,13 @@ interface NodeInterfacesTabProps {
   onDelete: (iface: WgInterfaceDto) => void;
   onMove: (iface: WgInterfaceDto) => void;
   onCopy: (iface: WgInterfaceDto) => void;
-  onRemoveReplica: (iface: WgInterfaceDto, nodeId: string) => void;
 }
 
 const column = createColumnHelper<WgInterfaceDto>();
 
 type RowActions = Pick<
   NodeInterfacesTabProps,
-  | "onEdit"
-  | "onToggle"
-  | "onRestart"
-  | "onDelete"
-  | "onMove"
-  | "onCopy"
-  | "onRemoveReplica"
+  "onEdit" | "onToggle" | "onRestart" | "onDelete" | "onMove" | "onCopy"
 >;
 
 /** Обработчики — через ref: колонки стабильны, ячейки не перемонтируются. */
@@ -89,20 +82,10 @@ const createColumns = (
     ),
   }),
   column.display({
-    id: "copies",
-    header: "Копии и статус",
-    size: 260,
-    cell: ({ row }) => (
-      <div onClick={stopRowClick}>
-        <InterfaceReplicasCell
-          iface={row.original}
-          canManageReplicas={permissions.canReplicas}
-          onRemoveReplica={(iface, nodeId) =>
-            actions.current.onRemoveReplica(iface, nodeId)
-          }
-        />
-      </div>
-    ),
+    id: "status",
+    header: "Статус",
+    size: 200,
+    cell: ({ row }) => <InterfaceStatusCompact iface={row.original} />,
   }),
   column.display({
     id: "actions",

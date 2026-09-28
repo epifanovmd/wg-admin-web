@@ -14,15 +14,7 @@ vi.mock("@tanstack/react-router", () => ({
 }));
 vi.mock("@features/manage-wg-interface", () => ({
   hasAnyInterfaceAction: () => true,
-  InterfaceReplicasCell: ({
-    iface,
-    onRemoveReplica,
-  }: {
-    iface: WgInterfaceDto;
-    onRemoveReplica: (iface: WgInterfaceDto, nodeId: string) => void;
-  }) => (
-    <button onClick={() => onRemoveReplica(iface, "n2")}>Убрать копию</button>
-  ),
+  InterfaceStatusCompact: () => <span>Up</span>,
 }));
 
 const iface = {
@@ -46,7 +38,6 @@ const handlers = {
   onDelete: vi.fn(),
   onMove: vi.fn(),
   onCopy: vi.fn(),
-  onRemoveReplica: vi.fn(),
 };
 
 const ALL_ACTIONS = {
@@ -83,13 +74,11 @@ describe("NodeInterfacesTab", () => {
     });
   });
 
-  it("кнопки действий и копий строку не открывают", () => {
+  it("кнопки действий строку не открывают", () => {
     renderTab();
     fireEvent.click(screen.getByLabelText("Перезапустить"));
-    fireEvent.click(screen.getByText("Убрать копию"));
 
     expect(handlers.onRestart).toHaveBeenCalledOnce();
-    expect(handlers.onRemoveReplica).toHaveBeenCalledOnce();
     expect(navigate).not.toHaveBeenCalled();
   });
 });
