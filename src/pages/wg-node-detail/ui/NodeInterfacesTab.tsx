@@ -68,6 +68,11 @@ const createColumns = (
           {row.original.addressV6Cidr && `, ${row.original.addressV6Cidr}`}
           {" · порт "}
           {row.original.listenPort}
+          {row.original.natEnabled && (
+            <Tooltip content="Пиры выходят в интернет через ноду (masquerade)">
+              <span className="cursor-default"> · NAT</span>
+            </Tooltip>
+          )}
         </p>
       </div>
     ),
@@ -81,10 +86,11 @@ const createColumns = (
           {row.original.clientEndpoint ?? "адрес не задан"}
         </p>
         <p className="text-muted-foreground">
-          {row.original.endpointId
-            ? "через точку подключения"
-            : "publicHost ноды"}
-          {row.original.natEnabled && " · NAT"}
+          {row.original.endpoint
+            ? row.original.endpoint.mode === "relay"
+              ? `точка ${row.original.endpoint.name} · релей ${row.original.endpoint.relayNodeName ?? "—"}`
+              : `точка ${row.original.endpoint.name} · адрес ноды`
+            : "адрес ноды"}
         </p>
       </div>
     ),
