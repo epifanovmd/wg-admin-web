@@ -6,7 +6,7 @@ import {
 import type { WgInterfaceDto } from "@shared/api/gen/main/model";
 import { Button, Card, CopyableText, InfoField, StatCard } from "@shared/ui";
 import { Link } from "@tanstack/react-router";
-import { Database, Gauge, Users } from "lucide-react";
+import { Copy, Database, Gauge, Users } from "lucide-react";
 import { observer } from "mobx-react-lite";
 import { FC } from "react";
 
@@ -86,7 +86,13 @@ export const InterfaceOverviewTab: FC<InterfaceSectionProps> = observer(
             />
             <InfoField
               label="Точка подключения"
-              value={iface.endpointId ? "привязана" : "нет (адрес ноды)"}
+              value={
+                iface.endpoint
+                  ? iface.endpoint.mode === "relay"
+                    ? `${iface.endpoint.name} · через релей ${iface.endpoint.relayNodeName ?? "—"}`
+                    : `${iface.endpoint.name} · адрес ноды`
+                  : "нет (адрес ноды)"
+              }
             />
             <InfoField
               label="Публичный ключ"
@@ -105,13 +111,35 @@ export const InterfaceOverviewTab: FC<InterfaceSectionProps> = observer(
             ) : undefined
           }
         >
-          <InterfaceReplicasCell
-            iface={iface}
-            canManageReplicas={vm.permissions.canReplicas}
-            onRemoveReplica={(target, nodeId) =>
-              void vm.actions.removeReplica(target, nodeId)
-            }
-          />
+          {iface.replicas.length > 0 ? (
+            <InterfaceReplicasCell
+              iface={iface}
+              canManageReplicas={vm.permissions.canReplicas}
+              onRemoveReplica={(target, nodeId) =>
+                void vm.actions.removeReplica(target, nodeId)
+              }
+            />
+          ) : (
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="text-sm text-muted-foreground">
+                Копий нет — интерфейс работает только на «
+                {iface.nodeName ?? "—"}».{" "}
+                {iface.endpoint?.mode === "relay"
+                  ? "Копия на другой ноде станет резервом: при её отказе релей переключит трафик."
+                  : "Копия на другой ноде — готовый резерв для переноса."}
+              </p>
+              {vm.permissions.canReplicas && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  leftIcon={<Copy size={14} />}
+                  onClick={() => vm.move.openFor(iface, "copy")}
+                >
+                  Сделать копию
+                </Button>
+              )}
+            </div>
+          )}
         </Card>
       </div>
     );

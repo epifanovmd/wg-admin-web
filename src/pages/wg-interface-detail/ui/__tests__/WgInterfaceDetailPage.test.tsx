@@ -110,4 +110,21 @@ describe("WgInterfaceDetailPage", () => {
     expect(screen.queryByText("wg-alpha")).toBeNull();
     expect(screen.getByText("Загрузка интерфейса…")).toBeTruthy();
   });
+
+  it("копий нет — пояснение вместо списка из одной основной", async () => {
+    render(
+      <TooltipProvider>
+        <ModalProvider>
+          <WgInterfaceDetailPage />
+        </ModalProvider>
+      </TooltipProvider>,
+    );
+
+    expect(
+      await screen.findByText(/Копий нет — интерфейс работает только на/),
+    ).toBeTruthy();
+    expect(screen.queryByText("основная")).toBeNull();
+    // Без права на реплики — без кнопки.
+    expect(screen.queryByRole("button", { name: "Сделать копию" })).toBeNull();
+  });
 });
