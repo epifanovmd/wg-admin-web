@@ -45,7 +45,12 @@ export const InterfaceReplicasCell: FC<InterfaceReplicasCellProps> = ({
             key={copy.nodeId}
             className={cn("flex items-center gap-3", !dense && "py-2.5")}
           >
-            <div className="flex min-w-0 flex-1 items-center gap-2">
+            <div
+              className={cn(
+                "flex min-w-0 items-center gap-2",
+                !dense && "flex-1",
+              )}
+            >
               {serving ? (
                 <Tooltip content="Релей шлёт трафик сюда">
                   <Radio

@@ -48,7 +48,7 @@ const createColumns = (canPin: boolean, vm: RefObject<RelayedInterfacesVM>) => [
   }),
   column.display({
     id: "copies",
-    header: "Куда: копии",
+    header: "Копии",
     size: 260,
     cell: ({ row }) => (
       <InterfaceReplicasCell

@@ -26,12 +26,12 @@ export const InterfaceTrafficSelect: FC<InterfaceTrafficSelectProps> = ({
     value={iface.activeReplicaNodeId ?? AUTO}
     onChange={value => onPin(iface, value === AUTO ? null : value)}
     options={[
-      { value: AUTO, label: "Авто (живая по приоритету)" },
+      { value: AUTO, label: "Авто" },
       ...interfaceCopies(iface).map(copy => ({
         value: copy.nodeId,
         label: `Только ${copy.name}`,
       })),
     ]}
-    className="w-full max-w-56"
+    className="w-full max-w-48"
   />
 );
