@@ -3,7 +3,8 @@ name: Deploy
 # Сборка и запуск на хосте по SSH (make deploy): из CI после проверок main или
 # вручную. Настройки — переменная репозитория DEPLOY_ENV (содержимое
 # .env.deploy: хост, каталог, порт), ключ — секрет SSH_PRIVATE_KEY. Адрес API
-# для сборки — .env.production.local на хосте (make env).
+# для сборки — переменная PRODUCTION_ENV (содержимое .env.production.local):
+# кладётся на хост при каждом деплое; без неё — файл на хосте (make env).
 on:
   workflow_call:
   workflow_dispatch:
@@ -55,6 +56,19 @@ jobs:
         run: |
           for i in 1 2 3; do make sync && exit 0; sleep 10; done
           exit 1
+
+      - name: Адрес API для сборки на хост
+        env:
+          PRODUCTION_ENV: ${{ vars.PRODUCTION_ENV }}
+        run: |
+          if [ -z "$PRODUCTION_ENV" ]; then
+            echo "PRODUCTION_ENV не задан — используется файл на хосте"
+            exit 0
+          fi
+          env_file=$(sed -n 's/^ENV_FILE=//p' .env.deploy)
+          env_file=${env_file:-.env.production.local}
+          printf '%s\n' "$PRODUCTION_ENV" | tr -d '\r' > "$env_file"
+          make env
 
       - name: Сборка и запуск
         run: make build up
