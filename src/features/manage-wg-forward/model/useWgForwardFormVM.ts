@@ -1,6 +1,8 @@
-import { useWgNodeOptions } from "@entities/wg";
+import { IUserStore } from "@entities/user";
+import { useWgNodeOptions, WG_PERMISSIONS } from "@entities/wg";
 import { IMainApi } from "@shared/api";
-import type { WgForwardDto } from "@shared/api/gen/main/model";
+import type { WgForwardDto, WgInterfaceDto } from "@shared/api/gen/main/model";
+import { useEntity } from "@shared/lib/holders";
 import { notifyApiError } from "@shared/lib/http";
 import { INotificationService } from "@shared/lib/notifications";
 import { useZodForm } from "@shared/ui";
@@ -57,6 +59,26 @@ export const useWgForwardFormVM = ({ onSaved }: UseWgForwardFormOptions) => {
   const [editing, setEditing] = useState<WgForwardDto | null>(null);
   const form = useZodForm(wgForwardFormSchema);
   const path = form.watch("path");
+  const protocol = form.watch("protocol");
+  const targetNodeId = form.watch("targetNodeId");
+  const targetPort = form.watch("targetPort");
+  const canViewInterfaces = IUserStore.useInstance().can(
+    WG_PERMISSIONS.INTERFACE_VIEW,
+  );
+
+  // Интерфейсы ноды-цели: проброс на порт интерфейса панели — подсказка про точку.
+  const targetInterfaces = useEntity<WgInterfaceDto[], string>({
+    queryFn: async nodeId => {
+      const { data, error } = await api.listWgInterfaces({
+        nodeId,
+        limit: 100,
+      });
+
+      return { data: data?.items ?? null, error };
+    },
+    watch: [targetNodeId ?? ""],
+    enabled: open && !!targetNodeId && canViewInterfaces,
+  });
 
   const nodes = useWgNodeOptions({ enabled: open });
 
@@ -135,6 +157,17 @@ export const useWgForwardFormVM = ({ onSaved }: UseWgForwardFormOptions) => {
     form,
     submit,
     path,
+    /** Порт цели — интерфейс панели на ноде-цели: копии проброс не видит. */
+    get panelInterface() {
+      if (protocol !== "udp" || !targetNodeId) return null;
+
+      return (
+        targetInterfaces.data?.find(
+          iface =>
+            iface.nodeId === targetNodeId && iface.listenPort === targetPort,
+        ) ?? null
+      );
+    },
     nodeOptions: nodes.items,
   };
 };

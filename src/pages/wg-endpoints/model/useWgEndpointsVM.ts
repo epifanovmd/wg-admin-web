@@ -1,6 +1,7 @@
 import { IUserStore } from "@entities/user";
 import { IWgNodesStore, WG_PERMISSIONS } from "@entities/wg";
 import {
+  endpointWarnings,
   useDeleteWgEndpoint,
   useWgEndpointFormVM,
 } from "@features/manage-wg-endpoint";
@@ -75,9 +76,15 @@ export const useWgEndpointsVM = () => {
     [nodes],
   );
 
+  const warningsOf = useCallback(
+    (endpoint: WgEndpointDto) => endpointWarnings(endpoint, nodes),
+    [nodes],
+  );
+
   return {
     endpoints,
     relayNodeName,
+    warningsOf,
     form,
     remove,
     canCreate,

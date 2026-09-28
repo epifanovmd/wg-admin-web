@@ -40,10 +40,13 @@ export const MoveWgInterfaceModal: FC<{ vm: MoveWgInterfaceVM }> = ({ vm }) => (
           placeholder="Нода назначения"
           aria-label="Нода назначения"
         />
-        {vm.copyWithoutEndpoint && (
-          <Alert variant="warning" title="Нет точки подключения">
-            Клиенты подключаются к publicHost основной ноды и на копию сами не
-            перейдут. Резерв работает через точку подключения с релеем.
+        {vm.copyWithoutRelay !== null && (
+          <Alert variant="warning" title="Трафик на копию сам не переключится">
+            {vm.copyWithoutRelay
+              ? `Точка «${vm.copyWithoutRelay}» — адрес ноды: клиенты ходят прямо на основную ноду.`
+              : "У интерфейса нет точки подключения: клиенты ходят на адрес основной ноды."}{" "}
+            Копия останется резервом для ручного переноса; автоматическое
+            переключение — через точку с релеем панели.
           </Alert>
         )}
         {vm.changesClientConfigs && (

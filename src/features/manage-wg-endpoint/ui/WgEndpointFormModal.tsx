@@ -1,4 +1,5 @@
 import {
+  Alert,
   Button,
   Form,
   InputFormField,
@@ -96,6 +97,11 @@ export const WgEndpointFormModal: FC<WgEndpointFormModalProps> = observer(
               )}
             </>
           )}
+          {vm.warnings.map(warning => (
+            <Alert key={warning} variant="warning">
+              {warning}
+            </Alert>
+          ))}
           {vm.editing && (
             <div className="flex flex-col gap-1.5">
               <p className="text-sm font-medium">Интерфейсы через точку</p>

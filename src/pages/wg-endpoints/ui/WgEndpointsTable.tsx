@@ -14,16 +14,17 @@ interface WgEndpointsTableProps {
 export const WgEndpointsTable: FC<WgEndpointsTableProps> = observer(
   ({ vm }) => {
     const vmRef = useLatestRef(vm);
-    const { canUpdate, canDelete, endpoints, relayNodeName } = vm;
+    const { canUpdate, canDelete, endpoints, relayNodeName, warningsOf } = vm;
     const columns = useMemo(
       () =>
         createEndpointColumns({
           canUpdate,
           canDelete,
           relayNodeName,
+          warningsOf,
           vm: vmRef,
         }),
-      [canUpdate, canDelete, relayNodeName, vmRef],
+      [canUpdate, canDelete, relayNodeName, warningsOf, vmRef],
     );
 
     return (

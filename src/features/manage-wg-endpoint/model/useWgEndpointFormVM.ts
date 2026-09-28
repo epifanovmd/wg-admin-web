@@ -1,4 +1,4 @@
-import { useWgNodeOptions } from "@entities/wg";
+import { IWgNodesStore, useWgNodeOptions } from "@entities/wg";
 import { IMainApi } from "@shared/api";
 import {
   EWgEndpointMode,
@@ -11,6 +11,8 @@ import { INotificationService } from "@shared/lib/notifications";
 import { useZodForm } from "@shared/ui";
 import { useState } from "react";
 import { z } from "zod";
+
+import { endpointWarnings } from "./endpoint-warnings";
 
 const HOST = /^[a-zA-Z0-9.:_-]+$/;
 
@@ -49,6 +51,9 @@ export const useWgEndpointFormVM = ({ onSaved }: UseWgEndpointFormOptions) => {
   const form = useZodForm(wgEndpointFormSchema);
   const mode = form.watch("mode");
   const forwardMode = form.watch("forwardMode");
+  const host = form.watch("host");
+  const relayNodeId = form.watch("relayNodeId");
+  const nodesStore = IWgNodesStore.useInstance();
 
   const nodes = useWgNodeOptions({ enabled: open });
 
@@ -119,6 +124,18 @@ export const useWgEndpointFormVM = ({ onSaved }: UseWgEndpointFormOptions) => {
     submit,
     mode,
     forwardMode,
+    /** Настройки, которые почти наверняка ведут трафик не туда. */
+    get warnings() {
+      return endpointWarnings(
+        {
+          mode: mode ?? "direct",
+          host: host ?? "",
+          relayNodeId,
+          interfaces: editing?.interfaces ?? [],
+        },
+        nodesStore.nodes,
+      );
+    },
     nodeOptions: nodes.items,
   };
 };

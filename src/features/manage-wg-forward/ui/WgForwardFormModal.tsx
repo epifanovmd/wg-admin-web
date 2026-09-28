@@ -1,4 +1,5 @@
 import {
+  Alert,
   Button,
   Form,
   InputFormField,
@@ -104,6 +105,14 @@ export const WgForwardFormModal: FC<WgForwardFormModalProps> = observer(
               label="Порт цели"
             />
           </div>
+          {vm.panelInterface && (
+            <Alert variant="warning" title="Это интерфейс панели">
+              На ноде-цели порт {vm.panelInterface.listenPort} — интерфейс{" "}
+              {vm.panelInterface.name}. Проброс ведёт только на эту ноду и не
+              переключится на копии интерфейса; для резервирования используйте
+              точку подключения через релей панели.
+            </Alert>
+          )}
           <SegmentedFormField<TWgForwardForm>
             name="path"
             label="Путь"

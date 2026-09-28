@@ -125,4 +125,56 @@ describe("перенос интерфейса", () => {
       "Копия wg0 добавлена — поднимется, когда на ноде будет установлен агент",
     );
   });
+
+  it("копия при точке «адрес ноды» — предупреждение, что трафик сам не переключится", async () => {
+    const { result } = renderHook(() =>
+      useMoveWgInterfaceVM({ onMoved: vi.fn() }),
+    );
+
+    await act(async () =>
+      result.current.openFor(
+        {
+          ...iface,
+          endpointId: "e1",
+          endpoint: {
+            name: "msk",
+            mode: "direct",
+            relayNodeId: null,
+            relayNodeName: null,
+          },
+        } as unknown as WgInterfaceDto,
+        "copy",
+      ),
+    );
+    render(<MoveWgInterfaceModal vm={result.current} />);
+
+    expect(
+      screen.getByText("Трафик на копию сам не переключится"),
+    ).toBeTruthy();
+    expect(screen.getByText(/Точка «msk» — адрес ноды/)).toBeTruthy();
+  });
+
+  it("копия при точке через релей — без предупреждения", async () => {
+    const { result } = renderHook(() =>
+      useMoveWgInterfaceVM({ onMoved: vi.fn() }),
+    );
+
+    await act(async () =>
+      result.current.openFor(
+        {
+          ...iface,
+          endpointId: "e1",
+          endpoint: {
+            name: "msk-relay",
+            mode: "relay",
+            relayNodeId: "r",
+            relayNodeName: "MSK",
+          },
+        } as unknown as WgInterfaceDto,
+        "copy",
+      ),
+    );
+
+    expect(result.current.copyWithoutRelay).toBeNull();
+  });
 });

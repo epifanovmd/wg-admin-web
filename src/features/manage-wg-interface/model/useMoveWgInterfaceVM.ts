@@ -99,8 +99,14 @@ export const useMoveWgInterfaceVM = ({
     submitting,
     /** Перенос без точки подключения меняет адрес в клиентских конфигах. */
     changesClientConfigs: mode === "move" && !!iface && !iface.endpointId,
-    /** Копия без точки подключения не получит трафик через релей. */
-    copyWithoutEndpoint: mode === "copy" && !!iface && !iface.endpointId,
+    /**
+     * Копия без точки через релей: трафик на неё сам не переключится.
+     * null — точка через релей, предупреждать не о чем.
+     */
+    copyWithoutRelay:
+      mode === "copy" && iface && iface.endpoint?.mode !== "relay"
+        ? (iface.endpoint?.name ?? "")
+        : null,
   };
 };
 

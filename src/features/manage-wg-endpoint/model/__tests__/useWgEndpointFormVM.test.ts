@@ -1,3 +1,4 @@
+import { IWgNodesStore } from "@entities/wg";
 import { IMainApi } from "@shared/api";
 import type { WgEndpointDto } from "@shared/api/gen/main/model";
 import { iocContainer } from "@shared/lib/di";
@@ -21,12 +22,16 @@ beforeEach(() => {
   iocContainer
     .bind(INotificationService.Tid)
     .toConstantValue({ error: vi.fn(), success: vi.fn() });
+  iocContainer.bind(IWgNodesStore.Tid).toConstantValue({
+    nodes: [{ id: "msk", name: "MSK", publicHost: "147.45.245.104" }],
+  });
 });
 
 afterEach(() => {
   vi.clearAllMocks();
   iocContainer.unbind(IMainApi.Tid);
   iocContainer.unbind(INotificationService.Tid);
+  iocContainer.unbind(IWgNodesStore.Tid);
 });
 
 describe("useWgEndpointFormVM", () => {
@@ -95,5 +100,41 @@ describe("useWgEndpointFormVM", () => {
       result.current.syncEditing({ ...endpoint, id: "e2", interfaces: [] }),
     );
     expect(result.current.editing?.interfaces).toEqual([target]);
+  });
+
+  it("предупреждения — по текущим значениям формы и интерфейсам точки", () => {
+    const { result } = renderHook(() =>
+      useWgEndpointFormVM({ onSaved: vi.fn() }),
+    );
+
+    act(() =>
+      result.current.openEdit({
+        id: "e1",
+        name: "msk",
+        host: "147.45.245.104",
+        mode: "direct",
+        relayNodeId: null,
+        forwardMode: "dnat",
+        route: "auto",
+        description: null,
+        interfaces: [
+          {
+            interfaceId: "i1",
+            interfaceName: "wg0",
+            nodeId: "nl",
+            nodeName: "Нидерланды",
+            port: 51820,
+            copyNodeIds: [],
+          },
+        ],
+      } as unknown as WgEndpointDto),
+    );
+    expect(result.current.warnings[0]).toContain("нода «MSK»");
+
+    act(() => {
+      result.current.form.setValue("mode", "relay");
+      result.current.form.setValue("relayNodeId", "msk");
+    });
+    expect(result.current.warnings).toEqual([]);
   });
 });

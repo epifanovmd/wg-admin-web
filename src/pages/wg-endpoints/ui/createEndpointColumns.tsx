@@ -1,32 +1,25 @@
 import { EndpointTargets } from "@features/manage-wg-endpoint";
-import type {
-  EWgEndpointRoute,
-  WgEndpointDto,
-} from "@shared/api/gen/main/model";
+import type { WgEndpointDto } from "@shared/api/gen/main/model";
 import {
-  Badge,
   createColumnHelper,
   IconButton,
   TableRowActions,
   Tooltip,
 } from "@shared/ui";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2, TriangleAlert } from "lucide-react";
 import type { RefObject } from "react";
 
 import type { WgEndpointsVM } from "../model/useWgEndpointsVM";
+import { EndpointModeBadges } from "./EndpointModeBadges";
 
 const column = createColumnHelper<WgEndpointDto>();
-
-const ROUTE_LABEL: Record<EWgEndpointRoute, string> = {
-  auto: "авто",
-  tunnel: "только туннель",
-  direct: "напрямую",
-};
 
 interface EndpointColumnsOptions {
   canUpdate: boolean;
   canDelete: boolean;
   relayNodeName: (id: string | null) => string | null;
+  /** Настройки, которые почти наверняка ведут трафик не туда. */
+  warningsOf: (endpoint: WgEndpointDto) => string[];
   /** VM — через ref: колонки стабильны, ячейки не перемонтируются. */
   vm: RefObject<WgEndpointsVM>;
 }
@@ -36,6 +29,7 @@ export const createEndpointColumns = ({
   canUpdate,
   canDelete,
   relayNodeName,
+  warningsOf,
   vm,
 }: EndpointColumnsOptions) => [
   column.display({
@@ -56,25 +50,23 @@ export const createEndpointColumns = ({
     size: 220,
     cell: ({ row }) => {
       const endpoint = row.original;
-
-      if (endpoint.mode === "direct") {
-        return (
-          <Tooltip content="Панель трафик не пересылает: хост должен вести прямо на ноду интерфейса">
-            <Badge variant="outline">адрес ноды</Badge>
-          </Tooltip>
-        );
-      }
+      const warnings = warningsOf(endpoint);
 
       return (
-        <div className="flex flex-wrap items-center gap-1">
-          <Badge variant="info">
-            релей: {relayNodeName(endpoint.relayNodeId) ?? "—"}
-          </Badge>
-          <Badge variant={endpoint.forwardMode === "ipip" ? "purple" : "muted"}>
-            {endpoint.forwardMode === "ipip"
-              ? `IPIP · ${ROUTE_LABEL[endpoint.route]}`
-              : "DNAT"}
-          </Badge>
+        <div className="flex items-center gap-1.5">
+          <EndpointModeBadges
+            endpoint={endpoint}
+            relayName={relayNodeName(endpoint.relayNodeId)}
+          />
+          {warnings.length > 0 && (
+            <Tooltip content={warnings.join(" ")}>
+              <TriangleAlert
+                size={14}
+                className="shrink-0 text-warning"
+                aria-label="Проверьте настройку точки"
+              />
+            </Tooltip>
+          )}
         </div>
       );
     },
