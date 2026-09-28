@@ -5,7 +5,7 @@ import { iocContainer } from "@shared/lib/di";
 import { INotificationService } from "@shared/lib/notifications";
 import { ISocketTransport } from "@shared/lib/socket";
 import { createFakeSocket } from "@shared/lib/socket/testing";
-import { renderHook, waitFor } from "@testing-library/react";
+import { act, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { useWgDashboardVM } from "../useWgDashboardVM";
@@ -27,7 +27,9 @@ const api = {
 };
 
 const bind = (permissions: string[]) => {
-  iocContainer.bind(ISocketTransport.Tid).toConstantValue(createFakeSocket());
+  const socket = createFakeSocket();
+
+  iocContainer.bind(ISocketTransport.Tid).toConstantValue(socket);
   iocContainer.bind(IMainApi.Tid).toConstantValue(api);
   iocContainer
     .bind(INotificationService.Tid)
@@ -41,6 +43,8 @@ const bind = (permissions: string[]) => {
     load: vi.fn().mockResolvedValue(undefined),
     upsert: vi.fn(),
   });
+
+  return socket;
 };
 
 afterEach(() => {
@@ -62,5 +66,35 @@ describe("useWgDashboardVM", () => {
 
     await waitFor(() => expect(result.current.overview?.peers.total).toBe(5));
     expect(api.wgStatsOverview).toHaveBeenCalledOnce();
+  });
+
+  it("свои подключения: назначенный пир появляется, ушедший — пропадает", async () => {
+    const socket = bind([WG_PERMISSIONS.STATS_OWN, WG_PERMISSIONS.PEER_OWN]);
+    const peer = { id: "p1", name: "iphone", userId: "u1" };
+    const assigned = { id: "p2", name: "mac", userId: "u1" };
+
+    api.listWgPeers.mockResolvedValueOnce({
+      data: { items: [peer], total: 1 },
+    });
+
+    const { result, rerender } = renderHook(() => useWgDashboardVM());
+    // VM отдаёт снимок items — перечитываем рендером.
+    const myPeers = () => {
+      rerender();
+
+      return result.current.myPeers;
+    };
+
+    await waitFor(() => expect(myPeers()).toHaveLength(1));
+
+    api.listWgPeers.mockResolvedValueOnce({
+      data: { items: [peer, assigned], total: 2 },
+    });
+    act(() => socket.fire("wg:peer:updated", assigned));
+    await waitFor(() => expect(myPeers()).toHaveLength(2));
+
+    act(() => socket.fire("wg:peer:updated", { ...peer, userId: "u2" }));
+    act(() => socket.fire("wg:peer:deleted", { id: "p2" }));
+    expect(myPeers()).toHaveLength(0);
   });
 });

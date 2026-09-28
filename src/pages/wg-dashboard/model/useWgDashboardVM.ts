@@ -69,13 +69,26 @@ export const useWgDashboardVM = () => {
       setNodeLive(prev => new Map(prev).set(snapshot.nodeId, snapshot)),
     canViewGlobal,
   );
+  // Свой пир — обновить или перезапросить список (назначен только что),
+  // переназначенный другому — убрать.
   useSocketEvent<[WgPeerDto]>(
     "wg:peer:updated",
     peer => {
-      if (myPeers.items.some(item => item.id === peer.id)) {
-        myPeers.upsertItem(peer.id, peer);
+      const isListed = myPeers.items.some(item => item.id === peer.id);
+
+      if (peer.userId !== userStore.user?.id) {
+        if (isListed) myPeers.removeItem(peer.id);
+      } else if (isListed) {
+        myPeers.updateItem(peer.id, peer);
+      } else {
+        void myPeers.refresh();
       }
     },
+    !canViewGlobal,
+  );
+  useSocketEvent<[{ id: string }]>(
+    "wg:peer:deleted",
+    ({ id }) => myPeers.removeItem(id),
     !canViewGlobal,
   );
 

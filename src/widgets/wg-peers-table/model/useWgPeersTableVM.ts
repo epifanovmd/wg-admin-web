@@ -24,8 +24,7 @@ export const useWgPeersTableVM = (filters: IWgPeersFilters) => {
   const canViewAll = userStore.can(WG_PERMISSIONS.PEER_VIEW);
   const canView = canViewAll || userStore.can(WG_PERMISSIONS.PEER_OWN);
 
-  // Холдер создаётся один раз: фильтры приходят аргументом из watch, а не
-  // из замыкания первого рендера.
+  // Фильтры — аргумент watch: их смена перезапрашивает список.
   const params = JSON.stringify(compactPeersFilters(filters));
 
   const peers = usePaged<WgPeerDto, string>({
@@ -47,9 +46,22 @@ export const useWgPeersTableVM = (filters: IWgPeersFilters) => {
     },
   });
 
-  const updateIfListed = (peer: WgPeerDto) => {
-    if (peers.items.some(item => item.id === peer.id)) {
+  /** Пир относится к списку: держателю — только свои, плюс фильтры владельца и интерфейса. */
+  const belongsToList = (peer: WgPeerDto) =>
+    (canViewAll || peer.userId === userStore.user?.id) &&
+    (!filters.userId || peer.userId === filters.userId) &&
+    (!filters.interfaceId || peer.interfaceId === filters.interfaceId);
+
+  /** Изменённый пир: обновить в списке, убрать ушедший, перезапросить новый. */
+  const applyUpdate = (peer: WgPeerDto) => {
+    const isListed = peers.items.some(item => item.id === peer.id);
+
+    if (!belongsToList(peer)) {
+      if (isListed) peers.removeItem(peer.id);
+    } else if (isListed) {
       peers.updateItem(peer.id, peer);
+    } else {
+      void peers.reload({ refresh: true });
     }
   };
 
@@ -62,7 +74,7 @@ export const useWgPeersTableVM = (filters: IWgPeersFilters) => {
     "wg-peers-own",
     !canViewAll && canView ? (userStore.user?.id ?? null) : null,
   );
-  useSocketEvent<[WgPeerDto]>("wg:peer:updated", updateIfListed, canView);
+  useSocketEvent<[WgPeerDto]>("wg:peer:updated", applyUpdate, canView);
   useSocketEvent<[{ id: string }]>(
     "wg:peer:deleted",
     ({ id }) => peers.removeItem(id),

@@ -200,4 +200,60 @@ describe("useWgPeersTableVM", () => {
       ).toEqual([{ type: "wg-peers-own", id: "u1" }]),
     );
   });
+
+  it("держателю назначили пир — список перезапрашивается", async () => {
+    iocContainer.rebind(IUserStore.Tid).toConstantValue({
+      user: { id: "u1" },
+      can: (permission: string) => permission === WG_PERMISSIONS.PEER_OWN,
+    });
+    const assigned = { ...peer, id: "p2", userId: "u1" };
+
+    const { result } = renderHook(() => useWgPeersTableVM({}));
+
+    await waitFor(() => expect(result.current.peers.items).toHaveLength(1));
+    api.listWgPeers.mockResolvedValueOnce({
+      data: { items: [peer, assigned], total: 2 },
+    });
+
+    act(() => socket.fire("wg:peer:updated", assigned));
+    await waitFor(() => expect(result.current.peers.items).toHaveLength(2));
+  });
+
+  it("чужой незнакомый пир у держателя — без перезапроса", async () => {
+    iocContainer.rebind(IUserStore.Tid).toConstantValue({
+      user: { id: "u1" },
+      can: (permission: string) => permission === WG_PERMISSIONS.PEER_OWN,
+    });
+
+    const { result } = renderHook(() => useWgPeersTableVM({}));
+
+    await waitFor(() => expect(result.current.peers.items).toHaveLength(1));
+    act(() =>
+      socket.fire("wg:peer:updated", { ...peer, id: "p2", userId: "u2" }),
+    );
+    expect(api.listWgPeers).toHaveBeenCalledTimes(1);
+  });
+
+  it("фильтр по владельцу: переназначенный пир уходит, назначенный — появляется", async () => {
+    const own = { ...peer, userId: "u2" };
+
+    api.listWgPeers.mockResolvedValueOnce({ data: { items: [own], total: 1 } });
+
+    const { result } = renderHook(() => useWgPeersTableVM({ userId: "u2" }));
+
+    await waitFor(() => expect(result.current.peers.items).toHaveLength(1));
+
+    act(() => socket.fire("wg:peer:updated", { ...own, userId: "u3" }));
+    expect(result.current.peers.items).toHaveLength(0);
+
+    const assigned = { ...peer, id: "p2", userId: "u2" };
+
+    api.listWgPeers.mockResolvedValueOnce({
+      data: { items: [assigned], total: 1 },
+    });
+    act(() => socket.fire("wg:peer:updated", assigned));
+    await waitFor(() =>
+      expect(result.current.peers.items.map(item => item.id)).toEqual(["p2"]),
+    );
+  });
 });
