@@ -10,6 +10,7 @@ import { notifyApiError } from "@shared/lib/http";
 import { INotificationService } from "@shared/lib/notifications";
 import { useSocketEvent, useSocketRoom } from "@shared/lib/socket";
 import { useConfirm } from "@shared/ui";
+import { useRef } from "react";
 
 import { compactPeersFilters, type IWgPeersFilters } from "./types";
 
@@ -52,11 +53,24 @@ export const useWgPeersTableVM = (filters: IWgPeersFilters) => {
     },
   });
 
-  /** Пир относится к списку: держателю — только свои, плюс фильтры владельца и интерфейса. */
-  const belongsToList = (peer: WgPeerDto) =>
+  /** Пир в области списка: держателю — только свои, плюс фильтры узла, интерфейса и владельца. */
+  const inScope = (
+    peer: Pick<WgPeerDto, "userId" | "interfaceId" | "nodeId">,
+  ) =>
     (canViewAll || peer.userId === userStore.user?.id) &&
     (!filters.userId || peer.userId === filters.userId) &&
+    (!filters.nodeId || peer.nodeId === filters.nodeId) &&
     (!filters.interfaceId || peer.interfaceId === filters.interfaceId);
+
+  /** Пир проходит фильтры онлайна. */
+  const matchesOnline = (online: boolean) =>
+    filters.online === undefined || online === filters.online;
+
+  /** Пир относится к списку: область плюс фильтры включённости и онлайна. */
+  const belongsToList = (peer: WgPeerDto) =>
+    inScope(peer) &&
+    (filters.enabled === undefined || peer.enabled === filters.enabled) &&
+    matchesOnline(peer.isOnline);
 
   /** Изменённый пир: обновить в списке, убрать ушедший, перезапросить новый. */
   const applyUpdate = (peer: WgPeerDto) => {
@@ -88,8 +102,34 @@ export const useWgPeersTableVM = (filters: IWgPeersFilters) => {
     ({ id }) => peers.removeItem(id),
     canView,
   );
+  // Последний известный онлайн пиров вне списка — чтобы заметить переход под фильтр.
+  const lastOnline = useRef(new Map<string, boolean>());
+
   const applyLive = (lives: IWgPeerLive[]) => {
     const byId = new Map(lives.map(live => [live.peerId, live]));
+    const listed = new Map(peers.items.map(item => [item.id, item]));
+    const leaving = lives.filter(live => {
+      const item = listed.get(live.peerId);
+
+      return (
+        item && item.isOnline !== live.online && !matchesOnline(live.online)
+      );
+    });
+    const arrived =
+      filters.online !== undefined &&
+      lives.some(live => {
+        const prev = lastOnline.current.get(live.peerId);
+
+        return (
+          !listed.has(live.peerId) &&
+          prev !== undefined &&
+          prev !== live.online &&
+          matchesOnline(live.online) &&
+          inScope(live)
+        );
+      });
+
+    lives.forEach(live => lastOnline.current.set(live.peerId, live.online));
 
     peers.updateItems(item => {
       const live = byId.get(item.id);
@@ -114,6 +154,8 @@ export const useWgPeersTableVM = (filters: IWgPeersFilters) => {
         txBytesTotal: live.txTotal,
       };
     });
+    leaving.forEach(live => peers.removeItem(live.peerId));
+    if (arrived) void peers.reload({ refresh: true });
   };
 
   // Живая статистика пиров — пачкой за тик (комнаты интерфейса, обзора или

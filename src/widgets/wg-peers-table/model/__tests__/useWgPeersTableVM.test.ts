@@ -257,6 +257,76 @@ describe("useWgPeersTableVM", () => {
     );
   });
 
+  it("фильтр «только онлайн»: ушедший офлайн пир пропадает из списка", async () => {
+    api.listWgPeers.mockResolvedValueOnce({
+      data: { items: [{ ...peer, isOnline: true }], total: 1 },
+    });
+
+    const { result } = renderHook(() => useWgPeersTableVM({ online: true }));
+
+    await waitFor(() => expect(result.current.peers.items).toHaveLength(1));
+
+    act(() =>
+      socket.fire("wg:peers:stats", {
+        peers: [{ peerId: "p1", online: false, rxTotal: 0, txTotal: 0 }],
+      }),
+    );
+    expect(result.current.peers.items).toHaveLength(0);
+  });
+
+  it("фильтр «только онлайн»: вышедший в онлайн пир интерфейса — перезапрос списка", async () => {
+    api.listWgPeers.mockResolvedValueOnce({
+      data: { items: [{ ...peer, isOnline: true }], total: 1 },
+    });
+
+    const { result } = renderHook(() =>
+      useWgPeersTableVM({ interfaceId: "i1", online: true }),
+    );
+
+    await waitFor(() => expect(result.current.peers.items).toHaveLength(1));
+
+    const live = (peerId: string, interfaceId: string, online: boolean) => ({
+      peerId,
+      interfaceId,
+      online,
+      rxTotal: 0,
+      txTotal: 0,
+    });
+
+    act(() =>
+      socket.fire("wg:peers:stats", {
+        peers: [live("p2", "i1", false), live("p3", "i2", false)],
+      }),
+    );
+    act(() =>
+      socket.fire("wg:peers:stats", { peers: [live("p3", "i2", true)] }),
+    );
+    expect(api.listWgPeers).toHaveBeenCalledTimes(1);
+
+    api.listWgPeers.mockResolvedValueOnce({
+      data: {
+        items: [
+          { ...peer, isOnline: true },
+          { ...peer, id: "p2", isOnline: true },
+        ],
+        total: 2,
+      },
+    });
+    act(() =>
+      socket.fire("wg:peers:stats", { peers: [live("p2", "i1", true)] }),
+    );
+    await waitFor(() => expect(result.current.peers.items).toHaveLength(2));
+  });
+
+  it("фильтр по включённости: выключенный пир уходит из списка включённых", async () => {
+    const { result } = renderHook(() => useWgPeersTableVM({ enabled: true }));
+
+    await waitFor(() => expect(result.current.peers.items).toHaveLength(1));
+
+    act(() => socket.fire("wg:peer:updated", { ...peer, enabled: false }));
+    expect(result.current.peers.items).toHaveLength(0);
+  });
+
   it("все пиры — комната списка; обзор — только при праве на статистику", async () => {
     iocContainer.rebind(IUserStore.Tid).toConstantValue({
       user: { id: "u1" },
