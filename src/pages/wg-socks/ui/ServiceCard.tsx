@@ -32,6 +32,7 @@ export const ServiceCard: FC<ServiceCardProps> = observer(({ vm, service }) => {
           {service.nodeName ?? "нода"} :{service.listenPort}
           {(service.clientHost || service.clientPort) &&
             ` · клиенты → ${socksClientAddress(service)}`}
+          {service.ownerName && ` · владелец ${service.ownerName}`}
         </span>
       }
       extra={

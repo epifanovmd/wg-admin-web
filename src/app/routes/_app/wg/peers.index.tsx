@@ -7,6 +7,7 @@ const searchSchema = z.object({
   nodeId: z.string().optional().catch(undefined),
   interfaceId: z.string().optional().catch(undefined),
   userId: z.string().optional().catch(undefined),
+  mine: z.boolean().optional().catch(undefined),
   enabled: z.boolean().optional().catch(undefined),
   online: z.boolean().optional().catch(undefined),
   query: z.string().optional().catch(undefined),

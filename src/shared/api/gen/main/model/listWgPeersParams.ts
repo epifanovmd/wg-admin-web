@@ -7,6 +7,10 @@ export type ListWgPeersParams = {
   enabled?: boolean;
   online?: boolean;
   query?: string;
+  /**
+   * Только свои пиры (держатель или создатель) при любой области прав
+   */
+  mine?: boolean;
   offset?: number;
   limit?: number;
 };

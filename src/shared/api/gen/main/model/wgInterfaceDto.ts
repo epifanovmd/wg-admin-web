@@ -11,10 +11,20 @@ export interface WgInterfaceDto {
    */
   ownerId: string | null;
   /**
+   * Отображаемое имя владельца.
+   * @nullable
+   */
+  ownerName: string | null;
+  /**
    * Создатель интерфейса.
    * @nullable
    */
   createdById: string | null;
+  /**
+   * Отображаемое имя создателя.
+   * @nullable
+   */
+  createdByName: string | null;
   nodeId: string;
   /**
    * Название ноды (если загружена связь).

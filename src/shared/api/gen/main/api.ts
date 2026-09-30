@@ -104,6 +104,7 @@ import type {
   ListWgInterfacesParams,
   ListWgNodesParams,
   ListWgPeersParams,
+  ListWgSocksParams,
   ProfileDto,
   PublicKeyCredentialCreationOptionsJSON,
   PublicKeyCredentialRequestOptionsJSON,
@@ -115,6 +116,7 @@ import type {
   WgAgentStateParams,
   WgEndpointDto,
   WgEndpointOptionDto,
+  WgEndpointOptionsParams,
   WgForwardDto,
   WgInterfaceDto,
   WgInterfaceOptionDto,
@@ -124,8 +126,10 @@ import type {
   WgNodeLogsParams,
   WgNodeMetricsParams,
   WgNodeOptionDto,
+  WgNodeOptionsParams,
   WgPeerDto,
   WgPeerOptionDto,
+  WgPeerOptionsParams,
   WgSocksClientDto,
   WgSocksServiceDto,
   WgStatsSeriesParams,
@@ -238,10 +242,11 @@ export const getWgAdmin = () => {
    * @summary Ноды (options)
    */
   const wgNodeOptions = (
+    params?: WgNodeOptionsParams,
     options?: SecondParameter<typeof mainMutator<WgNodeOptionDto[]>>,
   ) => {
     return mainMutator<WgNodeOptionDto[]>(
-      { url: `/api/v1/wg/nodes/options`, method: "GET" },
+      { url: `/api/v1/wg/nodes/options`, method: "GET", params },
       options,
     );
   };
@@ -400,10 +405,11 @@ export const getWgAdmin = () => {
    * @summary Точки подключения (options)
    */
   const wgEndpointOptions = (
+    params?: WgEndpointOptionsParams,
     options?: SecondParameter<typeof mainMutator<WgEndpointOptionDto[]>>,
   ) => {
     return mainMutator<WgEndpointOptionDto[]>(
-      { url: `/api/v1/wg/endpoints/options`, method: "GET" },
+      { url: `/api/v1/wg/endpoints/options`, method: "GET", params },
       options,
     );
   };
@@ -775,10 +781,11 @@ export const getWgAdmin = () => {
    * @summary Пиры (options)
    */
   const wgPeerOptions = (
+    params?: WgPeerOptionsParams,
     options?: SecondParameter<typeof mainMutator<WgPeerOptionDto[]>>,
   ) => {
     return mainMutator<WgPeerOptionDto[]>(
-      { url: `/api/v1/wg/peers/options`, method: "GET" },
+      { url: `/api/v1/wg/peers/options`, method: "GET", params },
       options,
     );
   };
@@ -1217,10 +1224,11 @@ export const getWgAdmin = () => {
    * @summary Список прокси
    */
   const listWgSocks = (
+    params?: ListWgSocksParams,
     options?: SecondParameter<typeof mainMutator<WgSocksServiceDto[]>>,
   ) => {
     return mainMutator<WgSocksServiceDto[]>(
-      { url: `/api/v1/wg/socks`, method: "GET" },
+      { url: `/api/v1/wg/socks`, method: "GET", params },
       options,
     );
   };

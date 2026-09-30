@@ -2,6 +2,7 @@ import {
   formatHandshakeAgo,
   formatInterfaceLabel,
   formatTraffic,
+  WgOwnershipCell,
   WgPeerStateBadge,
   WgRxTx,
   WgToggleSwitch,
@@ -67,6 +68,18 @@ const createColumns = (vmRef: RefObject<WgPeersTableVM>) => [
           )}
         </p>
       </div>
+    ),
+  }),
+  column.display({
+    id: "holder",
+    header: "Держатель",
+    size: 170,
+    cell: ({ row }) => (
+      <WgOwnershipCell
+        owner={row.original.userName}
+        creator={row.original.createdByName}
+        emptyOwner="не назначен"
+      />
     ),
   }),
   column.display({

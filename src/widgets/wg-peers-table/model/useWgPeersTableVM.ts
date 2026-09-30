@@ -73,12 +73,13 @@ export const useWgPeersTableVM = (filters: IWgPeersFilters) => {
 
   /**
    * Пир в области списка: с областью «свои» — только свои (держатель или
-   * создатель), плюс фильтры узла, интерфейса и держателя.
+   * создатель), с фильтром «Мои» — тоже, плюс фильтры узла, интерфейса и
+   * держателя.
    */
   const inScope = (
     peer: Pick<WgPeerDto, "userId" | "createdById" | "interfaceId" | "nodeId">,
   ) =>
-    (canViewAll ||
+    ((canViewAll && !filters.mine) ||
       (currentUserId !== null && wgPeerOwners(peer).includes(currentUserId))) &&
     (!filters.userId || peer.userId === filters.userId) &&
     (!filters.nodeId || peer.nodeId === filters.nodeId) &&

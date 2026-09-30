@@ -2,6 +2,7 @@ import {
   nodeSyncView,
   resolveAgentUpdate,
   WgNodeStatusBadge,
+  WgOwnershipCell,
 } from "@entities/wg";
 import type {
   IWgAgentReleaseInfo,
@@ -51,6 +52,17 @@ export const createNodeColumns = ({ release, vm }: NodeColumnsOptions) => [
           {row.original.description && ` · ${row.original.description}`}
         </p>
       </div>
+    ),
+  }),
+  column.display({
+    id: "owner",
+    header: "Владелец",
+    size: 160,
+    cell: ({ row }) => (
+      <WgOwnershipCell
+        owner={row.original.ownerName}
+        creator={row.original.createdByName}
+      />
     ),
   }),
   column.display({

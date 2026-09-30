@@ -7,6 +7,10 @@ export type ListWgInterfacesParams = {
   viaRelay?: boolean;
   enabled?: boolean;
   query?: string;
+  /**
+   * Только свои интерфейсы (владелец или создатель) при любой области прав
+   */
+  mine?: boolean;
   offset?: number;
   limit?: number;
 };

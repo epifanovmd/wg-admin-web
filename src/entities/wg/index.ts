@@ -26,6 +26,7 @@ export { useWgLiveSpeed } from "./model/useWgLiveSpeed";
 export { useWgNodeOptions } from "./model/useWgNodeOptions";
 export { WgInterfaceStatusBadge } from "./ui/WgInterfaceStatusBadge";
 export { WgNodeStatusBadge } from "./ui/WgNodeStatusBadge";
+export { WgOwnershipCell } from "./ui/WgOwnershipCell";
 export { WgPeerStateBadge } from "./ui/WgPeerStateBadge";
 export { WgRxTx } from "./ui/WgRxTx";
 export { WgSpeedChart } from "./ui/WgSpeedChart";

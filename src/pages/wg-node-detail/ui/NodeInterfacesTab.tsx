@@ -1,4 +1,4 @@
-import { WgToggleSwitch } from "@entities/wg";
+import { WgOwnershipCell, WgToggleSwitch } from "@entities/wg";
 import {
   hasAnyInterfaceAction,
   InterfaceStatusCompact,
@@ -84,6 +84,17 @@ const createColumns = (
           )}
         </p>
       </div>
+    ),
+  }),
+  column.display({
+    id: "owner",
+    header: "Владелец",
+    size: 160,
+    cell: ({ row }) => (
+      <WgOwnershipCell
+        owner={row.original.ownerName}
+        creator={row.original.createdByName}
+      />
     ),
   }),
   column.display({

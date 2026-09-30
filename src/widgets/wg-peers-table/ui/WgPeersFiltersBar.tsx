@@ -1,5 +1,5 @@
 import { useDebouncedValue } from "@mantine/hooks";
-import { Button, Input, Select, Switch } from "@shared/ui";
+import { Button, Input, Segmented, Select, Switch } from "@shared/ui";
 import { RotateCcw, Search } from "lucide-react";
 import { observer } from "mobx-react-lite";
 import { FC, useEffect, useState } from "react";
@@ -17,6 +17,13 @@ const STATUS_OPTIONS: Array<{ value: TStatus; label: string }> = [
   { value: "disabled", label: "Выключенные" },
 ];
 
+type TScope = "all" | "mine";
+
+const SCOPE_OPTIONS: Array<{ value: TScope; label: string }> = [
+  { value: "all", label: "Все" },
+  { value: "mine", label: "Мои" },
+];
+
 const toStatus = (enabled: boolean | undefined): TStatus =>
   enabled === undefined ? "all" : enabled ? "enabled" : "disabled";
 
@@ -28,7 +35,7 @@ export interface WgPeersFiltersBarProps {
   onChange: (patch: Partial<IWgPeersFilters>) => void;
   /** Выбор ноды и интерфейса; на странице интерфейса — не нужен. */
   withLocation?: boolean;
-  /** Выбор держателя — только тем, кто видит пиры всех. */
+  /** Выбор держателя и «Все / Мои» — только тем, кто видит пиры всех. */
   withOwner: boolean;
 }
 
@@ -58,12 +65,24 @@ export const WgPeersFiltersBar: FC<WgPeersFiltersBarProps> = observer(
     }, [filters.query]);
 
     const hasFilters =
-      Boolean(filters.query || filters.userId || filters.online) ||
+      Boolean(
+        filters.query || filters.userId || filters.online || filters.mine,
+      ) ||
       filters.enabled !== undefined ||
       (withLocation && Boolean(filters.nodeId || filters.interfaceId));
 
     return (
       <div className="flex flex-wrap items-center gap-3">
+        {withOwner && (
+          <Segmented<TScope>
+            aria-label="Чьи пиры"
+            options={SCOPE_OPTIONS}
+            value={filters.mine ? "mine" : "all"}
+            onValueChange={scope =>
+              onChange({ mine: scope === "mine" || undefined })
+            }
+          />
+        )}
         <Input
           value={search}
           onChange={event => setSearch(event.target.value)}
@@ -139,6 +158,7 @@ export const WgPeersFiltersBar: FC<WgPeersFiltersBarProps> = observer(
               onChange({
                 query: undefined,
                 userId: undefined,
+                mine: undefined,
                 enabled: undefined,
                 online: undefined,
                 ...(withLocation && {

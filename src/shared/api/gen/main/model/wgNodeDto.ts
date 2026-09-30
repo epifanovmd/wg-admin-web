@@ -9,10 +9,20 @@ export interface WgNodeDto {
    */
   ownerId: string | null;
   /**
+   * Отображаемое имя владельца.
+   * @nullable
+   */
+  ownerName: string | null;
+  /**
    * Создатель ноды.
    * @nullable
    */
   createdById: string | null;
+  /**
+   * Отображаемое имя создателя.
+   * @nullable
+   */
+  createdByName: string | null;
   name: string;
   /** @nullable */
   description: string | null;

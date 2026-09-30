@@ -3,6 +3,8 @@ export interface IWgPeersFilters {
   nodeId?: string;
   interfaceId?: string;
   userId?: string;
+  /** Только свои: держатель или создатель — текущий пользователь. */
+  mine?: boolean;
   /** true — только включённые, false — только выключенные. */
   enabled?: boolean;
   online?: boolean;

@@ -40,6 +40,7 @@ describe("WgPeersFiltersBar", () => {
     expect(onChange).toHaveBeenLastCalledWith({
       query: undefined,
       userId: undefined,
+      mine: undefined,
       enabled: undefined,
       online: undefined,
     });
@@ -52,5 +53,20 @@ describe("WgPeersFiltersBar", () => {
     expect(screen.getByText("Все ноды")).toBeTruthy();
     expect(screen.getByText("Все интерфейсы")).toBeTruthy();
     expect(screen.getByText("Все держатели")).toBeTruthy();
+  });
+
+  it("«Все / Мои» — только тем, кто видит пиры всех", () => {
+    const onChange = vi.fn();
+    const view = render(
+      <WgPeersFiltersBar filters={{}} onChange={onChange} withOwner />,
+    );
+
+    fireEvent.click(screen.getByRole("radio", { name: "Мои" }));
+    expect(onChange).toHaveBeenLastCalledWith({ mine: true });
+
+    view.rerender(
+      <WgPeersFiltersBar filters={{}} onChange={onChange} withOwner={false} />,
+    );
+    expect(screen.queryByRole("radiogroup", { name: "Чьи пиры" })).toBeNull();
   });
 });

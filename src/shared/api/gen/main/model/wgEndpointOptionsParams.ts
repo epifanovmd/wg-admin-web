@@ -1,9 +1,6 @@
-export type ListWgEndpointsParams = {
-  query?: string;
+export type WgEndpointOptionsParams = {
   /**
    * Только свои точки (владелец или создатель) при любой области прав
    */
   mine?: boolean;
-  offset?: number;
-  limit?: number;
 };

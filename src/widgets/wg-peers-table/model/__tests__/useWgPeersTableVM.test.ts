@@ -189,13 +189,11 @@ describe("useWgPeersTableVM", () => {
   });
 
   it("держатель без права видеть всех — комната «мои пиры», не обзор", async () => {
-    iocContainer
-      .rebind(IUserStore.Tid)
-      .toConstantValue(
-        createFakeAccess({
-          permissions: [ownPermission(WG_PERMISSIONS.PEER_VIEW)],
-        }),
-      );
+    iocContainer.rebind(IUserStore.Tid).toConstantValue(
+      createFakeAccess({
+        permissions: [ownPermission(WG_PERMISSIONS.PEER_VIEW)],
+      }),
+    );
 
     renderHook(() => useWgPeersTableVM({}));
 
@@ -209,13 +207,11 @@ describe("useWgPeersTableVM", () => {
   });
 
   it("держателю назначили пир — список перезапрашивается", async () => {
-    iocContainer
-      .rebind(IUserStore.Tid)
-      .toConstantValue(
-        createFakeAccess({
-          permissions: [ownPermission(WG_PERMISSIONS.PEER_VIEW)],
-        }),
-      );
+    iocContainer.rebind(IUserStore.Tid).toConstantValue(
+      createFakeAccess({
+        permissions: [ownPermission(WG_PERMISSIONS.PEER_VIEW)],
+      }),
+    );
     const assigned = { ...peer, id: "p2", userId: "u1" };
 
     const { result } = renderHook(() => useWgPeersTableVM({}));
@@ -230,13 +226,11 @@ describe("useWgPeersTableVM", () => {
   });
 
   it("чужой незнакомый пир у держателя — без перезапроса", async () => {
-    iocContainer
-      .rebind(IUserStore.Tid)
-      .toConstantValue(
-        createFakeAccess({
-          permissions: [ownPermission(WG_PERMISSIONS.PEER_VIEW)],
-        }),
-      );
+    iocContainer.rebind(IUserStore.Tid).toConstantValue(
+      createFakeAccess({
+        permissions: [ownPermission(WG_PERMISSIONS.PEER_VIEW)],
+      }),
+    );
 
     const { result } = renderHook(() => useWgPeersTableVM({}));
 
@@ -405,5 +399,26 @@ describe("useWgPeersTableVM", () => {
       canPsk: false,
       canToggle: false,
     });
+  });
+
+  it("фильтр «Мои» при праве на все: чужой пир в список не попадает", async () => {
+    const { result } = renderHook(() => useWgPeersTableVM({ mine: true }));
+
+    await waitFor(() => expect(result.current.peers.items).toHaveLength(1));
+    expect(api.listWgPeers).toHaveBeenLastCalledWith(
+      expect.objectContaining({ mine: true }),
+    );
+    api.listWgPeers.mockClear();
+
+    act(() =>
+      socket.fire("wg:peer:updated", {
+        ...peer,
+        id: "p9",
+        userId: "u2",
+        createdById: "u3",
+      }),
+    );
+
+    expect(api.listWgPeers).not.toHaveBeenCalled();
   });
 });

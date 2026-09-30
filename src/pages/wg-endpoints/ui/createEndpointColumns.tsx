@@ -1,3 +1,4 @@
+import { WgOwnershipCell } from "@entities/wg";
 import { EndpointTargets } from "@features/manage-wg-endpoint";
 import type { WgEndpointDto } from "@shared/api/gen/main/model";
 import {
@@ -38,6 +39,17 @@ export const createEndpointColumns = ({
           {row.original.host}
         </p>
       </div>
+    ),
+  }),
+  column.display({
+    id: "owner",
+    header: "Владелец",
+    size: 160,
+    cell: ({ row }) => (
+      <WgOwnershipCell
+        owner={row.original.ownerName}
+        creator={row.original.createdByName}
+      />
     ),
   }),
   column.display({

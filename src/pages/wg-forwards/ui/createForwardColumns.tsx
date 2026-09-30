@@ -1,4 +1,4 @@
-import { WgToggleSwitch } from "@entities/wg";
+import { WgOwnershipCell, WgToggleSwitch } from "@entities/wg";
 import type { EWgForwardRoute, WgForwardDto } from "@shared/api/gen/main/model";
 import {
   Badge,
@@ -39,6 +39,17 @@ export const createForwardColumns = ({ vm }: ForwardColumnsOptions) => [
           {row.original.protocol}
         </p>
       </div>
+    ),
+  }),
+  column.display({
+    id: "owner",
+    header: "Владелец",
+    size: 160,
+    cell: ({ row }) => (
+      <WgOwnershipCell
+        owner={row.original.ownerName}
+        creator={row.original.createdByName}
+      />
     ),
   }),
   column.display({

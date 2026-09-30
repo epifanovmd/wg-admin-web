@@ -15,10 +15,20 @@ export interface WgPeerDto {
    */
   userId: string | null;
   /**
+   * Отображаемое имя держателя.
+   * @nullable
+   */
+  userName: string | null;
+  /**
    * Создатель пира.
    * @nullable
    */
   createdById: string | null;
+  /**
+   * Отображаемое имя создателя.
+   * @nullable
+   */
+  createdByName: string | null;
   name: string;
   /** @nullable */
   description: string | null;
