@@ -58,7 +58,11 @@ export const useAdminRolesVM = () => {
       return;
     }
 
-    roles.upsertItem(res.data.id, res.data);
+    // Сервер отдаёт только что созданную роль без поля permissions.
+    roles.upsertItem(res.data.id, {
+      ...res.data,
+      permissions: res.data.permissions ?? [],
+    });
     form.reset({ name: "" });
     toast.success(`Роль ${name} создана`);
   };
