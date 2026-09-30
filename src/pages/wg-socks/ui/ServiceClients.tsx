@@ -20,7 +20,7 @@ export const ServiceClients: FC<ServiceSectionProps> = observer(
       <section className="flex flex-col gap-2">
         <div className="flex items-center justify-between gap-2">
           <h3 className="text-sm font-medium">Устройства (сертификаты)</h3>
-          {vm.canManageClients && (
+          {vm.accessOf(service).canManageClients && (
             <Button
               size="sm"
               variant="outline"
@@ -48,7 +48,7 @@ export const ServiceClients: FC<ServiceSectionProps> = observer(
                 {client.revoked ? (
                   <Badge variant="destructive">отозван</Badge>
                 ) : (
-                  vm.canManageClients && (
+                  vm.accessOf(service).canManageClients && (
                     <>
                       <Tooltip
                         content={

@@ -40,6 +40,11 @@ export interface IUserStore {
    * wildcard-иерархия). `can(ownPermission(p))` — есть ли право хотя бы на свои.
    */
   can(permission: Permission): boolean;
+  /**
+   * Отпечаток доступа: меняется при смене пользователя или его прав. Ключ
+   * мемоизации для того, что зависит от прав (колонки таблиц с действиями).
+   */
+  readonly accessKey: string;
   /** Область права: на все сущности, только на свои или нет права. */
   scope(permission: Permission): AccessScope | null;
   /**

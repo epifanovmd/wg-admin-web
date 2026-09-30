@@ -1,9 +1,11 @@
 import { PermissionGate } from "@entities/user";
 import { WG_PERMISSIONS } from "@entities/wg";
+import { AssignWgOwnerModal } from "@features/assign-wg-owner";
 import {
   ProvisionWgNodeModal,
   WgNodeFormModal,
 } from "@features/manage-wg-node";
+import { ownPermission } from "@shared/lib/access";
 import { Button, PageHeader, PageLayout } from "@shared/ui";
 import { Plus } from "lucide-react";
 import { observer } from "mobx-react-lite";
@@ -35,12 +37,13 @@ export const WgNodesPage: FC = observer(() => {
         />
       }
     >
-      <PermissionGate permission={WG_PERMISSIONS.NODE_VIEW}>
+      <PermissionGate permission={ownPermission(WG_PERMISSIONS.NODE_VIEW)}>
         <WgNodesTable vm={vm} />
         {vm.mesh && <NodeMeshCard matrix={vm.mesh} />}
       </PermissionGate>
       <WgNodeFormModal vm={vm.form} />
       <ProvisionWgNodeModal vm={vm.provision} />
+      <AssignWgOwnerModal vm={vm.owner} />
     </PageLayout>
   );
 });

@@ -13,7 +13,7 @@ import type { RelayedInterfacesVM } from "../model/useRelayedInterfacesVM";
 
 const column = createColumnHelper<WgInterfaceDto>();
 
-const createColumns = (canPin: boolean, vm: RefObject<RelayedInterfacesVM>) => [
+const createColumns = (vm: RefObject<RelayedInterfacesVM>) => [
   column.display({
     id: "relay",
     header: "Релей",
@@ -66,7 +66,7 @@ const createColumns = (canPin: boolean, vm: RefObject<RelayedInterfacesVM>) => [
       row.original.replicas.length > 0 ? (
         <InterfaceTrafficSelect
           iface={row.original}
-          disabled={!canPin}
+          disabled={!vm.current.canPin(row.original)}
           onPin={(iface, nodeId) => void vm.current.pin(iface, nodeId)}
         />
       ) : (
@@ -85,10 +85,12 @@ interface RelayedInterfacesTableProps {
 export const RelayedInterfacesTable: FC<RelayedInterfacesTableProps> = observer(
   ({ vm }) => {
     const vmRef = useLatestRef(vm);
-    const { canPin, interfaces } = vm;
+    const { accessKey, interfaces } = vm;
+    // Права считаются по строке; при смене прав колонки пересобираются.
     const columns = useMemo(
-      () => createColumns(canPin, vmRef),
-      [canPin, vmRef],
+      () => createColumns(vmRef),
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      [accessKey, vmRef],
     );
 
     return (

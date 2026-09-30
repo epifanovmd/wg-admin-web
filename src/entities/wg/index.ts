@@ -9,7 +9,7 @@ export {
   formatInterfaceLabel,
   formatTraffic,
 } from "./lib/format";
-export { WG_PERMISSIONS, wgPeerOwners } from "./lib/permissions";
+export { WG_PERMISSIONS, wgOwners, wgPeerOwners } from "./lib/permissions";
 export { nodeSyncView } from "./lib/status";
 export {
   type ISpeedPoint,

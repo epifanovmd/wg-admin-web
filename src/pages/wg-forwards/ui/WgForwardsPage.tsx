@@ -1,6 +1,8 @@
 import { PermissionGate } from "@entities/user";
 import { WG_PERMISSIONS } from "@entities/wg";
+import { AssignWgOwnerModal } from "@features/assign-wg-owner";
 import { WgForwardFormModal } from "@features/manage-wg-forward";
+import { ownPermission } from "@shared/lib/access";
 import { Button, Card, PageHeader, PageLayout } from "@shared/ui";
 import { Plus } from "lucide-react";
 import { observer } from "mobx-react-lite";
@@ -34,7 +36,7 @@ export const WgForwardsPage: FC = observer(() => {
         />
       }
     >
-      <PermissionGate permission={WG_PERMISSIONS.FORWARD_VIEW}>
+      <PermissionGate permission={ownPermission(WG_PERMISSIONS.FORWARD_VIEW)}>
         <WgForwardsTable vm={vm} />
       </PermissionGate>
       {relayed.canView && (
@@ -46,6 +48,7 @@ export const WgForwardsPage: FC = observer(() => {
         </Card>
       )}
       <WgForwardFormModal vm={vm.form} />
+      <AssignWgOwnerModal vm={vm.owner} />
     </PageLayout>
   );
 });

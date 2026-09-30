@@ -9,7 +9,12 @@ import type {
   GetWgSocksMacClientParams,
   IAddWgInterfaceReplicaBody,
   IAppVersionDto,
+  IAssignWgEndpointBody,
+  IAssignWgForwardBody,
+  IAssignWgInterfaceBody,
+  IAssignWgNodeBody,
   IAssignWgPeerBody,
+  IAssignWgSocksBody,
   ICreateApiKeyBody,
   ICreateRoleRequestDto,
   ICreateWgEndpointBody,
@@ -194,7 +199,8 @@ export const getWgAdmin = () => {
 
   /**
    * Создать ноду (VPS с агентом). Ключ агента возвращается только в этом
-   * ответе — сохранить сразу.
+   * ответе — сохранить сразу. Создатель — автор запроса; владелец, отличный
+   * от себя, — только с правом `wg:node:assign`.
    * @summary Создание ноды
    */
   const createWgNode = (
@@ -213,7 +219,8 @@ export const getWgAdmin = () => {
   };
 
   /**
-   * Ноды с фильтрами, новые первыми.
+   * Ноды с фильтрами, новые первыми. С правом `wg:node:view:own` — только
+   * свои (владелец или создатель).
    * @summary Список нод
    */
   const listWgNodes = (
@@ -227,7 +234,7 @@ export const getWgAdmin = () => {
   };
 
   /**
-   * Краткий список нод для выпадающих списков.
+   * Краткий список нод для выпадающих списков (в рамках прав).
    * @summary Ноды (options)
    */
   const wgNodeOptions = (
@@ -240,7 +247,7 @@ export const getWgAdmin = () => {
   };
 
   /**
-   * Нода по id.
+   * Нода по id; чужая без права на все ноды — 404.
    * @summary Нода
    */
   const getWgNode = (
@@ -288,6 +295,40 @@ export const getWgAdmin = () => {
   };
 
   /**
+   * Назначить владельца ноды (она станет для него своей).
+   * @summary Назначение владельца ноды
+   */
+  const assignWgNode = (
+    id: Uuid,
+    iAssignWgNodeBody: IAssignWgNodeBody,
+    options?: SecondParameter<typeof mainMutator<WgNodeDto>>,
+  ) => {
+    return mainMutator<WgNodeDto>(
+      {
+        url: `/api/v1/wg/nodes/${id}/assign`,
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        data: iAssignWgNodeBody,
+      },
+      options,
+    );
+  };
+
+  /**
+   * Снять владельца ноды.
+   * @summary Снятие владельца ноды
+   */
+  const revokeWgNode = (
+    id: Uuid,
+    options?: SecondParameter<typeof mainMutator<WgNodeDto>>,
+  ) => {
+    return mainMutator<WgNodeDto>(
+      { url: `/api/v1/wg/nodes/${id}/revoke`, method: "POST" },
+      options,
+    );
+  };
+
+  /**
    * Перевыпустить ключ агента: старый отзывается сразу, новый возвращается
    * один раз.
    * @summary Ротация ключа агента
@@ -319,7 +360,9 @@ export const getWgAdmin = () => {
 
   /**
    * Создать точку подключения — стабильный адрес для клиентских конфигов
-   * (напрямую или через релей-ноду).
+   * (напрямую или через релей-ноду, видимую автору). Создатель — автор
+   * запроса; владелец, отличный от себя, — только с правом
+   * `wg:endpoint:assign`.
    * @summary Создание точки подключения
    */
   const createWgEndpoint = (
@@ -338,7 +381,8 @@ export const getWgAdmin = () => {
   };
 
   /**
-   * Точки подключения, новые первыми.
+   * Точки подключения, новые первыми. С правом `wg:endpoint:view:own` —
+   * только свои (владелец или создатель).
    * @summary Список точек подключения
    */
   const listWgEndpoints = (
@@ -352,7 +396,7 @@ export const getWgAdmin = () => {
   };
 
   /**
-   * Краткий список для выпадающих списков.
+   * Краткий список для выпадающих списков (в рамках прав).
    * @summary Точки подключения (options)
    */
   const wgEndpointOptions = (
@@ -365,7 +409,7 @@ export const getWgAdmin = () => {
   };
 
   /**
-   * Точка подключения по id.
+   * Точка подключения по id; чужая без права на все точки — 404.
    * @summary Точка подключения
    */
   const getWgEndpoint = (
@@ -380,7 +424,8 @@ export const getWgAdmin = () => {
 
   /**
    * Изменить точку подключения; смена хоста/релея применяется к нодам
-   * автоматически, клиентские конфиги перевыпускать не нужно.
+   * автоматически, клиентские конфиги перевыпускать не нужно. Новый релей
+   * должен быть виден автору.
    * @summary Изменение точки подключения
    */
   const updateWgEndpoint = (
@@ -414,9 +459,45 @@ export const getWgAdmin = () => {
   };
 
   /**
+   * Назначить владельца точки подключения (она станет для него своей).
+   * @summary Назначение владельца точки
+   */
+  const assignWgEndpoint = (
+    id: Uuid,
+    iAssignWgEndpointBody: IAssignWgEndpointBody,
+    options?: SecondParameter<typeof mainMutator<WgEndpointDto>>,
+  ) => {
+    return mainMutator<WgEndpointDto>(
+      {
+        url: `/api/v1/wg/endpoints/${id}/assign`,
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        data: iAssignWgEndpointBody,
+      },
+      options,
+    );
+  };
+
+  /**
+   * Снять владельца точки подключения.
+   * @summary Снятие владельца точки
+   */
+  const revokeWgEndpoint = (
+    id: Uuid,
+    options?: SecondParameter<typeof mainMutator<WgEndpointDto>>,
+  ) => {
+    return mainMutator<WgEndpointDto>(
+      { url: `/api/v1/wg/endpoints/${id}/revoke`, method: "POST" },
+      options,
+    );
+  };
+
+  /**
    * Создать WireGuard-интерфейс на ноде; ключи генерируются на сервере,
-   * приватный ключ хранится зашифрованным. Произвольные PostUp/PostDown —
-   * только суперпользователь.
+   * приватный ключ хранится зашифрованным. Нода должна быть видна автору;
+   * создатель — автор запроса, владелец, отличный от себя, — только с правом
+   * `wg:interface:assign`. Произвольные PostUp/PostDown — с правом
+   * `wg:interface:hooks`.
    * @summary Создание интерфейса
    */
   const createWgInterface = (
@@ -438,7 +519,8 @@ export const getWgAdmin = () => {
    * Интерфейсы с фильтрами (с копиями), новые первыми. `nodeId` — основная
    * нода, `hostNodeId` — нода, где интерфейс работает (основная или копия).
    * `viaRelay` — только
-   * интерфейсы за точками через релей: что и куда пересылают релеи.
+   * интерфейсы за точками через релей: что и куда пересылают релеи. С правом
+   * `wg:interface:view:own` — только свои (владелец или создатель).
    * @summary Список интерфейсов
    */
   const listWgInterfaces = (
@@ -452,7 +534,7 @@ export const getWgAdmin = () => {
   };
 
   /**
-   * Краткий список интерфейсов для выпадающих списков.
+   * Краткий список интерфейсов для выпадающих списков (в рамках прав).
    * @summary Интерфейсы (options)
    */
   const wgInterfaceOptions = (
@@ -466,7 +548,7 @@ export const getWgAdmin = () => {
   };
 
   /**
-   * Интерфейс по id.
+   * Интерфейс по id; чужой без права на все интерфейсы — 404.
    * @summary Интерфейс
    */
   const getWgInterface = (
@@ -543,9 +625,9 @@ export const getWgAdmin = () => {
   };
 
   /**
-   * Перенести интерфейс с ключом и пирами на другую ноду. С точкой
-   * подключения клиентские конфиги не меняются; без неё меняется адрес
-   * подключения (publicHost новой ноды).
+   * Перенести интерфейс с ключом и пирами на другую ноду (видимую автору).
+   * С точкой подключения клиентские конфиги не меняются; без неё меняется
+   * адрес подключения (publicHost новой ноды).
    * @summary Перенос интерфейса на другую ноду
    */
   const moveWgInterface = (
@@ -565,9 +647,10 @@ export const getWgAdmin = () => {
   };
 
   /**
-   * Скопировать интерфейс на ноду: тот же ключ, адреса и всегда те же пиры.
-   * Релей точки подключения держит туннели до всех копий и переключает
-   * трафик (авто по здоровью или закреплённая копия — `activeReplicaNodeId`).
+   * Скопировать интерфейс на ноду (видимую автору): тот же ключ, адреса и
+   * всегда те же пиры. Релей точки подключения держит туннели до всех копий
+   * и переключает трафик (авто по здоровью или закреплённая копия —
+   * `activeReplicaNodeId`).
    * @summary Реплика интерфейса на ноде
    */
   const addWgInterfaceReplica = (
@@ -614,6 +697,40 @@ export const getWgAdmin = () => {
   ) => {
     return mainMutator<WgNodeCommandDto>(
       { url: `/api/v1/wg/interfaces/${id}/restart`, method: "POST" },
+      options,
+    );
+  };
+
+  /**
+   * Назначить владельца интерфейса (он станет для него своим).
+   * @summary Назначение владельца интерфейса
+   */
+  const assignWgInterface = (
+    id: Uuid,
+    iAssignWgInterfaceBody: IAssignWgInterfaceBody,
+    options?: SecondParameter<typeof mainMutator<WgInterfaceDto>>,
+  ) => {
+    return mainMutator<WgInterfaceDto>(
+      {
+        url: `/api/v1/wg/interfaces/${id}/assign`,
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        data: iAssignWgInterfaceBody,
+      },
+      options,
+    );
+  };
+
+  /**
+   * Снять владельца интерфейса.
+   * @summary Снятие владельца интерфейса
+   */
+  const revokeWgInterface = (
+    id: Uuid,
+    options?: SecondParameter<typeof mainMutator<WgInterfaceDto>>,
+  ) => {
+    return mainMutator<WgInterfaceDto>(
+      { url: `/api/v1/wg/interfaces/${id}/revoke`, method: "POST" },
       options,
     );
   };
@@ -879,7 +996,8 @@ export const getWgAdmin = () => {
   };
 
   /**
-   * Текущий live-снимок интерфейса.
+   * Текущий live-снимок интерфейса. С областью «свои» — только свой
+   * интерфейс (владелец или создатель).
    * @summary Текущий снимок интерфейса
    */
   const wgStatsCurrentInterface = (
@@ -896,7 +1014,8 @@ export const getWgAdmin = () => {
   };
 
   /**
-   * Текущий live-снимок ноды с системными метриками.
+   * Текущий live-снимок ноды с системными метриками. С областью «свои» —
+   * только своя нода (владелец или создатель).
    * @summary Текущий снимок ноды
    */
   const wgStatsCurrentNode = (
@@ -925,7 +1044,8 @@ export const getWgAdmin = () => {
   };
 
   /**
-   * Скорость интерфейса за последние минуты.
+   * Скорость интерфейса за последние минуты. С областью «свои» — только
+   * свой интерфейс.
    * @summary Короткий ряд скорости интерфейса
    */
   const wgStatsInterfaceWindow = (
@@ -942,7 +1062,7 @@ export const getWgAdmin = () => {
   };
 
   /**
-   * Скорость ноды за последние минуты.
+   * Скорость ноды за последние минуты. С областью «свои» — только своя нода.
    * @summary Короткий ряд скорости ноды
    */
   const wgStatsNodeWindow = (
@@ -970,7 +1090,8 @@ export const getWgAdmin = () => {
   };
 
   /**
-   * Здоровье IPIP-туннелей ноды: RTT и потери по каждому линку релея.
+   * Здоровье IPIP-туннелей ноды: RTT и потери по каждому линку релея. С
+   * областью «свои» — только своя нода.
    * @summary Туннели ноды
    */
   const wgStatsNodeLinks = (
@@ -984,7 +1105,8 @@ export const getWgAdmin = () => {
   };
 
   /**
-   * Системные метрики ноды (CPU, память, диск) за период.
+   * Системные метрики ноды (CPU, память, диск) за период. С
+   * `wg:node:view:own` — только своя нода.
    * @summary Метрики ноды
    */
   const wgNodeMetrics = (
@@ -1069,7 +1191,9 @@ export const getWgAdmin = () => {
   };
 
   /**
-   * Новый прокси на ноде со своим CA и серверным сертификатом.
+   * Новый прокси на ноде (видимой автору) со своим CA и серверным
+   * сертификатом. Создатель — автор запроса; владелец, отличный от себя, —
+   * только с правом `wg:socks:assign`.
    * @summary Создание прокси
    */
   const createWgSocks = (
@@ -1088,7 +1212,8 @@ export const getWgAdmin = () => {
   };
 
   /**
-   * Прокси с пользователями, клиентами и live-показателями.
+   * Прокси с пользователями, клиентами и live-показателями. С правом
+   * `wg:socks:view:own` — только свои (владелец или создатель).
    * @summary Список прокси
    */
   const listWgSocks = (
@@ -1101,6 +1226,7 @@ export const getWgAdmin = () => {
   };
 
   /**
+   * Прокси по id; чужой без права на все прокси — 404.
    * @summary Прокси
    */
   const getWgSocks = (
@@ -1141,6 +1267,40 @@ export const getWgAdmin = () => {
   ) => {
     return mainMutator<void>(
       { url: `/api/v1/wg/socks/${id}`, method: "DELETE" },
+      options,
+    );
+  };
+
+  /**
+   * Назначить владельца прокси (он станет для него своим).
+   * @summary Назначение владельца прокси
+   */
+  const assignWgSocks = (
+    id: Uuid,
+    iAssignWgSocksBody: IAssignWgSocksBody,
+    options?: SecondParameter<typeof mainMutator<WgSocksServiceDto>>,
+  ) => {
+    return mainMutator<WgSocksServiceDto>(
+      {
+        url: `/api/v1/wg/socks/${id}/assign`,
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        data: iAssignWgSocksBody,
+      },
+      options,
+    );
+  };
+
+  /**
+   * Снять владельца прокси.
+   * @summary Снятие владельца прокси
+   */
+  const revokeWgSocks = (
+    id: Uuid,
+    options?: SecondParameter<typeof mainMutator<WgSocksServiceDto>>,
+  ) => {
+    return mainMutator<WgSocksServiceDto>(
+      { url: `/api/v1/wg/socks/${id}/revoke`, method: "POST" },
       options,
     );
   };
@@ -1323,7 +1483,9 @@ export const getWgAdmin = () => {
 
   /**
    * Создать проброс: релей, протокол и порт, цель (нода с агентом или
-   * адрес), путь и режим маршрута.
+   * адрес), путь и режим маршрута. Релей и нода-цель должны быть видны
+   * автору; создатель — автор запроса, владелец, отличный от себя, — только с
+   * правом `wg:forward:assign`.
    * @summary Создание проброса
    */
   const createWgForward = (
@@ -1342,7 +1504,8 @@ export const getWgAdmin = () => {
   };
 
   /**
-   * Пробросы с активным маршрутом по отчётам агентов.
+   * Пробросы с активным маршрутом по отчётам агентов. С правом
+   * `wg:forward:view:own` — только свои (владелец или создатель).
    * @summary Список пробросов
    */
   const listWgForwards = (
@@ -1356,6 +1519,7 @@ export const getWgAdmin = () => {
   };
 
   /**
+   * Проброс по id; чужой без права на все пробросы — 404.
    * @summary Проброс
    */
   const getWgForward = (
@@ -1370,7 +1534,8 @@ export const getWgAdmin = () => {
 
   /**
    * Изменить проброс; в том числе переключить маршрут (auto / tunnel /
-   * direct) — агент релея применит сразу.
+   * direct) — агент релея применит сразу. Новая нода-цель должна быть видна
+   * автору.
    * @summary Изменение проброса
    */
   const updateWgForward = (
@@ -1398,6 +1563,40 @@ export const getWgAdmin = () => {
   ) => {
     return mainMutator<void>(
       { url: `/api/v1/wg/forwards/${id}`, method: "DELETE" },
+      options,
+    );
+  };
+
+  /**
+   * Назначить владельца проброса (он станет для него своим).
+   * @summary Назначение владельца проброса
+   */
+  const assignWgForward = (
+    id: Uuid,
+    iAssignWgForwardBody: IAssignWgForwardBody,
+    options?: SecondParameter<typeof mainMutator<WgForwardDto>>,
+  ) => {
+    return mainMutator<WgForwardDto>(
+      {
+        url: `/api/v1/wg/forwards/${id}/assign`,
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        data: iAssignWgForwardBody,
+      },
+      options,
+    );
+  };
+
+  /**
+   * Снять владельца проброса.
+   * @summary Снятие владельца проброса
+   */
+  const revokeWgForward = (
+    id: Uuid,
+    options?: SecondParameter<typeof mainMutator<WgForwardDto>>,
+  ) => {
+    return mainMutator<WgForwardDto>(
+      { url: `/api/v1/wg/forwards/${id}/revoke`, method: "POST" },
       options,
     );
   };
@@ -2368,6 +2567,8 @@ export const getWgAdmin = () => {
     getWgNode,
     updateWgNode,
     deleteWgNode,
+    assignWgNode,
+    revokeWgNode,
     rotateWgAgentKey,
     wgNodeLogs,
     createWgEndpoint,
@@ -2376,6 +2577,8 @@ export const getWgAdmin = () => {
     getWgEndpoint,
     updateWgEndpoint,
     deleteWgEndpoint,
+    assignWgEndpoint,
+    revokeWgEndpoint,
     createWgInterface,
     listWgInterfaces,
     wgInterfaceOptions,
@@ -2388,6 +2591,8 @@ export const getWgAdmin = () => {
     addWgInterfaceReplica,
     removeWgInterfaceReplica,
     restartWgInterface,
+    assignWgInterface,
+    revokeWgInterface,
     createWgPeer,
     listWgPeers,
     wgPeerOptions,
@@ -2422,6 +2627,8 @@ export const getWgAdmin = () => {
     getWgSocks,
     updateWgSocks,
     deleteWgSocks,
+    assignWgSocks,
+    revokeWgSocks,
     addWgSocksUser,
     updateWgSocksUser,
     removeWgSocksUser,
@@ -2436,6 +2643,8 @@ export const getWgAdmin = () => {
     getWgForward,
     updateWgForward,
     deleteWgForward,
+    assignWgForward,
+    revokeWgForward,
     listJobs,
     getJob,
     cancelJob,
@@ -2524,6 +2733,12 @@ export type UpdateWgNodeResult = NonNullable<
 export type DeleteWgNodeResult = NonNullable<
   Awaited<ReturnType<ReturnType<typeof getWgAdmin>["deleteWgNode"]>>
 >;
+export type AssignWgNodeResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["assignWgNode"]>>
+>;
+export type RevokeWgNodeResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["revokeWgNode"]>>
+>;
 export type RotateWgAgentKeyResult = NonNullable<
   Awaited<ReturnType<ReturnType<typeof getWgAdmin>["rotateWgAgentKey"]>>
 >;
@@ -2547,6 +2762,12 @@ export type UpdateWgEndpointResult = NonNullable<
 >;
 export type DeleteWgEndpointResult = NonNullable<
   Awaited<ReturnType<ReturnType<typeof getWgAdmin>["deleteWgEndpoint"]>>
+>;
+export type AssignWgEndpointResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["assignWgEndpoint"]>>
+>;
+export type RevokeWgEndpointResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["revokeWgEndpoint"]>>
 >;
 export type CreateWgInterfaceResult = NonNullable<
   Awaited<ReturnType<ReturnType<typeof getWgAdmin>["createWgInterface"]>>
@@ -2583,6 +2804,12 @@ export type RemoveWgInterfaceReplicaResult = NonNullable<
 >;
 export type RestartWgInterfaceResult = NonNullable<
   Awaited<ReturnType<ReturnType<typeof getWgAdmin>["restartWgInterface"]>>
+>;
+export type AssignWgInterfaceResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["assignWgInterface"]>>
+>;
+export type RevokeWgInterfaceResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["revokeWgInterface"]>>
 >;
 export type CreateWgPeerResult = NonNullable<
   Awaited<ReturnType<ReturnType<typeof getWgAdmin>["createWgPeer"]>>
@@ -2686,6 +2913,12 @@ export type UpdateWgSocksResult = NonNullable<
 export type DeleteWgSocksResult = NonNullable<
   Awaited<ReturnType<ReturnType<typeof getWgAdmin>["deleteWgSocks"]>>
 >;
+export type AssignWgSocksResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["assignWgSocks"]>>
+>;
+export type RevokeWgSocksResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["revokeWgSocks"]>>
+>;
 export type AddWgSocksUserResult = NonNullable<
   Awaited<ReturnType<ReturnType<typeof getWgAdmin>["addWgSocksUser"]>>
 >;
@@ -2727,6 +2960,12 @@ export type UpdateWgForwardResult = NonNullable<
 >;
 export type DeleteWgForwardResult = NonNullable<
   Awaited<ReturnType<ReturnType<typeof getWgAdmin>["deleteWgForward"]>>
+>;
+export type AssignWgForwardResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["assignWgForward"]>>
+>;
+export type RevokeWgForwardResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["revokeWgForward"]>>
 >;
 export type ListJobsResult = NonNullable<
   Awaited<ReturnType<ReturnType<typeof getWgAdmin>["listJobs"]>>

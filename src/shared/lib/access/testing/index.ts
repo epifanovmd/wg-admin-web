@@ -21,6 +21,7 @@ export const createFakeAccess = ({
     roles: [] as string[],
     permissions,
     isAdmin: false,
+    accessKey: [userId, ...permissions].join("|"),
     can: (permission: Permission) => hasPermission(permissions, permission),
     scope,
     canOn: (

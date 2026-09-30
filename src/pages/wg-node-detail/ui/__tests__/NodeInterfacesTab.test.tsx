@@ -43,11 +43,15 @@ const handlers = {
 
 const ALL_ACTIONS = {
   canCreate: true,
-  canUpdate: true,
-  canDelete: true,
-  canControl: true,
-  canMove: true,
-  canReplicas: true,
+  accessKey: "all",
+  accessOf: () => ({
+    canUpdate: true,
+    canDelete: true,
+    canControl: true,
+    canMove: true,
+    canReplicas: true,
+    canAssign: true,
+  }),
 };
 
 const renderTab = (interfaces: WgInterfaceDto[] = [iface]) =>
@@ -57,7 +61,7 @@ const renderTab = (interfaces: WgInterfaceDto[] = [iface]) =>
         nodeId="n1"
         interfaces={interfaces}
         isLoading={false}
-        permissions={ALL_ACTIONS}
+        access={ALL_ACTIONS}
         {...handlers}
       />
     </TooltipProvider>,

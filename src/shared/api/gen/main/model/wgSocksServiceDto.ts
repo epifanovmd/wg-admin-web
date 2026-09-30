@@ -4,6 +4,16 @@ import type { WgSocksUserDto } from "./wgSocksUserDto.ts";
 
 export interface WgSocksServiceDto {
   id: string;
+  /**
+   * Назначенный владелец прокси.
+   * @nullable
+   */
+  ownerId: string | null;
+  /**
+   * Создатель прокси.
+   * @nullable
+   */
+  createdById: string | null;
   name: string;
   /** @nullable */
   description: string | null;

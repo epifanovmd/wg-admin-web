@@ -65,6 +65,10 @@ class UserStore implements IUserStore {
     return isAdminRole(this.roles);
   }
 
+  get accessKey(): string {
+    return [this.user?.id ?? "", ...this.roles, ...this.permissions].join("|");
+  }
+
   get error() {
     return this._holder.error?.message;
   }

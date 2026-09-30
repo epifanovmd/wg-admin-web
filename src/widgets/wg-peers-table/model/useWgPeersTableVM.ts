@@ -266,7 +266,7 @@ export const useWgPeersTableVM = (filters: IWgPeersFilters) => {
     /** Действия над пиром: право на все или свой пир. */
     accessOf,
     /** Меняется вместе с правами — колонки таблицы пересобираются по нему. */
-    accessKey: `${currentUserId}|${userStore.permissions.join(",")}|${userStore.isAdmin}`,
+    accessKey: userStore.accessKey,
   };
 };
 

@@ -14,17 +14,12 @@ interface WgEndpointsTableProps {
 export const WgEndpointsTable: FC<WgEndpointsTableProps> = observer(
   ({ vm }) => {
     const vmRef = useLatestRef(vm);
-    const { canUpdate, canDelete, endpoints, relayNodeName, warningsOf } = vm;
+    const { accessKey, endpoints, relayNodeName, warningsOf } = vm;
+    // Права действий считаются по строке; при смене прав колонки пересобираются.
     const columns = useMemo(
-      () =>
-        createEndpointColumns({
-          canUpdate,
-          canDelete,
-          relayNodeName,
-          warningsOf,
-          vm: vmRef,
-        }),
-      [canUpdate, canDelete, relayNodeName, warningsOf, vmRef],
+      () => createEndpointColumns({ relayNodeName, warningsOf, vm: vmRef }),
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      [accessKey, relayNodeName, warningsOf, vmRef],
     );
 
     return (

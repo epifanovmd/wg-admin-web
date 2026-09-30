@@ -1,6 +1,7 @@
 import { IUserStore } from "@entities/user";
 import { IWgNodesStore, WG_PERMISSIONS } from "@entities/wg";
 import { IMainApi } from "@shared/api";
+import { createFakeAccess } from "@shared/lib/access/testing";
 import { iocContainer } from "@shared/lib/di";
 import { INotificationService } from "@shared/lib/notifications";
 import { ISocketTransport } from "@shared/lib/socket";
@@ -19,10 +20,9 @@ const bind = (permissions: string[]) => {
   iocContainer
     .bind(INotificationService.Tid)
     .toConstantValue({ error: vi.fn(), success: vi.fn() });
-  iocContainer.bind(IUserStore.Tid).toConstantValue({
-    user: { id: "u1" },
-    can: (permission: string) => permissions.includes(permission),
-  });
+  iocContainer
+    .bind(IUserStore.Tid)
+    .toConstantValue(createFakeAccess({ userId: "u1", permissions }));
   iocContainer.bind(IWgNodesStore.Tid).toConstantValue({
     nodes: [],
     load: vi.fn().mockResolvedValue(undefined),

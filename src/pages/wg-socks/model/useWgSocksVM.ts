@@ -1,5 +1,6 @@
 import { IUserStore } from "@entities/user";
-import { WG_PERMISSIONS } from "@entities/wg";
+import { WG_PERMISSIONS, wgOwners } from "@entities/wg";
+import { useAssignWgOwnerVM } from "@features/assign-wg-owner";
 import { useDeleteWgSocks, useWgSocksFormVM } from "@features/manage-wg-socks";
 import { IMainApi } from "@shared/api";
 import type {
@@ -20,13 +21,42 @@ import { useState } from "react";
 import { type ISocksSecret, macClientFileName } from "./socks-links";
 import { type INamePrompt, useSocksNamePromptVM } from "./useSocksNamePromptVM";
 
-/** Прокси (SOCKS5 через mTLS): сервисы, их пользователи и устройства. */
+/** Действия над конкретным прокси по области прав. */
+export interface IWgSocksRowAccess {
+  canUpdate: boolean;
+  canDelete: boolean;
+  canManageUsers: boolean;
+  canViewSecrets: boolean;
+  canManageClients: boolean;
+  canAssign: boolean;
+}
+
+/**
+ * Прокси (SOCKS5 через mTLS): сервисы, их пользователи и устройства. С
+ * областью «свои» — только свои прокси (владелец или создатель); действия —
+ * по сервису.
+ */
 export const useWgSocksVM = () => {
   const api = IMainApi.useInstance();
   const toast = INotificationService.useInstance();
   const userStore = IUserStore.useInstance();
   const confirm = useConfirm();
-  const canView = userStore.can(WG_PERMISSIONS.SOCKS_VIEW);
+  const viewScope = userStore.scope(WG_PERMISSIONS.SOCKS_VIEW);
+  const canView = viewScope !== null;
+
+  const accessOf = (service: WgSocksServiceDto): IWgSocksRowAccess => {
+    const owners = wgOwners(service);
+    const can = (permission: string) => userStore.canOn(permission, owners);
+
+    return {
+      canUpdate: can(WG_PERMISSIONS.SOCKS_UPDATE),
+      canDelete: can(WG_PERMISSIONS.SOCKS_DELETE),
+      canManageUsers: can(WG_PERMISSIONS.SOCKS_USERS),
+      canViewSecrets: can(WG_PERMISSIONS.SOCKS_SECRETS),
+      canManageClients: can(WG_PERMISSIONS.SOCKS_CLIENTS),
+      canAssign: can(WG_PERMISSIONS.SOCKS_ASSIGN),
+    };
+  };
   const [secret, setSecret] = useState<ISocksSecret | null>(null);
 
   const services = useCollection<WgSocksServiceDto>({
@@ -45,7 +75,10 @@ export const useWgSocksVM = () => {
   });
 
   // Изменения (пользователи, сертификаты) и статистика агента — событиями.
-  useSocketRoom("wg-socks", canView ? "all" : null, () => services.refresh());
+  // Все прокси — из комнаты списка; свои приходят адресно.
+  useSocketRoom("wg-socks", viewScope === "all" ? "all" : null, () =>
+    services.refresh(),
+  );
   useSocketEvent<[WgSocksServiceDto]>("wg:socks:updated", upsert, canView);
   useSocketEvent<[{ id: string }]>(
     "wg:socks:deleted",
@@ -115,10 +148,15 @@ export const useWgSocksVM = () => {
 
   const namePrompt = useSocksNamePromptVM({ onSubmit: create });
   const canCreate = userStore.can(WG_PERMISSIONS.SOCKS_CREATE);
-  const canUpdate = userStore.can(WG_PERMISSIONS.SOCKS_UPDATE);
-  const canManageUsers = userStore.can(WG_PERMISSIONS.SOCKS_USERS);
-  const canViewSecrets = userStore.can(WG_PERMISSIONS.SOCKS_SECRETS);
-  const canManageClients = userStore.can(WG_PERMISSIONS.SOCKS_CLIENTS);
+  const owner = useAssignWgOwnerVM<WgSocksServiceDto>({ onSaved: upsert });
+
+  const openOwner = (service: WgSocksServiceDto) =>
+    owner.openFor({
+      title: `Прокси ${service.name}`,
+      ownerId: service.ownerId,
+      assign: userId => api.assignWgSocks(service.id, { userId }),
+      revoke: () => api.revokeWgSocks(service.id),
+    });
 
   const toggleUser = async (service: WgSocksServiceDto, user: WgSocksUserDto) =>
     done(
@@ -185,15 +223,27 @@ export const useWgSocksVM = () => {
     else downloadBlob(res.data, macClientFileName(service.name));
   };
 
-  useCloseWhenForbidden(form.open, form.editing ? canUpdate : canCreate, () =>
-    form.setOpen(false),
+  const prompted = namePrompt.prompt
+    ? accessOf(namePrompt.prompt.service)
+    : null;
+
+  useCloseWhenForbidden(
+    form.open,
+    form.editing ? accessOf(form.editing).canUpdate : canCreate,
+    () => form.setOpen(false),
   );
   useCloseWhenForbidden(
-    !!namePrompt.prompt,
-    namePrompt.prompt?.kind === "client" ? canManageClients : canManageUsers,
+    !!prompted,
+    namePrompt.prompt?.kind === "client"
+      ? !!prompted?.canManageClients
+      : !!prompted?.canManageUsers,
     namePrompt.close,
   );
-  useCloseWhenForbidden(!!secret, canViewSecrets, () => setSecret(null));
+  useCloseWhenForbidden(
+    !!secret,
+    userStore.scope(WG_PERMISSIONS.SOCKS_SECRETS) !== null,
+    () => setSecret(null),
+  );
 
   return {
     services,
@@ -208,12 +258,11 @@ export const useWgSocksVM = () => {
     closeSecret: () => setSecret(null),
     revokeClient,
     downloadMac,
+    owner,
+    openOwner,
     canCreate,
-    canUpdate,
-    canDelete: userStore.can(WG_PERMISSIONS.SOCKS_DELETE),
-    canManageUsers,
-    canViewSecrets,
-    canManageClients,
+    /** Действия над прокси: право на все или свой. */
+    accessOf,
   };
 };
 

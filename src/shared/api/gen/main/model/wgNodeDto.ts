@@ -3,6 +3,16 @@ import type { IWgNodeOsInfo } from "./iWgNodeOsInfo.ts";
 
 export interface WgNodeDto {
   id: string;
+  /**
+   * Назначенный владелец ноды.
+   * @nullable
+   */
+  ownerId: string | null;
+  /**
+   * Создатель ноды.
+   * @nullable
+   */
+  createdById: string | null;
   name: string;
   /** @nullable */
   description: string | null;

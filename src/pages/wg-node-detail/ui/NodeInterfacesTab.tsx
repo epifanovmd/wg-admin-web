@@ -2,7 +2,7 @@ import { WgToggleSwitch } from "@entities/wg";
 import {
   hasAnyInterfaceAction,
   InterfaceStatusCompact,
-  type IWgInterfacePermissions,
+  type WgInterfaceAccess,
 } from "@features/manage-wg-interface";
 import type { WgInterfaceDto } from "@shared/api/gen/main/model";
 import { useLatestRef } from "@shared/lib/hooks";
@@ -23,7 +23,8 @@ interface NodeInterfacesTabProps {
   nodeId: string;
   interfaces: WgInterfaceDto[];
   isLoading: boolean;
-  permissions: IWgInterfacePermissions;
+  /** Права действий — по строке (свой интерфейс или право на все). */
+  access: WgInterfaceAccess;
   onEdit: (iface: WgInterfaceDto) => void;
   onToggle: (iface: WgInterfaceDto) => Promise<boolean>;
   onRestart: (iface: WgInterfaceDto) => void;
@@ -47,10 +48,10 @@ type RowActions = Pick<
   | "onRemoveReplica"
 >;
 
-/** Обработчики — через ref: колонки стабильны, ячейки не перемонтируются. */
+/** Обработчики и права — через ref: колонки стабильны, ячейки не перемонтируются. */
 const createColumns = (
   nodeId: string,
-  permissions: IWgInterfacePermissions,
+  accessRef: RefObject<WgInterfaceAccess>,
   actions: RefObject<RowActions>,
 ) => [
   column.display({
@@ -117,8 +118,10 @@ const createColumns = (
     meta: { align: "right" },
     // Действия интерфейса — у основной; у копии чужого интерфейса — только
     // убрать её с этой ноды.
-    cell: ({ row }) =>
-      row.original.nodeId !== nodeId ? (
+    cell: ({ row }) => {
+      const permissions = accessRef.current.accessOf(row.original);
+
+      return row.original.nodeId !== nodeId ? (
         permissions.canReplicas ? (
           <TableRowActions>
             <Tooltip content="Убрать копию с этой ноды">
@@ -197,7 +200,8 @@ const createColumns = (
             </Tooltip>
           )}
         </TableRowActions>
-      ) : null,
+      ) : null;
+    },
   }),
 ];
 
@@ -206,14 +210,16 @@ export const NodeInterfacesTab: FC<NodeInterfacesTabProps> = ({
   nodeId,
   interfaces,
   isLoading,
-  permissions,
+  access,
   ...actions
 }) => {
   const navigate = useNavigate();
   const actionsRef = useLatestRef<RowActions>(actions);
+  const accessRef = useLatestRef(access);
   const columns = useMemo(
-    () => createColumns(nodeId, permissions, actionsRef),
-    [nodeId, permissions, actionsRef],
+    () => createColumns(nodeId, accessRef, actionsRef),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [nodeId, access.accessKey, accessRef, actionsRef],
   );
 
   return (

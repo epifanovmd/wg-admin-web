@@ -5,6 +5,16 @@ import type { IWgInterfaceReplicaDto } from "./iWgInterfaceReplicaDto.ts";
 
 export interface WgInterfaceDto {
   id: string;
+  /**
+   * Назначенный владелец интерфейса.
+   * @nullable
+   */
+  ownerId: string | null;
+  /**
+   * Создатель интерфейса.
+   * @nullable
+   */
+  createdById: string | null;
   nodeId: string;
   /**
    * Название ноды (если загружена связь).

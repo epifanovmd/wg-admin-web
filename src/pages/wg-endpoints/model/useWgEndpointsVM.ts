@@ -1,5 +1,6 @@
 import { IUserStore } from "@entities/user";
-import { IWgNodesStore, WG_PERMISSIONS } from "@entities/wg";
+import { IWgNodesStore, WG_PERMISSIONS, wgOwners } from "@entities/wg";
+import { useAssignWgOwnerVM } from "@features/assign-wg-owner";
 import {
   endpointWarnings,
   useDeleteWgEndpoint,
@@ -12,12 +13,33 @@ import { useCloseWhenForbidden } from "@shared/lib/hooks";
 import { useSocketEvent, useSocketRoom } from "@shared/lib/socket";
 import { useCallback, useEffect } from "react";
 
-/** Точки подключения и действия с ними. */
+/** Действия над конкретной точкой по области прав. */
+export interface IWgEndpointRowAccess {
+  canUpdate: boolean;
+  canDelete: boolean;
+  canAssign: boolean;
+}
+
+/**
+ * Точки подключения и действия с ними. С областью «свои» — только свои точки
+ * (владелец или создатель); действия — по строке.
+ */
 export const useWgEndpointsVM = () => {
   const api = IMainApi.useInstance();
   const userStore = IUserStore.useInstance();
   const nodesStore = IWgNodesStore.useInstance();
-  const canView = userStore.can(WG_PERMISSIONS.ENDPOINT_VIEW);
+  const viewScope = userStore.scope(WG_PERMISSIONS.ENDPOINT_VIEW);
+  const canView = viewScope !== null;
+
+  const accessOf = (endpoint: WgEndpointDto): IWgEndpointRowAccess => {
+    const owners = wgOwners(endpoint);
+
+    return {
+      canUpdate: userStore.canOn(WG_PERMISSIONS.ENDPOINT_UPDATE, owners),
+      canDelete: userStore.canOn(WG_PERMISSIONS.ENDPOINT_DELETE, owners),
+      canAssign: userStore.canOn(WG_PERMISSIONS.ENDPOINT_ASSIGN, owners),
+    };
+  };
 
   const endpoints = useCollection<WgEndpointDto>({
     queryFn: async () => {
@@ -35,23 +57,34 @@ export const useWgEndpointsVM = () => {
 
   const form = useWgEndpointFormVM({ onSaved: upsert });
   const canCreate = userStore.can(WG_PERMISSIONS.ENDPOINT_CREATE);
-  const canUpdate = userStore.can(WG_PERMISSIONS.ENDPOINT_UPDATE);
+  const owner = useAssignWgOwnerVM<WgEndpointDto>({ onSaved: upsert });
 
-  useCloseWhenForbidden(form.open, form.editing ? canUpdate : canCreate, () =>
-    form.setOpen(false),
+  const openOwner = (endpoint: WgEndpointDto) =>
+    owner.openFor({
+      title: `Точка ${endpoint.name}`,
+      ownerId: endpoint.ownerId,
+      assign: userId => api.assignWgEndpoint(endpoint.id, { userId }),
+      revoke: () => api.revokeWgEndpoint(endpoint.id),
+    });
+
+  useCloseWhenForbidden(
+    form.open,
+    form.editing ? accessOf(form.editing).canUpdate : canCreate,
+    () => form.setOpen(false),
   );
   const remove = useDeleteWgEndpoint({
     onDeleted: endpoint => endpoints.removeItem(endpoint.id),
   });
 
-  // Названия релей-нод для таблицы — при праве видеть ноды.
-  const canViewNodes = userStore.can(WG_PERMISSIONS.NODE_VIEW);
+  // Названия релей-нод для таблицы — при праве видеть ноды (хотя бы свои).
+  const canViewNodes = userStore.scope(WG_PERMISSIONS.NODE_VIEW) !== null;
 
   useEffect(() => {
     if (canView && canViewNodes) void nodesStore.load();
   }, [canView, canViewNodes, nodesStore]);
 
-  useSocketRoom("wg-endpoints", canView ? "all" : null, () =>
+  // Все точки — из комнаты списка; свои приходят адресно.
+  useSocketRoom("wg-endpoints", viewScope === "all" ? "all" : null, () =>
     endpoints.refresh(),
   );
   useSocketEvent<[WgEndpointDto]>(
@@ -87,9 +120,12 @@ export const useWgEndpointsVM = () => {
     warningsOf,
     form,
     remove,
+    owner,
+    openOwner,
     canCreate,
-    canUpdate,
-    canDelete: userStore.can(WG_PERMISSIONS.ENDPOINT_DELETE),
+    /** Действия над точкой: право на все или своя. */
+    accessOf,
+    accessKey: userStore.accessKey,
   };
 };
 

@@ -1,5 +1,6 @@
 import { PermissionGate } from "@entities/user";
 import { WG_PERMISSIONS, WgNodeStatusBadge } from "@entities/wg";
+import { AssignWgOwnerModal } from "@features/assign-wg-owner";
 import {
   MoveWgInterfaceModal,
   WgInterfaceFormModal,
@@ -8,6 +9,7 @@ import {
   ProvisionWgNodeModal,
   WgNodeFormModal,
 } from "@features/manage-wg-node";
+import { ownPermission } from "@shared/lib/access";
 import { cn } from "@shared/lib/utils";
 import {
   Alert,
@@ -77,7 +79,7 @@ export const WgNodeDetail: FC<WgNodeDetailProps> = observer(({ nodeId }) => {
         )
       }
     >
-      <PermissionGate permission={WG_PERMISSIONS.NODE_VIEW}>
+      <PermissionGate permission={ownPermission(WG_PERMISSIONS.NODE_VIEW)}>
         {!node ? (
           vm.node.isError ? (
             <PageEmpty icon="error" title="Нода не найдена" />
@@ -113,7 +115,7 @@ export const WgNodeDetail: FC<WgNodeDetailProps> = observer(({ nodeId }) => {
                     <TabsTrigger value="logs">Журнал агента</TabsTrigger>
                   )}
                 </TabsList>
-                {tab === "interfaces" && vm.interfacePermissions.canCreate && (
+                {tab === "interfaces" && vm.interfaceAccess.canCreate && (
                   <Button
                     leftIcon={<Plus size={15} />}
                     onClick={vm.interfaceForm.openCreate}
@@ -143,7 +145,7 @@ export const WgNodeDetail: FC<WgNodeDetailProps> = observer(({ nodeId }) => {
                   nodeId={nodeId}
                   interfaces={vm.interfaces.items}
                   isLoading={vm.interfaces.isLoading}
-                  permissions={vm.interfacePermissions}
+                  access={vm.interfaceAccess}
                   onEdit={vm.interfaceForm.openEdit}
                   onToggle={vm.interfaceActions.toggle}
                   onRestart={vm.interfaceActions.restart}
@@ -174,6 +176,7 @@ export const WgNodeDetail: FC<WgNodeDetailProps> = observer(({ nodeId }) => {
       <WgNodeFormModal vm={vm.nodeForm} />
       <WgInterfaceFormModal vm={vm.interfaceForm} />
       <ProvisionWgNodeModal vm={vm.provision} />
+      <AssignWgOwnerModal vm={vm.owner} />
       <MoveWgInterfaceModal vm={vm.move} />
     </PageLayout>
   );

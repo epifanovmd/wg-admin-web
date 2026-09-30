@@ -1,6 +1,8 @@
 import { PermissionGate } from "@entities/user";
 import { WG_PERMISSIONS } from "@entities/wg";
+import { AssignWgOwnerModal } from "@features/assign-wg-owner";
 import { WgSocksFormModal } from "@features/manage-wg-socks";
+import { ownPermission } from "@shared/lib/access";
 import { Button, PageHeader, PageLayout } from "@shared/ui";
 import { Plus } from "lucide-react";
 import { observer } from "mobx-react-lite";
@@ -33,12 +35,13 @@ export const WgSocksPage: FC = observer(() => {
         />
       }
     >
-      <PermissionGate permission={WG_PERMISSIONS.SOCKS_VIEW}>
+      <PermissionGate permission={ownPermission(WG_PERMISSIONS.SOCKS_VIEW)}>
         <WgSocksServices vm={vm} />
       </PermissionGate>
       <WgSocksFormModal vm={vm.form} />
       <SocksNamePromptModal vm={vm.namePrompt} />
       <SocksSecretModal vm={vm} />
+      <AssignWgOwnerModal vm={vm.owner} />
     </PageLayout>
   );
 });

@@ -13,4 +13,9 @@ export interface ICreateWgSocksBody {
   clientPort?: number | null;
   /** CN/SNI серверного сертификата (по умолчанию publicHost ноды). */
   serverName?: string;
+  /**
+   * Назначенный владелец; другой пользователь — только с правом назначения.
+   * @nullable
+   */
+  ownerId?: string | null;
 }

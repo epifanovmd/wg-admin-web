@@ -2,6 +2,8 @@ import { IUserStore } from "@entities/user";
 import { IWgNodesStore, WG_PERMISSIONS } from "@entities/wg";
 import { IMainApi } from "@shared/api";
 import type { WgNodeDto } from "@shared/api/gen/main/model";
+import { ownPermission } from "@shared/lib/access";
+import { createFakeAccess } from "@shared/lib/access/testing";
 import { iocContainer } from "@shared/lib/di";
 import { INotificationService } from "@shared/lib/notifications";
 import { ISocketTransport } from "@shared/lib/socket";
@@ -33,6 +35,8 @@ const node = {
   applyError: null,
   inSync: true,
   hasAgentKey: true,
+  ownerId: "u2",
+  createdById: null,
 } as unknown as WgNodeDto;
 
 const wgAgentRelease = vi.fn();
@@ -50,10 +54,9 @@ const bind = (permissions: string[]) => {
   iocContainer
     .bind(INotificationService.Tid)
     .toConstantValue({ error: vi.fn(), success: vi.fn() });
-  iocContainer.bind(IUserStore.Tid).toConstantValue({
-    user: { id: "u1" },
-    can: (permission: string) => permissions.includes(permission),
-  });
+  iocContainer
+    .bind(IUserStore.Tid)
+    .toConstantValue(createFakeAccess({ userId: "u1", permissions }));
   iocContainer.bind(IWgNodesStore.Tid).toConstantValue({
     nodes: [node],
     isLoading: false,
@@ -101,6 +104,30 @@ describe("WgNodesPage", () => {
     },
   );
 
+  const OWN_NODE_RIGHTS = [
+    ownPermission(WG_PERMISSIONS.NODE_VIEW),
+    ownPermission(WG_PERMISSIONS.NODE_UPDATE),
+    ownPermission(WG_PERMISSIONS.NODE_ASSIGN),
+  ];
+
+  it("права «свои»: у чужой ноды действий нет", () => {
+    bind(OWN_NODE_RIGHTS);
+    renderPage();
+
+    expect(screen.queryByRole("button", { name: "Изменить" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Владелец" })).toBeNull();
+  });
+
+  it("права «свои»: у своей ноды — изменение и владелец", () => {
+    Object.assign(node, { ownerId: "u1" });
+    bind(OWN_NODE_RIGHTS);
+    renderPage();
+
+    expect(screen.getByRole("button", { name: "Изменить" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Владелец" })).toBeTruthy();
+    Object.assign(node, { ownerId: "u2" });
+  });
+
   it("клик по строке открывает ноду", () => {
     bind([WG_PERMISSIONS.NODE_VIEW]);
     renderPage();
@@ -120,10 +147,9 @@ describe("WgNodesPage", () => {
     expect(screen.queryByRole("button", { name: "Новая нода" })).toBeNull();
     view.unmount();
     iocContainer.unbind(IUserStore.Tid);
-    iocContainer.bind(IUserStore.Tid).toConstantValue({
-      user: { id: "u1" },
-      can: () => true,
-    });
+    iocContainer
+      .bind(IUserStore.Tid)
+      .toConstantValue(createFakeAccess({ permissions: ["*"] }));
     renderPage();
 
     expect(screen.getByRole("button", { name: "Новая нода" })).toBeTruthy();

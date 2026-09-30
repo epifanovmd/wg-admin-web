@@ -1,5 +1,6 @@
 import { IUserStore } from "@entities/user";
 import { IMainApi } from "@shared/api";
+import { createFakeAccess } from "@shared/lib/access/testing";
 import { iocContainer } from "@shared/lib/di";
 import { renderHook, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -17,7 +18,9 @@ const api = {
 
 beforeEach(() => {
   iocContainer.bind(IMainApi.Tid).toConstantValue(api);
-  iocContainer.bind(IUserStore.Tid).toConstantValue({ can: () => true });
+  iocContainer
+    .bind(IUserStore.Tid)
+    .toConstantValue(createFakeAccess({ permissions: ["*"] }));
 });
 
 afterEach(() => {

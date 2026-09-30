@@ -17,7 +17,7 @@ import {
   Tooltip,
 } from "@shared/ui";
 import { Link } from "@tanstack/react-router";
-import { HardDriveDownload, Pencil, Trash2 } from "lucide-react";
+import { HardDriveDownload, Pencil, Trash2, UserCog } from "lucide-react";
 import type { RefObject } from "react";
 
 import type { WgNodesVM } from "../model/useWgNodesVM";
@@ -25,9 +25,6 @@ import type { WgNodesVM } from "../model/useWgNodesVM";
 const column = createColumnHelper<WgNodeDto>();
 
 interface NodeColumnsOptions {
-  canUpdate: boolean;
-  canDelete: boolean;
-  canProvision: boolean;
   /** Раздаваемая бэкендом версия агента; null — не загружена или нет права. */
   release: IWgAgentReleaseInfo | null;
   /** VM — через ref: колонки стабильны, ячейки не перемонтируются. */
@@ -35,13 +32,7 @@ interface NodeColumnsOptions {
 }
 
 /** Колонки таблицы нод. */
-export const createNodeColumns = ({
-  canUpdate,
-  canDelete,
-  canProvision,
-  release,
-  vm,
-}: NodeColumnsOptions) => [
+export const createNodeColumns = ({ release, vm }: NodeColumnsOptions) => [
   column.display({
     id: "name",
     header: "Нода",
@@ -110,40 +101,54 @@ export const createNodeColumns = ({
     id: "actions",
     size: 130,
     meta: { align: "right" },
-    cell: ({ row }) => (
-      <TableRowActions>
-        {canProvision && (
-          <Tooltip content="Установить агента">
-            <IconButton
-              aria-label="Установить агента"
-              onClick={() => vm.current.provision.openFor(row.original)}
-            >
-              <HardDriveDownload size={15} />
-            </IconButton>
-          </Tooltip>
-        )}
-        {canUpdate && (
-          <Tooltip content="Изменить">
-            <IconButton
-              aria-label="Изменить"
-              onClick={() => vm.current.form.openEdit(row.original)}
-            >
-              <Pencil size={15} />
-            </IconButton>
-          </Tooltip>
-        )}
-        {canDelete && (
-          <Tooltip content="Удалить">
-            <IconButton
-              aria-label="Удалить"
-              variant="destructive"
-              onClick={() => void vm.current.remove(row.original)}
-            >
-              <Trash2 size={15} />
-            </IconButton>
-          </Tooltip>
-        )}
-      </TableRowActions>
-    ),
+    cell: ({ row }) => {
+      const access = vm.current.accessOf(row.original);
+
+      return (
+        <TableRowActions>
+          {access.canProvision && (
+            <Tooltip content="Установить агента">
+              <IconButton
+                aria-label="Установить агента"
+                onClick={() => vm.current.provision.openFor(row.original)}
+              >
+                <HardDriveDownload size={15} />
+              </IconButton>
+            </Tooltip>
+          )}
+          {access.canAssign && (
+            <Tooltip content="Владелец">
+              <IconButton
+                aria-label="Владелец"
+                onClick={() => vm.current.openOwner(row.original)}
+              >
+                <UserCog size={15} />
+              </IconButton>
+            </Tooltip>
+          )}
+          {access.canUpdate && (
+            <Tooltip content="Изменить">
+              <IconButton
+                aria-label="Изменить"
+                onClick={() => vm.current.form.openEdit(row.original)}
+              >
+                <Pencil size={15} />
+              </IconButton>
+            </Tooltip>
+          )}
+          {access.canDelete && (
+            <Tooltip content="Удалить">
+              <IconButton
+                aria-label="Удалить"
+                variant="destructive"
+                onClick={() => void vm.current.remove(row.original)}
+              >
+                <Trash2 size={15} />
+              </IconButton>
+            </Tooltip>
+          )}
+        </TableRowActions>
+      );
+    },
   }),
 ];

@@ -4,11 +4,13 @@ import {
   useWgLiveSpeed,
   WG_PERMISSIONS,
 } from "@entities/wg";
+import { useAssignWgOwnerVM } from "@features/assign-wg-owner";
 import {
+  NO_INTERFACE_ACCESS,
   useMoveWgInterfaceVM,
+  useWgInterfaceAccess,
   useWgInterfaceActions,
   useWgInterfaceFormVM,
-  useWgInterfacePermissions,
 } from "@features/manage-wg-interface";
 import { IMainApi } from "@shared/api";
 import type { WgInterfaceDto } from "@shared/api/gen/main/model";
@@ -25,15 +27,16 @@ import { useState } from "react";
 
 /**
  * Страница интерфейса: карточка, живая статистика и события комнаты
- * интерфейса, действия (как на странице ноды), пиры с фильтрами.
+ * интерфейса, действия (как на странице ноды; по области прав на этот
+ * интерфейс), пиры с фильтрами.
  */
 export const useWgInterfaceDetailVM = (interfaceId: string) => {
   const api = IMainApi.useInstance();
   const userStore = IUserStore.useInstance();
   const navigate = useNavigate();
-  const canView = userStore.can(WG_PERMISSIONS.INTERFACE_VIEW);
+  const canView = userStore.scope(WG_PERMISSIONS.INTERFACE_VIEW) !== null;
   const liveId = canView ? interfaceId : null;
-  const permissions = useWgInterfacePermissions();
+  const access = useWgInterfaceAccess();
   const [peerFilters, setPeerFilters] = useState<IWgPeersFilters>({});
 
   const iface = useEntity<WgInterfaceDto, string>({
@@ -87,6 +90,23 @@ export const useWgInterfaceDetailVM = (interfaceId: string) => {
     onSaved: iface.setData,
   });
 
+  const owner = useAssignWgOwnerVM<WgInterfaceDto>({ onSaved: iface.setData });
+  const permissions = iface.data
+    ? access.accessOf(iface.data)
+    : NO_INTERFACE_ACCESS;
+
+  const openOwner = () => {
+    const current = iface.data;
+
+    if (!current) return;
+    owner.openFor({
+      title: `Интерфейс ${current.name}`,
+      ownerId: current.ownerId,
+      assign: userId => api.assignWgInterface(current.id, { userId }),
+      revoke: () => api.revokeWgInterface(current.id),
+    });
+  };
+
   useCloseWhenForbidden(form.open, permissions.canUpdate, () =>
     form.setOpen(false),
   );
@@ -110,6 +130,8 @@ export const useWgInterfaceDetailVM = (interfaceId: string) => {
         compactPeersFilters({ ...previous, ...patch }),
       ),
     permissions,
+    owner,
+    openOwner,
   };
 };
 

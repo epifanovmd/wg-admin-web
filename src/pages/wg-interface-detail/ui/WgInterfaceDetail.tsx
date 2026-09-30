@@ -1,5 +1,6 @@
 import { PermissionGate } from "@entities/user";
 import { WG_PERMISSIONS, WgInterfaceStatusBadge } from "@entities/wg";
+import { AssignWgOwnerModal } from "@features/assign-wg-owner";
 import {
   hasAnyInterfaceAction,
   MoveWgInterfaceModal,
@@ -7,6 +8,7 @@ import {
 } from "@features/manage-wg-interface";
 import { WgPeerFormModal } from "@features/manage-wg-peer";
 import { WgPeerConfigModal } from "@features/wg-peer-config";
+import { ownPermission } from "@shared/lib/access";
 import {
   Alert,
   Button,
@@ -74,7 +76,9 @@ export const WgInterfaceDetail: FC<WgInterfaceDetailProps> = observer(
           )
         }
       >
-        <PermissionGate permission={WG_PERMISSIONS.INTERFACE_VIEW}>
+        <PermissionGate
+          permission={ownPermission(WG_PERMISSIONS.INTERFACE_VIEW)}
+        >
           {!iface ? (
             vm.iface.isError ? (
               <PageEmpty icon="error" title="Интерфейс не найден" />
@@ -129,6 +133,7 @@ export const WgInterfaceDetail: FC<WgInterfaceDetailProps> = observer(
         <WgPeerFormModal vm={vm.peers.form} />
         <WgPeerConfigModal vm={vm.peers.config} />
         <MoveWgInterfaceModal vm={vm.move} />
+        <AssignWgOwnerModal vm={vm.owner} />
       </PageLayout>
     );
   },

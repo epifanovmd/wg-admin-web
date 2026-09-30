@@ -5,6 +5,16 @@ import type { EWgForwardRoute } from "./eWgForwardRoute.ts";
 
 export interface WgForwardDto {
   id: string;
+  /**
+   * Назначенный владелец проброса.
+   * @nullable
+   */
+  ownerId: string | null;
+  /**
+   * Создатель проброса.
+   * @nullable
+   */
+  createdById: string | null;
   name: string;
   /** @nullable */
   description: string | null;

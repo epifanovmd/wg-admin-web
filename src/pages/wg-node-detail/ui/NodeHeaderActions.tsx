@@ -1,7 +1,13 @@
 import { RotateWgAgentKeyButton } from "@features/manage-wg-node";
 import type { WgNodeDto } from "@shared/api/gen/main/model";
 import { Button } from "@shared/ui";
-import { HardDriveDownload, PackageX, Pencil, Trash2 } from "lucide-react";
+import {
+  HardDriveDownload,
+  PackageX,
+  Pencil,
+  Trash2,
+  UserCog,
+} from "lucide-react";
 import { observer } from "mobx-react-lite";
 import { FC } from "react";
 
@@ -53,6 +59,15 @@ export const NodeHeaderActions: FC<NodeHeaderActionsProps> = observer(
           onClick={() => vm.nodeForm.openEdit(node)}
         >
           Изменить
+        </Button>
+      )}
+      {vm.canAssign && (
+        <Button
+          variant="outline"
+          leftIcon={<UserCog size={15} />}
+          onClick={vm.openOwner}
+        >
+          Владелец
         </Button>
       )}
       {vm.canDelete && (

@@ -1,6 +1,9 @@
 import { IUserStore } from "@entities/user";
 import { WG_PERMISSIONS } from "@entities/wg";
-import { useWgInterfaceActions } from "@features/manage-wg-interface";
+import {
+  useWgInterfaceAccess,
+  useWgInterfaceActions,
+} from "@features/manage-wg-interface";
 import { IMainApi } from "@shared/api";
 import type { WgInterfaceDto } from "@shared/api/gen/main/model";
 import { useCollection } from "@shared/lib/holders";
@@ -14,8 +17,9 @@ import { useSocketEvent, useSocketRoom } from "@shared/lib/socket";
 export const useRelayedInterfacesVM = () => {
   const api = IMainApi.useInstance();
   const userStore = IUserStore.useInstance();
-  const canView = userStore.can(WG_PERMISSIONS.INTERFACE_VIEW);
-  const canPin = userStore.can(WG_PERMISSIONS.INTERFACE_REPLICAS);
+  const viewScope = userStore.scope(WG_PERMISSIONS.INTERFACE_VIEW);
+  const canView = viewScope !== null;
+  const access = useWgInterfaceAccess();
 
   const interfaces = useCollection<WgInterfaceDto>({
     queryFn: async () => {
@@ -42,7 +46,7 @@ export const useRelayedInterfacesVM = () => {
     onDeleted: iface => interfaces.removeItem(iface.id),
   });
 
-  useSocketRoom("wg-interfaces", canView ? "all" : null, () =>
+  useSocketRoom("wg-interfaces", viewScope === "all" ? "all" : null, () =>
     interfaces.refresh(),
   );
   useSocketEvent<[WgInterfaceDto]>("wg:interface:updated", upsert, canView);
@@ -54,7 +58,9 @@ export const useRelayedInterfacesVM = () => {
 
   return {
     canView,
-    canPin,
+    /** Закреплять обслуживающую копию: право на копии этого интерфейса. */
+    canPin: (iface: WgInterfaceDto) => access.accessOf(iface).canReplicas,
+    accessKey: access.accessKey,
     interfaces,
     pin: actions.pinReplica,
   };

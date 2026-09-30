@@ -13,10 +13,12 @@ interface WgForwardsTableProps {
 /** Таблица пробросов портов. */
 export const WgForwardsTable: FC<WgForwardsTableProps> = observer(({ vm }) => {
   const vmRef = useLatestRef(vm);
-  const { canUpdate, canDelete, forwards } = vm;
+  const { accessKey, forwards } = vm;
   const columns = useMemo(
-    () => createForwardColumns({ canUpdate, canDelete, vm: vmRef }),
-    [canUpdate, canDelete, vmRef],
+    () => createForwardColumns({ vm: vmRef }),
+    // Права действий считаются по строке; при смене прав колонки пересобираются.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [accessKey, vmRef],
   );
 
   return (

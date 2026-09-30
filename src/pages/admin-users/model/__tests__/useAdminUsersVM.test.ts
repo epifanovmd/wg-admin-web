@@ -1,6 +1,7 @@
 import { IUserStore } from "@entities/user";
 import { IMainApi } from "@shared/api";
 import type { UserDto } from "@shared/api/gen/main/model";
+import { createFakeAccess } from "@shared/lib/access/testing";
 import { iocContainer } from "@shared/lib/di";
 import { INotificationService } from "@shared/lib/notifications";
 import { ISocketTransport } from "@shared/lib/socket";
@@ -22,10 +23,9 @@ const api = { getUsers: vi.fn() };
 let socket: IFakeSocket;
 
 const bind = (permissions: string[]) =>
-  iocContainer.bind(IUserStore.Tid).toConstantValue({
-    user: { id: "admin" },
-    can: (permission: string) => permissions.includes(permission),
-  });
+  iocContainer
+    .bind(IUserStore.Tid)
+    .toConstantValue(createFakeAccess({ userId: "admin", permissions }));
 
 beforeEach(() => {
   socket = createFakeSocket();

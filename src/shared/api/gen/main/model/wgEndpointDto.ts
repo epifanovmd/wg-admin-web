@@ -5,6 +5,16 @@ import type { IWgEndpointInterfaceDto } from "./iWgEndpointInterfaceDto.ts";
 
 export interface WgEndpointDto {
   id: string;
+  /**
+   * Назначенный владелец точки.
+   * @nullable
+   */
+  ownerId: string | null;
+  /**
+   * Создатель точки.
+   * @nullable
+   */
+  createdById: string | null;
   name: string;
   /** @nullable */
   description: string | null;

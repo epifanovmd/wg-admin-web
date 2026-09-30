@@ -16,11 +16,16 @@ export interface ICreateWgInterfaceBody {
   endpointPort?: number | null;
   natEnabled?: boolean;
   /**
-   * Только для суперпользователя.
+   * Только с правом `wg:interface:hooks`.
    * @nullable
    */
   customPostUp?: string | null;
   /** @nullable */
   customPostDown?: string | null;
   enabled?: boolean;
+  /**
+   * Назначенный владелец; другой пользователь — только с правом назначения.
+   * @nullable
+   */
+  ownerId?: string | null;
 }

@@ -15,17 +15,12 @@ interface WgNodesTableProps {
 export const WgNodesTable: FC<WgNodesTableProps> = observer(({ vm }) => {
   const navigate = useNavigate();
   const vmRef = useLatestRef(vm);
-  const { canUpdate, canDelete, canProvision, release } = vm;
+  const { release, accessKey } = vm;
+  // Права действий считаются по строке; при смене прав колонки пересобираются.
   const columns = useMemo(
-    () =>
-      createNodeColumns({
-        canUpdate,
-        canDelete,
-        canProvision,
-        release,
-        vm: vmRef,
-      }),
-    [canUpdate, canDelete, canProvision, release, vmRef],
+    () => createNodeColumns({ release, vm: vmRef }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [accessKey, release, vmRef],
   );
 
   return (

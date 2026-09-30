@@ -17,4 +17,9 @@ export interface ICreateWgEndpointBody {
   forwardMode?: EWgForwardMode;
   /** Маршрут при IPIP: по умолчанию `auto` (запасной прямой путь). */
   route?: EWgEndpointRoute;
+  /**
+   * Назначенный владелец; другой пользователь — только с правом назначения.
+   * @nullable
+   */
+  ownerId?: string | null;
 }

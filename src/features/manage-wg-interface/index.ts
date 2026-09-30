@@ -1,12 +1,14 @@
 export { interfaceTraffic } from "./model/interface-traffic";
 export { useMoveWgInterfaceVM } from "./model/useMoveWgInterfaceVM";
-export { useWgInterfaceActions } from "./model/useWgInterfaceActions";
-export { useWgInterfaceFormVM } from "./model/useWgInterfaceFormVM";
 export {
   hasAnyInterfaceAction,
-  type IWgInterfacePermissions,
-  useWgInterfacePermissions,
-} from "./model/useWgInterfacePermissions";
+  type IWgInterfaceRowAccess,
+  NO_INTERFACE_ACCESS,
+  useWgInterfaceAccess,
+  type WgInterfaceAccess,
+} from "./model/useWgInterfaceAccess";
+export { useWgInterfaceActions } from "./model/useWgInterfaceActions";
+export { useWgInterfaceFormVM } from "./model/useWgInterfaceFormVM";
 export { InterfaceReplicasCell } from "./ui/InterfaceReplicasCell";
 export { InterfaceStatusCompact } from "./ui/InterfaceStatusCompact";
 export { InterfaceTrafficNote } from "./ui/InterfaceTrafficNote";

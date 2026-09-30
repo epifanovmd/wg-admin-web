@@ -6,7 +6,7 @@ import {
   TableRowActions,
   Tooltip,
 } from "@shared/ui";
-import { Pencil, Trash2, TriangleAlert } from "lucide-react";
+import { Pencil, Trash2, TriangleAlert, UserCog } from "lucide-react";
 import type { RefObject } from "react";
 
 import type { WgEndpointsVM } from "../model/useWgEndpointsVM";
@@ -15,8 +15,6 @@ import { EndpointModeBadges } from "./EndpointModeBadges";
 const column = createColumnHelper<WgEndpointDto>();
 
 interface EndpointColumnsOptions {
-  canUpdate: boolean;
-  canDelete: boolean;
   relayNodeName: (id: string | null) => string | null;
   /** Настройки, которые почти наверняка ведут трафик не туда. */
   warningsOf: (endpoint: WgEndpointDto) => string[];
@@ -26,8 +24,6 @@ interface EndpointColumnsOptions {
 
 /** Колонки таблицы точек подключения. */
 export const createEndpointColumns = ({
-  canUpdate,
-  canDelete,
   relayNodeName,
   warningsOf,
   vm,
@@ -90,12 +86,24 @@ export const createEndpointColumns = ({
   }),
   column.display({
     id: "actions",
-    size: 100,
+    size: 130,
     meta: { align: "right" },
-    cell: ({ row }) =>
-      canUpdate || canDelete ? (
+    cell: ({ row }) => {
+      const access = vm.current.accessOf(row.original);
+
+      return access.canUpdate || access.canDelete || access.canAssign ? (
         <TableRowActions>
-          {canUpdate && (
+          {access.canAssign && (
+            <Tooltip content="Владелец">
+              <IconButton
+                aria-label="Владелец"
+                onClick={() => vm.current.openOwner(row.original)}
+              >
+                <UserCog size={15} />
+              </IconButton>
+            </Tooltip>
+          )}
+          {access.canUpdate && (
             <Tooltip content="Изменить">
               <IconButton
                 aria-label="Изменить"
@@ -105,7 +113,7 @@ export const createEndpointColumns = ({
               </IconButton>
             </Tooltip>
           )}
-          {canDelete && (
+          {access.canDelete && (
             <Tooltip content="Удалить">
               <IconButton
                 aria-label="Удалить"
@@ -117,6 +125,7 @@ export const createEndpointColumns = ({
             </Tooltip>
           )}
         </TableRowActions>
-      ) : null,
+      ) : null;
+    },
   }),
 ];

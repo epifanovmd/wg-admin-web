@@ -1,7 +1,14 @@
 import { WgToggleSwitch } from "@entities/wg";
 import type { WgInterfaceDto } from "@shared/api/gen/main/model";
 import { Button } from "@shared/ui";
-import { ArrowRightLeft, Copy, Pencil, RotateCcw, Trash2 } from "lucide-react";
+import {
+  ArrowRightLeft,
+  Copy,
+  Pencil,
+  RotateCcw,
+  Trash2,
+  UserCog,
+} from "lucide-react";
 import { observer } from "mobx-react-lite";
 import { FC } from "react";
 
@@ -56,6 +63,15 @@ export const InterfaceActions: FC<InterfaceSectionProps> = observer(
           onClick={() => vm.move.openFor(iface, "copy")}
         >
           Копия
+        </Button>
+      )}
+      {vm.permissions.canAssign && (
+        <Button
+          variant="outline"
+          leftIcon={<UserCog size={15} />}
+          onClick={vm.openOwner}
+        >
+          Владелец
         </Button>
       )}
       {vm.permissions.canDelete && (

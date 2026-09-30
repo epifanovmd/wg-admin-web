@@ -1,5 +1,6 @@
 import { IUserStore } from "@entities/user";
 import { IMainApi } from "@shared/api";
+import { createFakeAccess } from "@shared/lib/access/testing";
 import { iocContainer } from "@shared/lib/di";
 import { INotificationService } from "@shared/lib/notifications";
 import { act, renderHook, waitFor } from "@testing-library/react";
@@ -23,7 +24,7 @@ beforeEach(() => {
     .toConstantValue({ error: vi.fn(), success: vi.fn() });
   iocContainer
     .bind(IUserStore.Tid)
-    .toConstantValue({ user: { id: "u1" }, can: () => true });
+    .toConstantValue(createFakeAccess({ permissions: ["*"] }));
 });
 
 afterEach(() => {

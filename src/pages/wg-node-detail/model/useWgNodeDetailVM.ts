@@ -1,10 +1,16 @@
 import { IUserStore } from "@entities/user";
-import { type IWgNodeLive, useWgLiveSpeed, WG_PERMISSIONS } from "@entities/wg";
+import {
+  type IWgNodeLive,
+  useWgLiveSpeed,
+  WG_PERMISSIONS,
+  wgOwners,
+} from "@entities/wg";
+import { useAssignWgOwnerVM } from "@features/assign-wg-owner";
 import {
   useMoveWgInterfaceVM,
+  useWgInterfaceAccess,
   useWgInterfaceActions,
   useWgInterfaceFormVM,
-  useWgInterfacePermissions,
 } from "@features/manage-wg-interface";
 import {
   useDeleteWgNode,
@@ -35,23 +41,19 @@ const LOG_LINES = 300;
 
 /**
  * Карточка ноды: данные, интерфейсы, live-статистика и метрики, журнал и
- * обновление агента, действия. Загрузка и подписки — только с правом просмотра.
+ * обновление агента, действия. Загрузка и подписки — только с правом просмотра;
+ * действия — по области прав на эту ноду (своя — владелец или создатель).
  */
 export const useWgNodeDetailVM = (nodeId: string) => {
   const api = IMainApi.useInstance();
   const toast = INotificationService.useInstance();
   const userStore = IUserStore.useInstance();
   const navigate = useNavigate();
-  const canView = userStore.can(WG_PERMISSIONS.NODE_VIEW);
+  const canView = userStore.scope(WG_PERMISSIONS.NODE_VIEW) !== null;
   // Интерфейсы ноды — отдельный список с отдельным правом просмотра.
-  const canViewInterfaces =
-    canView && userStore.can(WG_PERMISSIONS.INTERFACE_VIEW);
-  const canUpdate = userStore.can(WG_PERMISSIONS.NODE_UPDATE);
-  const canDelete = userStore.can(WG_PERMISSIONS.NODE_DELETE);
-  const canAgent = userStore.can(WG_PERMISSIONS.NODE_AGENT);
-  const canLogs = userStore.can(WG_PERMISSIONS.NODE_LOGS);
-  const canProvision = userStore.can(WG_PERMISSIONS.NODE_PROVISION);
-  const interfacePermissions = useWgInterfacePermissions();
+  const interfaceScope = userStore.scope(WG_PERMISSIONS.INTERFACE_VIEW);
+  const canViewInterfaces = canView && interfaceScope !== null;
+  const interfaceAccess = useWgInterfaceAccess();
   const liveId = canView ? nodeId : null;
 
   const node = useEntity<WgNodeDto, string>({
@@ -115,7 +117,7 @@ export const useWgNodeDetailVM = (nodeId: string) => {
   const release = useEntity<IWgAgentReleaseInfo>({
     queryFn: () => api.wgAgentRelease(),
     autoLoad: true,
-    enabled: canAgent,
+    enabled: canView && userStore.scope(WG_PERMISSIONS.NODE_AGENT) !== null,
   });
 
   const logs = useEntity<string, string>({
@@ -142,7 +144,8 @@ export const useWgNodeDetailVM = (nodeId: string) => {
     void links.refresh(nodeId);
     void speed.reload();
   });
-  useSocketRoom("wg-interfaces", canViewInterfaces ? "all" : null, () =>
+  // Все интерфейсы — из комнаты списка; свои приходят адресно.
+  useSocketRoom("wg-interfaces", interfaceScope === "all" ? "all" : null, () =>
     interfaces.refresh(nodeId),
   );
   useSocketEvent<[{ id: string }]>(
@@ -211,6 +214,28 @@ export const useWgNodeDetailVM = (nodeId: string) => {
     onSaved: upsertInterface,
   });
   const provision = useProvisionWgNodeVM({});
+  const owner = useAssignWgOwnerVM<WgNodeDto>({ onSaved: node.setData });
+  const owners = node.data ? wgOwners(node.data) : [];
+  const canOnNode = (permission: string) =>
+    !!node.data && userStore.canOn(permission, owners);
+  const canUpdate = canOnNode(WG_PERMISSIONS.NODE_UPDATE);
+  const canDelete = canOnNode(WG_PERMISSIONS.NODE_DELETE);
+  const canAgent = canOnNode(WG_PERMISSIONS.NODE_AGENT);
+  const canLogs = canOnNode(WG_PERMISSIONS.NODE_LOGS);
+  const canProvision = canOnNode(WG_PERMISSIONS.NODE_PROVISION);
+  const canAssign = canOnNode(WG_PERMISSIONS.NODE_ASSIGN);
+
+  const openOwner = () => {
+    const current = node.data;
+
+    if (!current) return;
+    owner.openFor({
+      title: `Нода ${current.name}`,
+      ownerId: current.ownerId,
+      assign: userId => api.assignWgNode(current.id, { userId }),
+      revoke: () => api.revokeWgNode(current.id),
+    });
+  };
   // Перенос уводит интерфейс с ноды, копия — обновляет строку.
   const move = useMoveWgInterfaceVM({ onMoved: upsertInterface });
   const removeNode = useDeleteWgNode({
@@ -223,16 +248,17 @@ export const useWgNodeDetailVM = (nodeId: string) => {
   useCloseWhenForbidden(
     interfaceForm.open,
     interfaceForm.editing
-      ? interfacePermissions.canUpdate
-      : interfacePermissions.canCreate,
+      ? interfaceAccess.accessOf(interfaceForm.editing).canUpdate
+      : interfaceAccess.canCreate,
     () => interfaceForm.setOpen(false),
   );
   useCloseWhenForbidden(!!provision.node, canProvision, provision.close);
   useCloseWhenForbidden(
     move.open,
-    move.mode === "copy"
-      ? interfacePermissions.canReplicas
-      : interfacePermissions.canMove,
+    !!move.iface &&
+      (move.mode === "copy"
+        ? interfaceAccess.accessOf(move.iface).canReplicas
+        : interfaceAccess.accessOf(move.iface).canMove),
     move.close,
   );
 
@@ -260,8 +286,11 @@ export const useWgNodeDetailVM = (nodeId: string) => {
     canAgent,
     canLogs,
     canProvision,
+    canAssign,
+    owner,
+    openOwner,
     canViewInterfaces,
-    interfacePermissions,
+    interfaceAccess,
   };
 };
 

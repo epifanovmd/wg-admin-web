@@ -23,4 +23,9 @@ export interface ICreateWgForwardBody {
   path: EWgForwardPath;
   route?: EWgForwardRoute;
   enabled?: boolean;
+  /**
+   * Назначенный владелец; другой пользователь — только с правом назначения.
+   * @nullable
+   */
+  ownerId?: string | null;
 }

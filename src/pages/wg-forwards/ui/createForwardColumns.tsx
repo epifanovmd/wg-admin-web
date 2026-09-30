@@ -8,7 +8,7 @@ import {
   TableRowActions,
   Tooltip,
 } from "@shared/ui";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2, UserCog } from "lucide-react";
 import type { RefObject } from "react";
 
 import type { WgForwardsVM } from "../model/useWgForwardsVM";
@@ -22,18 +22,12 @@ const ROUTES: Array<{ value: EWgForwardRoute; label: string }> = [
 ];
 
 interface ForwardColumnsOptions {
-  canUpdate: boolean;
-  canDelete: boolean;
   /** VM — через ref: колонки стабильны, ячейки не перемонтируются. */
   vm: RefObject<WgForwardsVM>;
 }
 
 /** Колонки таблицы пробросов. */
-export const createForwardColumns = ({
-  canUpdate,
-  canDelete,
-  vm,
-}: ForwardColumnsOptions) => [
+export const createForwardColumns = ({ vm }: ForwardColumnsOptions) => [
   column.display({
     id: "forward",
     header: "Проброс",
@@ -85,7 +79,7 @@ export const createForwardColumns = ({
             size="sm"
             options={ROUTES}
             value={forward.route}
-            disabled={!canUpdate}
+            disabled={!vm.current.accessOf(forward).canUpdate}
             onValueChange={route => void vm.current.setRoute(forward, route)}
           />
           {forward.activeRoute && (
@@ -107,12 +101,24 @@ export const createForwardColumns = ({
   }),
   column.display({
     id: "actions",
-    size: 140,
+    size: 170,
     meta: { align: "right" },
-    cell: ({ row }) =>
-      canUpdate || canDelete ? (
+    cell: ({ row }) => {
+      const access = vm.current.accessOf(row.original);
+
+      return access.canUpdate || access.canDelete || access.canAssign ? (
         <TableRowActions>
-          {canUpdate && (
+          {access.canAssign && (
+            <Tooltip content="Владелец">
+              <IconButton
+                aria-label="Владелец"
+                onClick={() => vm.current.openOwner(row.original)}
+              >
+                <UserCog size={15} />
+              </IconButton>
+            </Tooltip>
+          )}
+          {access.canUpdate && (
             <>
               <WgToggleSwitch
                 enabled={row.original.enabled}
@@ -128,7 +134,7 @@ export const createForwardColumns = ({
               </Tooltip>
             </>
           )}
-          {canDelete && (
+          {access.canDelete && (
             <Tooltip content="Удалить">
               <IconButton
                 aria-label="Удалить"
@@ -140,6 +146,7 @@ export const createForwardColumns = ({
             </Tooltip>
           )}
         </TableRowActions>
-      ) : null,
+      ) : null;
+    },
   }),
 ];

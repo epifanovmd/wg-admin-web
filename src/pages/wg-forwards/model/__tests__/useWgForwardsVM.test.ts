@@ -1,6 +1,7 @@
 import { IUserStore } from "@entities/user";
 import { IMainApi } from "@shared/api";
 import type { WgForwardDto } from "@shared/api/gen/main/model";
+import { createFakeAccess } from "@shared/lib/access/testing";
 import { iocContainer } from "@shared/lib/di";
 import { INotificationService } from "@shared/lib/notifications";
 import { ISocketTransport } from "@shared/lib/socket";
@@ -40,7 +41,9 @@ beforeEach(() => {
   iocContainer
     .bind(INotificationService.Tid)
     .toConstantValue({ error: vi.fn(), success: vi.fn() });
-  iocContainer.bind(IUserStore.Tid).toConstantValue({ can: () => true });
+  iocContainer
+    .bind(IUserStore.Tid)
+    .toConstantValue(createFakeAccess({ permissions: ["*"] }));
 });
 
 afterEach(() => {
@@ -84,5 +87,51 @@ describe("useWgForwardsVM", () => {
     act(() => socket.fire("wg:forward:deleted", { id: "f1" }));
     expect(result.current.forwards.items).toHaveLength(0);
     expect(api.listWgForwards).toHaveBeenCalledOnce();
+  });
+
+  it("область «свои»: только адресные события, действия — по своему пробросу", () => {
+    iocContainer.rebind(IUserStore.Tid).toConstantValue(
+      createFakeAccess({
+        permissions: [
+          "wg:forward:view:own",
+          "wg:forward:update:own",
+          "wg:forward:assign:own",
+        ],
+      }),
+    );
+
+    const { result } = renderHook(() => useWgForwardsVM());
+    const own = { ...forward, ownerId: null, createdById: "u1" };
+    const foreign = { ...forward, ownerId: "u2", createdById: "u3" };
+
+    expect(socket.emitted.some(({ event }) => event === "room:subscribe")).toBe(
+      false,
+    );
+    expect(result.current.accessOf(own)).toEqual({
+      canUpdate: true,
+      canDelete: false,
+      canAssign: true,
+    });
+    expect(result.current.accessOf(foreign)).toEqual({
+      canUpdate: false,
+      canDelete: false,
+      canAssign: false,
+    });
+  });
+
+  it("владелец: окно назначения вызывает assign проброса", async () => {
+    const assignWgForward = vi
+      .fn()
+      .mockResolvedValue({ data: { ...forward, ownerId: "u2" } });
+
+    Object.assign(api, { assignWgForward, revokeWgForward: vi.fn() });
+
+    const { result } = renderHook(() => useWgForwardsVM());
+
+    act(() => result.current.openOwner(forward as WgForwardDto));
+    act(() => result.current.owner.setUserId("u2"));
+    await act(() => result.current.owner.save());
+
+    expect(assignWgForward).toHaveBeenCalledWith("f1", { userId: "u2" });
   });
 });
