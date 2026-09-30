@@ -2,6 +2,8 @@ import { IUserStore } from "@entities/user";
 import { WG_PERMISSIONS } from "@entities/wg";
 import { IMainApi } from "@shared/api";
 import type { WgPeerDto } from "@shared/api/gen/main/model";
+import { ownPermission } from "@shared/lib/access";
+import { createFakeAccess } from "@shared/lib/access/testing";
 import { iocContainer } from "@shared/lib/di";
 import { INotificationService } from "@shared/lib/notifications";
 import { ISocketTransport } from "@shared/lib/socket";
@@ -34,7 +36,9 @@ beforeEach(() => {
   iocContainer
     .bind(INotificationService.Tid)
     .toConstantValue({ error: vi.fn(), success: vi.fn() });
-  iocContainer.bind(IUserStore.Tid).toConstantValue({ can: () => true });
+  iocContainer
+    .bind(IUserStore.Tid)
+    .toConstantValue(createFakeAccess({ permissions: ["*"] }));
 });
 
 afterEach(() => {
@@ -185,10 +189,13 @@ describe("useWgPeersTableVM", () => {
   });
 
   it("держатель без права видеть всех — комната «мои пиры», не обзор", async () => {
-    iocContainer.rebind(IUserStore.Tid).toConstantValue({
-      user: { id: "u1" },
-      can: (permission: string) => permission === WG_PERMISSIONS.PEER_OWN,
-    });
+    iocContainer
+      .rebind(IUserStore.Tid)
+      .toConstantValue(
+        createFakeAccess({
+          permissions: [ownPermission(WG_PERMISSIONS.PEER_VIEW)],
+        }),
+      );
 
     renderHook(() => useWgPeersTableVM({}));
 
@@ -202,10 +209,13 @@ describe("useWgPeersTableVM", () => {
   });
 
   it("держателю назначили пир — список перезапрашивается", async () => {
-    iocContainer.rebind(IUserStore.Tid).toConstantValue({
-      user: { id: "u1" },
-      can: (permission: string) => permission === WG_PERMISSIONS.PEER_OWN,
-    });
+    iocContainer
+      .rebind(IUserStore.Tid)
+      .toConstantValue(
+        createFakeAccess({
+          permissions: [ownPermission(WG_PERMISSIONS.PEER_VIEW)],
+        }),
+      );
     const assigned = { ...peer, id: "p2", userId: "u1" };
 
     const { result } = renderHook(() => useWgPeersTableVM({}));
@@ -220,10 +230,13 @@ describe("useWgPeersTableVM", () => {
   });
 
   it("чужой незнакомый пир у держателя — без перезапроса", async () => {
-    iocContainer.rebind(IUserStore.Tid).toConstantValue({
-      user: { id: "u1" },
-      can: (permission: string) => permission === WG_PERMISSIONS.PEER_OWN,
-    });
+    iocContainer
+      .rebind(IUserStore.Tid)
+      .toConstantValue(
+        createFakeAccess({
+          permissions: [ownPermission(WG_PERMISSIONS.PEER_VIEW)],
+        }),
+      );
 
     const { result } = renderHook(() => useWgPeersTableVM({}));
 
@@ -328,10 +341,11 @@ describe("useWgPeersTableVM", () => {
   });
 
   it("все пиры — комната списка; обзор — только при праве на статистику", async () => {
-    iocContainer.rebind(IUserStore.Tid).toConstantValue({
-      user: { id: "u1" },
-      can: (permission: string) => permission === WG_PERMISSIONS.PEER_VIEW,
-    });
+    iocContainer
+      .rebind(IUserStore.Tid)
+      .toConstantValue(
+        createFakeAccess({ permissions: [WG_PERMISSIONS.PEER_VIEW] }),
+      );
 
     renderHook(() => useWgPeersTableVM({}));
 
@@ -342,5 +356,54 @@ describe("useWgPeersTableVM", () => {
           .map(({ args }) => (args[0] as { type: string }).type),
       ).toEqual(["wg-peers"]),
     );
+  });
+
+  it("созданный собой пир с чужим держателем — свой: попадает в список", async () => {
+    iocContainer.rebind(IUserStore.Tid).toConstantValue(
+      createFakeAccess({
+        permissions: [ownPermission(WG_PERMISSIONS.PEER_VIEW)],
+      }),
+    );
+    const created = { ...peer, id: "p2", userId: "u2", createdById: "u1" };
+
+    const { result } = renderHook(() => useWgPeersTableVM({}));
+
+    await waitFor(() => expect(result.current.peers.items).toHaveLength(1));
+    api.listWgPeers.mockResolvedValueOnce({
+      data: { items: [peer, created], total: 2 },
+    });
+
+    act(() => socket.fire("wg:peer:updated", created));
+    await waitFor(() => expect(result.current.peers.items).toHaveLength(2));
+  });
+
+  it("видит все — меняет и удаляет только свои", () => {
+    iocContainer.rebind(IUserStore.Tid).toConstantValue(
+      createFakeAccess({
+        permissions: [
+          WG_PERMISSIONS.PEER_VIEW,
+          ownPermission(WG_PERMISSIONS.PEER_UPDATE),
+          ownPermission(WG_PERMISSIONS.PEER_DELETE),
+        ],
+      }),
+    );
+
+    const { result } = renderHook(() => useWgPeersTableVM({}));
+    const own = { ...peer, userId: null, createdById: "u1" };
+    const foreign = { ...peer, userId: "u2", createdById: "u3" };
+
+    expect(result.current.canViewAll).toBe(true);
+    expect(result.current.accessOf(own)).toEqual({
+      canUpdate: true,
+      canDelete: true,
+      canPsk: false,
+      canToggle: false,
+    });
+    expect(result.current.accessOf(foreign)).toEqual({
+      canUpdate: false,
+      canDelete: false,
+      canPsk: false,
+      canToggle: false,
+    });
   });
 });

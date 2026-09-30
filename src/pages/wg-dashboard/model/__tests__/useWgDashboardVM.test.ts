@@ -1,6 +1,8 @@
 import { IUserStore } from "@entities/user";
 import { IWgNodesStore, WG_PERMISSIONS } from "@entities/wg";
 import { IMainApi } from "@shared/api";
+import { ownPermission } from "@shared/lib/access";
+import { createFakeAccess } from "@shared/lib/access/testing";
 import { iocContainer } from "@shared/lib/di";
 import { INotificationService } from "@shared/lib/notifications";
 import { ISocketTransport } from "@shared/lib/socket";
@@ -34,10 +36,9 @@ const bind = (permissions: string[]) => {
   iocContainer
     .bind(INotificationService.Tid)
     .toConstantValue({ error: vi.fn(), success: vi.fn() });
-  iocContainer.bind(IUserStore.Tid).toConstantValue({
-    user: { id: "u1" },
-    can: (permission: string) => permissions.includes(permission),
-  });
+  iocContainer
+    .bind(IUserStore.Tid)
+    .toConstantValue(createFakeAccess({ permissions }));
   iocContainer.bind(IWgNodesStore.Tid).toConstantValue({
     nodes: [],
     load: vi.fn().mockResolvedValue(undefined),
@@ -59,7 +60,13 @@ afterEach(() => {
 describe("useWgDashboardVM", () => {
   it.each([
     ["администратор", [WG_PERMISSIONS.STATS_VIEW]],
-    ["пользователь VPN", [WG_PERMISSIONS.STATS_OWN, WG_PERMISSIONS.PEER_OWN]],
+    [
+      "пользователь VPN",
+      [
+        ownPermission(WG_PERMISSIONS.STATS_VIEW),
+        ownPermission(WG_PERMISSIONS.PEER_VIEW),
+      ],
+    ],
   ])("%s сразу видит сводку, не дожидаясь событий", async (_, permissions) => {
     bind(permissions);
     const { result } = renderHook(() => useWgDashboardVM());
@@ -69,7 +76,10 @@ describe("useWgDashboardVM", () => {
   });
 
   it("свои подключения: назначенный пир появляется, ушедший — пропадает", async () => {
-    const socket = bind([WG_PERMISSIONS.STATS_OWN, WG_PERMISSIONS.PEER_OWN]);
+    const socket = bind([
+      ownPermission(WG_PERMISSIONS.STATS_VIEW),
+      ownPermission(WG_PERMISSIONS.PEER_VIEW),
+    ]);
     const peer = { id: "p1", name: "iphone", userId: "u1" };
     const assigned = { id: "p2", name: "mac", userId: "u1" };
 

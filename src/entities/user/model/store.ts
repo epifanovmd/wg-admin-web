@@ -5,6 +5,7 @@ import {
   ProfileDto,
   UserDto,
 } from "@shared/api/gen/main/model";
+import type { AccessScope } from "@shared/lib/access";
 import { EntityHolder } from "@shared/lib/holders";
 import { injectable } from "inversify";
 import { makeAutoObservable } from "mobx";
@@ -13,7 +14,9 @@ import {
   canAccess,
   computeEffectivePermissions,
   isAdminRole,
+  isOwnedBy,
   type Permission,
+  resolveScope,
 } from "../lib/permissions";
 import { ProfileModel } from "./profile-model";
 import { IUserStore } from "./types";
@@ -76,6 +79,21 @@ class UserStore implements IUserStore {
 
   can(permission: Permission): boolean {
     return canAccess(this.roles, this.permissions, permission);
+  }
+
+  scope(permission: Permission): AccessScope | null {
+    return resolveScope(this.roles, this.permissions, permission);
+  }
+
+  canOn(
+    permission: Permission,
+    owners: ReadonlyArray<string | null | undefined>,
+  ): boolean {
+    const scope = this.scope(permission);
+
+    return (
+      scope === "all" || (scope === "own" && isOwnedBy(this.user?.id, owners))
+    );
   }
 
   hasRole(role: KnownRole): boolean {

@@ -5,8 +5,13 @@ export interface IWgPeerLive {
   peerId: string;
   interfaceId: string;
   nodeId: string;
-  /** @nullable */
+  /**
+   * Держатель и создатель пира: кому статистика идёт как «своя».
+   * @nullable
+   */
   userId: string | null;
+  /** @nullable */
+  createdById: string | null;
   online: boolean;
   /** @nullable */
   lastHandshakeAt: string | null;

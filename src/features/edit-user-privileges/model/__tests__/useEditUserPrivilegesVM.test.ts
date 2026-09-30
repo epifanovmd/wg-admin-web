@@ -55,6 +55,29 @@ describe("useEditUserPrivilegesVM", () => {
     expect(onSaved).toHaveBeenCalledWith(user);
   });
 
+  it("последнюю роль снять нельзя, при нескольких — можно", () => {
+    const { result } = renderHook(() =>
+      useEditUserPrivilegesVM({ user, onSaved: vi.fn() }),
+    );
+
+    expect(result.current.canToggleRole("user")).toBe(false);
+    expect(result.current.canToggleRole("admin")).toBe(true);
+
+    act(() => result.current.toggleRole("admin", true));
+
+    expect(result.current.canToggleRole("user")).toBe(true);
+  });
+
+  it("права задаются набором целиком", () => {
+    const { result } = renderHook(() =>
+      useEditUserPrivilegesVM({ user, onSaved: vi.fn() }),
+    );
+
+    act(() => result.current.setPermissions(["wg:peer:view:own"]));
+
+    expect(result.current.permissions).toEqual(["wg:peer:view:own"]);
+  });
+
   it("без права просмотра ролей — роли не грузятся и не меняются", () => {
     iocContainer.rebind(IUserStore.Tid).toConstantValue({ can: () => false });
 

@@ -60,12 +60,14 @@ export const useEditUserPrivilegesVM = ({
       ? allRoles.items.map(r => r.name)
       : (user?.roles.map(r => r.name) ?? []),
     canEditRoles: canViewRoles,
+    /** Последнюю роль не снять: у пользователя всегда есть хотя бы одна. */
+    canToggleRole: (name: string) =>
+      canViewRoles && !(roles.length === 1 && roles[0] === name),
     roles,
     permissions,
     toggleRole: (name: string, on: boolean) =>
       setRoles(list => toggle(list, name, on)),
-    togglePermission: (name: string, on: boolean) =>
-      setPermissions(list => toggle(list, name, on)),
+    setPermissions,
     isSaving: save.isLoading,
     save: () => save.mutate(),
   };

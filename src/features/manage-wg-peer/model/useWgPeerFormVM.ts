@@ -1,4 +1,9 @@
-import { useWgInterfaceOptions } from "@entities/wg";
+import { ADMIN_PERMISSIONS, IUserStore } from "@entities/user";
+import {
+  useWgInterfaceOptions,
+  WG_PERMISSIONS,
+  wgPeerOwners,
+} from "@entities/wg";
 import { IMainApi } from "@shared/api";
 import type { WgPeerDto } from "@shared/api/gen/main/model";
 import { useCollection } from "@shared/lib/holders";
@@ -45,8 +50,16 @@ export const useWgPeerFormVM = ({
 }: UseWgPeerFormOptions) => {
   const api = IMainApi.useInstance();
   const toast = INotificationService.useInstance();
+  const userStore = IUserStore.useInstance();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<WgPeerDto | null>(null);
+  // Держателя назначает право assign (при создании пир свой — любая область,
+  // при изменении — на этот пир); выбор пользователя требует их списка.
+  const canAssign =
+    userStore.can(ADMIN_PERMISSIONS.USER_VIEW) &&
+    (editing
+      ? userStore.canOn(WG_PERMISSIONS.PEER_ASSIGN, wgPeerOwners(editing))
+      : userStore.scope(WG_PERMISSIONS.PEER_ASSIGN) !== null);
   const form = useZodForm(wgPeerFormSchema);
 
   const interfaces = useWgInterfaceOptions({
@@ -67,7 +80,7 @@ export const useWgPeerFormVM = ({
         error,
       };
     },
-    enabled: open,
+    enabled: open && canAssign,
     watch: [open],
   });
 
@@ -119,7 +132,7 @@ export const useWgPeerFormVM = ({
           interfaceId: data.interfaceId,
           name: data.name,
           description: data.description || null,
-          userId: data.userId || null,
+          userId: canAssign ? data.userId || null : null,
           publicKey: data.publicKey || null,
           withPresharedKey: data.withPresharedKey,
           clientAllowedIPs: data.clientAllowedIPs || undefined,
@@ -135,7 +148,7 @@ export const useWgPeerFormVM = ({
     }
 
     // Смена держателя при редактировании — отдельными вызовами assign/revoke.
-    if (editing && data.userId !== editing.userId) {
+    if (editing && canAssign && data.userId !== editing.userId) {
       const assignRes = data.userId
         ? await api.assignWgPeer(editing.id, { userId: data.userId })
         : await api.revokeWgPeer(editing.id);
@@ -162,6 +175,8 @@ export const useWgPeerFormVM = ({
     form,
     submit,
     interfaceOptions: interfaces.items,
+    /** Можно ли назначать держателя. */
+    canAssign,
     userOptions: users.items,
   };
 };

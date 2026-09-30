@@ -1,10 +1,12 @@
 import { KnownRole } from "@shared/api/gen/main/model";
+import {
+  type AccessScope,
+  hasPermission,
+  type Permission,
+  scopeIn,
+} from "@shared/lib/access";
 
-/** Право — строка `домен:действие` или wildcard `домен:*`. */
-export type Permission = string;
-
-/** Полный доступ. */
-export const ALL_PERMISSIONS = "*";
+export { ALL_PERMISSIONS, type Permission } from "@shared/lib/access";
 
 /** Права администрирования (подписи и группы — в каталоге с сервера). */
 export const ADMIN_PERMISSIONS = {
@@ -25,27 +27,6 @@ export const ADMIN_PERMISSIONS = {
   AUDIT_VIEW: "audit:view",
 } as const;
 
-/**
- * Есть ли право с учётом wildcard-иерархии:
- * `wg:peer:create` ← `wg:peer:*` ← `wg:*` ← `*`.
- */
-const hasPermission = (
-  userPerms: readonly Permission[],
-  required: Permission,
-): boolean => {
-  if (userPerms.includes(ALL_PERMISSIONS) || userPerms.includes(required)) {
-    return true;
-  }
-
-  const parts = required.split(":");
-
-  for (let i = parts.length - 1; i >= 1; i--) {
-    if (userPerms.includes([...parts.slice(0, i), "*"].join(":"))) return true;
-  }
-
-  return false;
-};
-
 /** Роль admin — полный доступ. */
 export const isAdminRole = (roles: readonly string[]): boolean =>
   roles.includes(KnownRole.admin);
@@ -56,6 +37,23 @@ export const canAccess = (
   userPerms: readonly Permission[],
   required: Permission,
 ): boolean => isAdminRole(roles) || hasPermission(userPerms, required);
+
+/**
+ * Область права: `all` — роль admin, само право или wildcard; `own` — только
+ * `<право>:own`; `null` — права нет.
+ */
+export const resolveScope = (
+  roles: readonly string[],
+  userPerms: readonly Permission[],
+  required: Permission,
+): AccessScope | null =>
+  isAdminRole(roles) ? "all" : scopeIn(userPerms, required);
+
+/** Своя ли сущность: пользователь среди её владельцев (держатель, создатель). */
+export const isOwnedBy = (
+  userId: string | undefined,
+  owners: ReadonlyArray<string | null | undefined>,
+): boolean => !!userId && owners.includes(userId);
 
 /** Эффективные права: права ролей ∪ прямые права. */
 export const computeEffectivePermissions = (

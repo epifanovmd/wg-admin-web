@@ -1,4 +1,4 @@
-import { PermissionPicker } from "@entities/permission";
+import { PermissionMatrix } from "@entities/permission";
 import { ALL_PERMISSIONS } from "@entities/user";
 import { type IRoleDto, KnownRole } from "@shared/api/gen/main/model";
 import { pluralize } from "@shared/lib/utils";
@@ -42,11 +42,6 @@ export const RolePermissionsCard: FC<RolePermissionsCardProps> = ({
   const dirty =
     selected.length !== saved.length || selected.some(p => !saved.includes(p));
 
-  const toggle = (name: string, on: boolean) =>
-    setSelected(list =>
-      on ? [...list, name] : list.filter(permission => permission !== name),
-    );
-
   const save = async () => {
     setSaving(true);
     await onSave(role, selected);
@@ -79,9 +74,9 @@ export const RolePermissionsCard: FC<RolePermissionsCardProps> = ({
         )
       }
     >
-      <PermissionPicker
-        selected={selected}
-        onToggle={toggle}
+      <PermissionMatrix
+        value={selected}
+        onChange={setSelected}
         readOnly={!canUpdate}
         isLocked={name => name === ALL_PERMISSIONS && !canGrantAll}
       />

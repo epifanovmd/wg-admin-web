@@ -6,6 +6,7 @@ import {
 } from "@entities/wg";
 import { WgPeerFormModal } from "@features/manage-wg-peer";
 import { WgPeerConfigModal } from "@features/wg-peer-config";
+import { ownPermission } from "@shared/lib/access";
 import { PageEmpty, PageHeader, PageLayout, PageLoader } from "@shared/ui";
 import { Link } from "@tanstack/react-router";
 import { observer } from "mobx-react-lite";
@@ -60,9 +61,7 @@ export const WgPeerDetail: FC<WgPeerDetailProps> = observer(({ peerId }) => {
         )
       }
     >
-      <PermissionGate
-        permission={[WG_PERMISSIONS.PEER_VIEW, WG_PERMISSIONS.PEER_OWN]}
-      >
+      <PermissionGate permission={ownPermission(WG_PERMISSIONS.PEER_VIEW)}>
         {peer ? (
           <PeerOverview vm={vm} peer={peer} />
         ) : vm.peer.isError ? (

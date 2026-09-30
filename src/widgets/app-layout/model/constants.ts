@@ -1,5 +1,6 @@
 import { ADMIN_PERMISSIONS, type Permission } from "@entities/user";
 import { WG_PERMISSIONS } from "@entities/wg";
+import { ownPermission } from "@shared/lib/access";
 import { type LinkProps } from "@tanstack/react-router";
 import {
   Activity,
@@ -50,7 +51,7 @@ export const NAV_GROUPS: NavGroup[] = [
         to: "/wg/peers",
         label: "Пиры",
         icon: Cable,
-        permission: [WG_PERMISSIONS.PEER_VIEW, WG_PERMISSIONS.PEER_OWN],
+        permission: ownPermission(WG_PERMISSIONS.PEER_VIEW),
       },
     ],
   },

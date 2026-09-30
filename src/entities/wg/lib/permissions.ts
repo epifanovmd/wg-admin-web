@@ -1,3 +1,5 @@
+import type { WgPeerDto } from "@shared/api/gen/main/model";
+
 /** Права WG-домена; подписи и группы — в каталоге прав с сервера. */
 export const WG_PERMISSIONS = {
   NODE_VIEW: "wg:node:view",
@@ -31,7 +33,6 @@ export const WG_PERMISSIONS = {
   INTERFACE_REPLICAS: "wg:interface:replicas",
   INTERFACE_HOOKS: "wg:interface:hooks",
   PEER_VIEW: "wg:peer:view",
-  PEER_OWN: "wg:peer:own",
   PEER_CREATE: "wg:peer:create",
   PEER_UPDATE: "wg:peer:update",
   PEER_DELETE: "wg:peer:delete",
@@ -39,5 +40,9 @@ export const WG_PERMISSIONS = {
   PEER_PSK: "wg:peer:psk",
   PEER_ASSIGN: "wg:peer:assign",
   STATS_VIEW: "wg:stats:view",
-  STATS_OWN: "wg:stats:own",
 } as const;
+
+/** Кому пир «свой»: держатель и создатель. */
+export const wgPeerOwners = (
+  peer: Pick<WgPeerDto, "userId" | "createdById">,
+): Array<string | null> => [peer.userId, peer.createdById];

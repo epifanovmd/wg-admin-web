@@ -2,6 +2,7 @@ import { PermissionGate } from "@entities/user";
 import { WG_PERMISSIONS } from "@entities/wg";
 import { WgPeerFormModal } from "@features/manage-wg-peer";
 import { WgPeerConfigModal } from "@features/wg-peer-config";
+import { ownPermission } from "@shared/lib/access";
 import { Button, PageHeader, PageLayout } from "@shared/ui";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import {
@@ -50,9 +51,7 @@ export const WgPeersPage: FC = observer(() => {
         />
       }
     >
-      <PermissionGate
-        permission={[WG_PERMISSIONS.PEER_VIEW, WG_PERMISSIONS.PEER_OWN]}
-      >
+      <PermissionGate permission={ownPermission(WG_PERMISSIONS.PEER_VIEW)}>
         <WgPeersFiltersBar
           filters={filters}
           onChange={setFilters}

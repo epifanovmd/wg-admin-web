@@ -9,8 +9,16 @@ export interface WgPeerDto {
   nodeId: string | null;
   /** @nullable */
   nodeName: string | null;
-  /** @nullable */
+  /**
+   * Держатель пира.
+   * @nullable
+   */
   userId: string | null;
+  /**
+   * Создатель пира.
+   * @nullable
+   */
+  createdById: string | null;
   name: string;
   /** @nullable */
   description: string | null;

@@ -32,21 +32,8 @@ import type { WgPeersTableVM } from "../model/useWgPeersTableVM";
 
 const column = createColumnHelper<WgPeerDto>();
 
-/** Доступные действия со строкой; колонки пересобираются при их смене. */
-interface IRowAccess {
-  canUpdate: boolean;
-  canPsk: boolean;
-  canDelete: boolean;
-  canToggleAny: boolean;
-  canToggleOwn: boolean;
-  currentUserId: string | null;
-}
-
 /** VM — через ref: колонки стабильны, ячейки не перемонтируются. */
-const createColumns = (
-  access: IRowAccess,
-  vmRef: RefObject<WgPeersTableVM>,
-) => [
+const createColumns = (vmRef: RefObject<WgPeersTableVM>) => [
   column.display({
     id: "peer",
     header: "Пир",
@@ -133,9 +120,7 @@ const createColumns = (
     cell: ({ row }) => {
       const peer = row.original;
       const vm = vmRef.current;
-      const canToggle =
-        access.canToggleAny ||
-        (access.canToggleOwn && peer.userId === access.currentUserId);
+      const access = vm.accessOf(peer);
       const hasMenu = access.canUpdate || access.canPsk || access.canDelete;
 
       return (
@@ -150,7 +135,7 @@ const createColumns = (
               </IconButton>
             </Tooltip>
           )}
-          {canToggle && (
+          {access.canToggle && (
             <WgToggleSwitch
               enabled={peer.enabled}
               onToggle={() => vmRef.current.toggle(peer)}
@@ -203,38 +188,13 @@ export interface WgPeersTableProps {
 /** Таблица пиров с пагинацией; строка ведёт на карточку пира. */
 export const WgPeersTable: FC<WgPeersTableProps> = observer(
   ({ vm, onRowClick }) => {
-    const {
-      peers,
-      canUpdate,
-      canPsk,
-      canDelete,
-      canToggleAny,
-      canToggleOwn,
-      currentUserId,
-    } = vm;
+    const { peers, accessKey } = vm;
     const vmRef = useLatestRef(vm);
+    // Права действий считаются по строке; при смене прав колонки пересобираются.
     const columns = useMemo(
-      () =>
-        createColumns(
-          {
-            canUpdate,
-            canPsk,
-            canDelete,
-            canToggleAny,
-            canToggleOwn,
-            currentUserId,
-          },
-          vmRef,
-        ),
-      [
-        canUpdate,
-        canPsk,
-        canDelete,
-        canToggleAny,
-        canToggleOwn,
-        currentUserId,
-        vmRef,
-      ],
+      () => createColumns(vmRef),
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      [accessKey, vmRef],
     );
 
     return (

@@ -64,13 +64,15 @@ export const WgPeerFormModal: FC<WgPeerFormModalProps> = observer(({ vm }) => (
             label="Название"
             placeholder="Телефон Ивана"
           />
-          <SelectFormField<TWgPeerForm>
-            name="userId"
-            label="Держатель"
-            options={vm.userOptions}
-            placeholder="не назначен"
-            description="Пользователь увидит пир в своём списке"
-          />
+          {vm.canAssign && (
+            <SelectFormField<TWgPeerForm>
+              name="userId"
+              label="Держатель"
+              options={vm.userOptions}
+              placeholder="не назначен"
+              description="Пользователь увидит пир в своём списке"
+            />
+          )}
         </div>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <InputFormField<TWgPeerForm>

@@ -1,5 +1,5 @@
 import { IUserStore } from "@entities/user";
-import { type IWgPeerLive, WG_PERMISSIONS } from "@entities/wg";
+import { type IWgPeerLive, WG_PERMISSIONS, wgPeerOwners } from "@entities/wg";
 import { useWgPeerFormVM } from "@features/manage-wg-peer";
 import { useWgPeerConfigVM } from "@features/wg-peer-config";
 import { IMainApi } from "@shared/api";
@@ -16,6 +16,14 @@ import { compactPeersFilters, type IWgPeersFilters } from "./types";
 
 const PAGE_SIZE = 20;
 
+/** Действия над конкретным пиром по области прав. */
+export interface IWgPeerRowAccess {
+  canUpdate: boolean;
+  canDelete: boolean;
+  canPsk: boolean;
+  canToggle: boolean;
+}
+
 /** Список пиров с фильтрами (снаружи: адрес страницы или страница интерфейса). */
 export const useWgPeersTableVM = (filters: IWgPeersFilters) => {
   const api = IMainApi.useInstance();
@@ -23,13 +31,23 @@ export const useWgPeersTableVM = (filters: IWgPeersFilters) => {
   const userStore = IUserStore.useInstance();
   const confirm = useConfirm();
   const config = useWgPeerConfigVM();
-  const canViewAll = userStore.can(WG_PERMISSIONS.PEER_VIEW);
-  const canView = canViewAll || userStore.can(WG_PERMISSIONS.PEER_OWN);
-  const canViewStats = userStore.can(WG_PERMISSIONS.STATS_VIEW);
+  const viewScope = userStore.scope(WG_PERMISSIONS.PEER_VIEW);
+  const canViewAll = viewScope === "all";
+  const canView = viewScope !== null;
+  const canViewStats = userStore.scope(WG_PERMISSIONS.STATS_VIEW) === "all";
   const canCreate = userStore.can(WG_PERMISSIONS.PEER_CREATE);
-  const canUpdate = userStore.can(WG_PERMISSIONS.PEER_UPDATE);
-  const canToggleAny = userStore.can(WG_PERMISSIONS.PEER_TOGGLE);
-  const isOwnPeerAllowed = userStore.can(WG_PERMISSIONS.PEER_OWN);
+  const currentUserId = userStore.user?.id ?? null;
+
+  const accessOf = (peer: WgPeerDto): IWgPeerRowAccess => {
+    const owners = wgPeerOwners(peer);
+
+    return {
+      canUpdate: userStore.canOn(WG_PERMISSIONS.PEER_UPDATE, owners),
+      canDelete: userStore.canOn(WG_PERMISSIONS.PEER_DELETE, owners),
+      canPsk: userStore.canOn(WG_PERMISSIONS.PEER_PSK, owners),
+      canToggle: userStore.canOn(WG_PERMISSIONS.PEER_TOGGLE, owners),
+    };
+  };
 
   // Фильтры — аргумент watch: их смена перезапрашивает список.
   const params = JSON.stringify(compactPeersFilters(filters));
@@ -53,11 +71,15 @@ export const useWgPeersTableVM = (filters: IWgPeersFilters) => {
     },
   });
 
-  /** Пир в области списка: держателю — только свои, плюс фильтры узла, интерфейса и владельца. */
+  /**
+   * Пир в области списка: с областью «свои» — только свои (держатель или
+   * создатель), плюс фильтры узла, интерфейса и держателя.
+   */
   const inScope = (
-    peer: Pick<WgPeerDto, "userId" | "interfaceId" | "nodeId">,
+    peer: Pick<WgPeerDto, "userId" | "createdById" | "interfaceId" | "nodeId">,
   ) =>
-    (canViewAll || peer.userId === userStore.user?.id) &&
+    (canViewAll ||
+      (currentUserId !== null && wgPeerOwners(peer).includes(currentUserId))) &&
     (!filters.userId || peer.userId === filters.userId) &&
     (!filters.nodeId || peer.nodeId === filters.nodeId) &&
     (!filters.interfaceId || peer.interfaceId === filters.interfaceId);
@@ -85,17 +107,14 @@ export const useWgPeersTableVM = (filters: IWgPeersFilters) => {
     }
   };
 
-  // Все пиры — из комнаты списка, свои — адресно держателю.
+  // Все пиры — из комнаты списка, свои — адресно держателю и создателю.
   useSocketRoom("wg-peers", canViewAll ? "all" : null, () =>
     peers.reload({ refresh: true }),
   );
   // Живая статистика всех пиров — из комнаты обзора (право на статистику).
   useSocketRoom("wg-overview", canViewAll && canViewStats ? "all" : null);
-  // Держатель — статистика своих пиров из комнаты «мои пиры».
-  useSocketRoom(
-    "wg-peers-own",
-    !canViewAll && canView ? (userStore.user?.id ?? null) : null,
-  );
+  // Область «свои» — статистика своих пиров из комнаты «мои пиры».
+  useSocketRoom("wg-peers-own", !canViewAll && canView ? currentUserId : null);
   useSocketEvent<[WgPeerDto]>("wg:peer:updated", applyUpdate, canView);
   useSocketEvent<[{ id: string }]>(
     "wg:peer:deleted",
@@ -228,8 +247,10 @@ export const useWgPeersTableVM = (filters: IWgPeersFilters) => {
     else await peers.reload({ refresh: true });
   };
 
-  useCloseWhenForbidden(form.open, form.editing ? canUpdate : canCreate, () =>
-    form.setOpen(false),
+  useCloseWhenForbidden(
+    form.open,
+    form.editing ? accessOf(form.editing).canUpdate : canCreate,
+    () => form.setOpen(false),
   );
 
   return {
@@ -242,14 +263,10 @@ export const useWgPeersTableVM = (filters: IWgPeersFilters) => {
     canView,
     canViewAll,
     canCreate,
-    canUpdate,
-    canDelete: userStore.can(WG_PERMISSIONS.PEER_DELETE),
-    canPsk: userStore.can(WG_PERMISSIONS.PEER_PSK),
-    /** Включать и выключать любой пир. */
-    canToggleAny,
-    /** Включать и выключать свои пиры (держатель). */
-    canToggleOwn: isOwnPeerAllowed,
-    currentUserId: userStore.user?.id ?? null,
+    /** Действия над пиром: право на все или свой пир. */
+    accessOf,
+    /** Меняется вместе с правами — колонки таблицы пересобираются по нему. */
+    accessKey: `${currentUserId}|${userStore.permissions.join(",")}|${userStore.isAdmin}`,
   };
 };
 

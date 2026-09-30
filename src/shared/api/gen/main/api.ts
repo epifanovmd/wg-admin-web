@@ -639,8 +639,8 @@ export const getWgAdmin = () => {
   };
 
   /**
-   * Пиры с фильтрами. Без права `wg:peer:view` возвращаются только свои
-   * пиры (право `wg:peer:own`).
+   * Пиры с фильтрами. С правом `wg:peer:view:own` — только свои пиры
+   * (держатель или создатель).
    * @summary Список пиров
    */
   const listWgPeers = (
@@ -667,7 +667,7 @@ export const getWgAdmin = () => {
   };
 
   /**
-   * Пир по id; чужой без права `wg:peer:view` — 404.
+   * Пир по id; чужой без права на все пиры — 404.
    * @summary Пир
    */
   const getWgPeer = (
@@ -715,7 +715,7 @@ export const getWgAdmin = () => {
   };
 
   /**
-   * Включить пира. Держатель может включать свои пиры.
+   * Включить пира.
    * @summary Включение пира
    */
   const enableWgPeer = (
@@ -729,7 +729,7 @@ export const getWgAdmin = () => {
   };
 
   /**
-   * Выключить пира. Держатель может выключать свои пиры.
+   * Выключить пира.
    * @summary Выключение пира
    */
   const disableWgPeer = (
@@ -805,8 +805,7 @@ export const getWgAdmin = () => {
   };
 
   /**
-   * Клиентский конфиг `.conf` (attachment). Держатель получает конфиги
-   * своих пиров.
+   * Клиентский конфиг `.conf` (attachment).
    * @summary Конфиг пира
    */
   const wgPeerConfig = (
@@ -834,8 +833,8 @@ export const getWgAdmin = () => {
   };
 
   /**
-   * Сводка дашборда: с правом `wg:stats:view` — глобальная, иначе — по
-   * своим пирам (право `wg:stats:own`).
+   * Сводка дашборда: с правом `wg:stats:view` — глобальная, с
+   * `wg:stats:view:own` — по своим пирам (держатель или создатель).
    * @summary Сводка
    */
   const wgStatsOverview = (

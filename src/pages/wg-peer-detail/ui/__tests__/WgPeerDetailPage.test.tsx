@@ -2,6 +2,8 @@ import { IUserStore } from "@entities/user";
 import { WG_PERMISSIONS } from "@entities/wg";
 import { IMainApi } from "@shared/api";
 import type { WgPeerDto } from "@shared/api/gen/main/model";
+import { ownPermission } from "@shared/lib/access";
+import { createFakeAccess } from "@shared/lib/access/testing";
 import { iocContainer } from "@shared/lib/di";
 import { INotificationService } from "@shared/lib/notifications";
 import { ISocketTransport } from "@shared/lib/socket";
@@ -27,6 +29,8 @@ vi.mock("@tanstack/react-router", () => ({
 const peer = {
   id: "p1",
   name: "Ноутбук",
+  userId: "u1",
+  createdById: null,
   interfaceId: "i1",
   interfaceName: "wg0",
   nodeName: "Альфа",
@@ -83,10 +87,9 @@ const bind = (permissions: string[]) => {
     wgStatsPeerWindow: vi.fn().mockResolvedValue({ data: [] }),
   });
   iocContainer.bind(INotificationService.Tid).toConstantValue(toast);
-  iocContainer.bind(IUserStore.Tid).toConstantValue({
-    user: { id: "u1" },
-    can: (permission: string) => permissions.includes(permission),
-  });
+  iocContainer
+    .bind(IUserStore.Tid)
+    .toConstantValue(createFakeAccess({ permissions }));
 };
 
 const renderPage = () =>
@@ -107,8 +110,8 @@ afterEach(() => {
 });
 
 describe("WgPeerDetailPage", () => {
-  it("владелец пира не видит «Изменить»", async () => {
-    bind([WG_PERMISSIONS.PEER_OWN]);
+  it("держатель без права изменения не видит «Изменить»", async () => {
+    bind([ownPermission(WG_PERMISSIONS.PEER_VIEW)]);
     renderPage();
 
     await screen.findByText("Ноутбук");
@@ -151,14 +154,42 @@ describe("WgPeerDetailPage", () => {
     expect(navigate).toHaveBeenCalledWith({ to: "/wg/peers" });
   });
 
+  it("свой пир с правом изменения своих — «Изменить» есть", async () => {
+    bind([
+      ownPermission(WG_PERMISSIONS.PEER_VIEW),
+      ownPermission(WG_PERMISSIONS.PEER_UPDATE),
+    ]);
+    renderPage();
+
+    expect(
+      await screen.findByRole("button", { name: "Изменить" }),
+    ).toBeTruthy();
+  });
+
   it("пир ушёл к другому держателю — прежний держатель уходит к списку", async () => {
-    bind([WG_PERMISSIONS.PEER_OWN]);
+    bind([ownPermission(WG_PERMISSIONS.PEER_VIEW)]);
     renderPage();
     await screen.findByText("Ноутбук");
 
     act(() => socket.fire("wg:peer:updated", { ...peer, userId: "u2" }));
 
     expect(navigate).toHaveBeenCalledWith({ to: "/wg/peers" });
+  });
+
+  it("создатель остаётся на странице, когда держатель сменился", async () => {
+    bind([ownPermission(WG_PERMISSIONS.PEER_VIEW)]);
+    renderPage();
+    await screen.findByText("Ноутбук");
+
+    act(() =>
+      socket.fire("wg:peer:updated", {
+        ...peer,
+        userId: "u2",
+        createdById: "u1",
+      }),
+    );
+
+    expect(navigate).not.toHaveBeenCalled();
   });
 
   it("чужое изменение другого пира страницу не трогает", async () => {

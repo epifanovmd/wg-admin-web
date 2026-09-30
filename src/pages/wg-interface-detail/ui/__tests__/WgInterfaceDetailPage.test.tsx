@@ -2,6 +2,7 @@ import { IUserStore } from "@entities/user";
 import { IWgNodesStore, WG_PERMISSIONS } from "@entities/wg";
 import { IMainApi } from "@shared/api";
 import type { WgInterfaceDto } from "@shared/api/gen/main/model";
+import { createFakeAccess } from "@shared/lib/access/testing";
 import { iocContainer } from "@shared/lib/di";
 import { INotificationService } from "@shared/lib/notifications";
 import { ISocketTransport } from "@shared/lib/socket";
@@ -70,12 +71,11 @@ beforeEach(() => {
   iocContainer
     .bind(INotificationService.Tid)
     .toConstantValue({ error: vi.fn(), success: vi.fn() });
-  iocContainer.bind(IUserStore.Tid).toConstantValue({
-    user: { id: "u1" },
-    can: (permission: string) =>
-      permission === WG_PERMISSIONS.INTERFACE_VIEW ||
-      permission === WG_PERMISSIONS.PEER_VIEW,
-  });
+  iocContainer.bind(IUserStore.Tid).toConstantValue(
+    createFakeAccess({
+      permissions: [WG_PERMISSIONS.INTERFACE_VIEW, WG_PERMISSIONS.PEER_VIEW],
+    }),
+  );
   iocContainer
     .bind(IWgNodesStore.Tid)
     .toConstantValue({ options: vi.fn().mockResolvedValue([]) });

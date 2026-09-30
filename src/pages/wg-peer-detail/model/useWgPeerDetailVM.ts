@@ -1,5 +1,10 @@
 import { IUserStore } from "@entities/user";
-import { type IWgPeerLive, useWgLiveSpeed, WG_PERMISSIONS } from "@entities/wg";
+import {
+  type IWgPeerLive,
+  useWgLiveSpeed,
+  WG_PERMISSIONS,
+  wgPeerOwners,
+} from "@entities/wg";
 import { useWgPeerFormVM } from "@features/manage-wg-peer";
 import { useWgPeerConfigVM } from "@features/wg-peer-config";
 import { IMainApi } from "@shared/api";
@@ -13,17 +18,17 @@ import { useNavigate } from "@tanstack/react-router";
 
 /**
  * Карточка пира: данные, live-скорость и трафик за сутки, конфиг и
- * управление. Держатель видит свой пир (wg:peer:own), админ — любой.
+ * управление. С областью «свои» — только свой пир (держатель или создатель);
+ * действия — по области своих прав.
  */
 export const useWgPeerDetailVM = (peerId: string) => {
   const api = IMainApi.useInstance();
   const toast = INotificationService.useInstance();
   const userStore = IUserStore.useInstance();
   const navigate = useNavigate();
-  const canViewAll = userStore.can(WG_PERMISSIONS.PEER_VIEW);
-  const canViewOwn = userStore.can(WG_PERMISSIONS.PEER_OWN);
-  const canView = canViewAll || canViewOwn;
-  const canUpdate = userStore.can(WG_PERMISSIONS.PEER_UPDATE);
+  const viewScope = userStore.scope(WG_PERMISSIONS.PEER_VIEW);
+  const canViewAll = viewScope === "all";
+  const canView = viewScope !== null;
   const liveId = canView ? peerId : null;
 
   const peer = useEntity<WgPeerDto, string>({
@@ -51,6 +56,10 @@ export const useWgPeerDetailVM = (peerId: string) => {
     void peer.refresh(peerId);
     void speed.reload();
   });
+  /** Свой пир: держатель или создатель. */
+  const isMine = (item: WgPeerDto) =>
+    !!userStore.user && wgPeerOwners(item).includes(userStore.user.id);
+
   /** Пир удалён или больше не виден (ушёл к другому держателю). */
   const leave = (message: string) => {
     toast.warning(message);
@@ -61,7 +70,7 @@ export const useWgPeerDetailVM = (peerId: string) => {
     "wg:peer:updated",
     updated => {
       if (updated.id !== peerId) return;
-      if (!canViewAll && updated.userId !== userStore.user?.id) {
+      if (!canViewAll && !isMine(updated)) {
         leave("Пир больше не закреплён за вами");
       } else {
         peer.setData(updated);
@@ -77,6 +86,9 @@ export const useWgPeerDetailVM = (peerId: string) => {
     canView,
   );
 
+  const owners = peer.data ? wgPeerOwners(peer.data) : [];
+  const canUpdate =
+    !!peer.data && userStore.canOn(WG_PERMISSIONS.PEER_UPDATE, owners);
   const config = useWgPeerConfigVM();
   const form = useWgPeerFormVM({ onSaved: peer.setData });
 
@@ -112,10 +124,9 @@ export const useWgPeerDetailVM = (peerId: string) => {
     form,
     toggle,
     canUpdate,
-    /** Включать и выключать: любой пир по праву, свой — как держатель. */
+    /** Включать и выключать: право на все пиры или свой пир. */
     canToggle:
-      userStore.can(WG_PERMISSIONS.PEER_TOGGLE) ||
-      (canViewOwn && peer.data?.userId === userStore.user?.id),
+      !!peer.data && userStore.canOn(WG_PERMISSIONS.PEER_TOGGLE, owners),
   };
 };
 
