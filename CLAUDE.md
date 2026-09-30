@@ -70,6 +70,10 @@ aliases, build, auth, holders, ui, routing, testing, patterns. Загружай 
   ручной `useEffect` с отключённым exhaustive-deps.
 - Страницы: VM на уровне страницы, `PermissionGate` внутри `PageLayout`, загрузка
   только с правом просмотра; модалки форм получают `vm` и своих кнопок не рисуют.
+- Права с областью «все / свои» (`x:update` покрывает `x:update:own`): грамматика — в
+  `@shared/lib/access`, в UI — `userStore.can/scope/canOn`; действия в таблицах — по
+  строке, колонки мемоизируются по `accessKey`. В тестах — `createFakeAccess` из
+  `@shared/lib/access/testing`. Подробности — `.claude/memory/project_access.md`.
 - `shared/lib/holders` покрыт тестами на 100% (порог в vitest.config.ts) — правка холдеров без тестов роняет coverage.
 - Формы: React Hook Form + zodResolver; общие валидации — в `entities/auth`.
 - **Все функции — стрелочные.** `function`-объявления и выражения запрещены (компоненты,
