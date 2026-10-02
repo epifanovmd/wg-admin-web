@@ -16,7 +16,7 @@ export abstract class BaseListHolder<
     this._keyExtractor = keyExtractor;
 
     makeObservable(this, {
-      items: observable,
+      items: observable.ref,
 
       isEmpty: computed,
       count: computed,

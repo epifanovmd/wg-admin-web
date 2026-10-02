@@ -41,7 +41,8 @@ export class SyncCursorHolder<
 
     makeObservable(this, {
       isFetching: observable,
-      pendingItems: observable,
+      pendingItems: observable.ref,
+      bufferPendingItem: action,
       fetchInitial: action,
       loadOlder: action,
       loadNewer: action,
@@ -51,7 +52,7 @@ export class SyncCursorHolder<
   }
 
   bufferPendingItem(item: TItem): void {
-    this.pendingItems.push(item);
+    this.pendingItems = [...this.pendingItems, item];
   }
 
   invalidate(): void {
