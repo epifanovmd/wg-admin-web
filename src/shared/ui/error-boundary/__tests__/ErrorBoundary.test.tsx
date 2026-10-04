@@ -35,6 +35,29 @@ describe("ErrorBoundary", () => {
     expect(screen.getByText("Всё хорошо")).toBeInTheDocument();
   });
 
+  /**
+   * Жалоба: после 401 на refresh — пустой экран на /sign-in, в консоли
+   * «Uncaught undefined».
+   *
+   * Брошенное значение — не обязательно Error: роутер в гонке перехода бросает
+   * undefined. Граница записывала его как «ошибки нет», снова рендерила тех же
+   * детей и, получив ту же ошибку, пробрасывала её выше — React размонтировал
+   * всё дерево.
+   */
+  it("перехватывает брошенное не-Error значение — запасной экран вместо пустоты", () => {
+    const Thrower = () => {
+      throw undefined;
+    };
+
+    render(
+      <ErrorBoundary>
+        <Thrower />
+      </ErrorBoundary>,
+    );
+
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+  });
+
   it("resets the error when resetKeys change", () => {
     const { rerender } = render(
       <ErrorBoundary resetKeys={["/a"]}>

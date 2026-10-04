@@ -1,8 +1,8 @@
 /* eslint-disable check-file/filename-naming-convention -- инстанс-модуль, не компонент */
-import { Spinner } from "@shared/ui";
 import { createRouter } from "@tanstack/react-router";
 
 import { ErrorPage } from "../pages/errors";
+import { PendingScreen } from "./PendingScreen";
 import { routeTree } from "./routeTree.gen";
 
 export const router = createRouter({
@@ -11,11 +11,7 @@ export const router = createRouter({
   defaultViewTransition: true,
   defaultPendingMinMs: 300,
   defaultPendingMs: 100,
-  defaultPendingComponent: () => (
-    <div className="flex h-screen w-screen items-center justify-center">
-      <Spinner size="lg" />
-    </div>
-  ),
+  defaultPendingComponent: PendingScreen,
   defaultErrorComponent: ErrorPage,
 });
 

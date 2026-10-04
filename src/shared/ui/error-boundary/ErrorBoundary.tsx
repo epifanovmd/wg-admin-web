@@ -25,17 +25,29 @@ const haveResetKeysChanged = (
   return prev.some((value, index) => !Object.is(value, next[index]));
 };
 
+/**
+ * Брошенное значение — не обязательно Error: роутер в гонке перехода бросает
+ * `undefined`. Такое значение граница записала бы как «ошибки нет», снова
+ * отрендерила бы тех же детей и, получив ту же ошибку, пробросила бы её выше —
+ * React размонтировал бы всё дерево.
+ */
+const toError = (value: unknown): Error =>
+  value instanceof Error
+    ? value
+    : new Error(`Неизвестная ошибка: ${String(value)}`);
+
 export class ErrorBoundary extends Component<
   ErrorBoundaryProps,
   ErrorBoundaryState
 > {
   state: ErrorBoundaryState = { error: null };
 
-  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
-    return { error };
+  static getDerivedStateFromError(error: unknown): ErrorBoundaryState {
+    return { error: toError(error) };
   }
 
-  componentDidCatch(error: Error, info: ErrorInfo) {
+  componentDidCatch(thrown: unknown, info: ErrorInfo) {
+    const error = toError(thrown);
     const { onError } = this.props;
 
     if (onError) {

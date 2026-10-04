@@ -12,6 +12,8 @@ import { router } from "./router";
 
 @injectable()
 export class AppDataStore implements IAppDataStore {
+  isRestored = false;
+
   constructor(
     @IAuthStore() private _authStore: IAuthStore,
     @ISocketTransport() private _socketTransport: ISocketTransport,
@@ -26,6 +28,14 @@ export class AppDataStore implements IAppDataStore {
 
   initialize() {
     const disposers = createDisposer();
+
+    // Сессия — до роутера: его beforeLoad тогда синхронны, и редирект на вход
+    // не попадает в гонку перехода (маршрут бросал undefined — пустой экран).
+    if (this._authStore.isIdle) {
+      this._authStore.restore().finally(this._markRestored);
+    } else {
+      this._markRestored();
+    }
 
     return [
       reaction(
@@ -53,5 +63,9 @@ export class AppDataStore implements IAppDataStore {
       ),
       disposers.dispose,
     ];
+  }
+
+  private _markRestored() {
+    this.isRestored = true;
   }
 }
