@@ -15,6 +15,7 @@ import type {
   IAssignWgNodeBody,
   IAssignWgPeerBody,
   IAssignWgSocksBody,
+  IBiometricDevicesResponseDto,
   ICreateApiKeyBody,
   ICreateRoleRequestDto,
   ICreateWgEndpointBody,
@@ -31,6 +32,8 @@ import type {
   IDisable2FARequestDto,
   IEnable2FARequestDto,
   IGenerateAuthenticationOptionsRequestDto,
+  IGenerateNonceRequestDto,
+  IGenerateNonceResponseDto,
   IMoveWgInterfaceBody,
   IPaginatedDtoApiKeyDto,
   IPaginatedDtoJobRunDto,
@@ -46,6 +49,8 @@ import type {
   IProfileUpdateRequestDto,
   IProvisionWgNodeBody,
   IRefreshRequestDto,
+  IRegisterBiometricRequestDto,
+  IRegisterBiometricResponseDto,
   IRoleDto,
   IRolePermissionsRequestDto,
   ISignInRequestDto,
@@ -73,6 +78,8 @@ import type {
   IVerify2FARequestDto,
   IVerifyAuthenticationRequestDto,
   IVerifyAuthenticationResponseDto,
+  IVerifyBiometricSignatureRequestDto,
+  IVerifyBiometricSignatureResponseDto,
   IVerifyRegistrationRequestDto,
   IVerifyRegistrationResponseDto,
   IWgAgentCommandCompleteBody,
@@ -2520,6 +2527,96 @@ export const getWgAdmin = () => {
   };
 
   /**
+   * Регистрирует публичный ключ устройства для входа по биометрии.
+   * @summary Регистрация биометрии
+   */
+  const registerBiometric = (
+    iRegisterBiometricRequestDto: IRegisterBiometricRequestDto,
+    options?: SecondParameter<
+      typeof mainMutator<IRegisterBiometricResponseDto>
+    >,
+  ) => {
+    return mainMutator<IRegisterBiometricResponseDto>(
+      {
+        url: `/api/v1/biometric/register`,
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        data: iRegisterBiometricRequestDto,
+      },
+      options,
+    );
+  };
+
+  /**
+   * Выдаёт одноразовый nonce (5 минут), который устройство подписывает своим
+   * ключом. Публичный: вызывается до входа.
+   * @summary Nonce для биометрического входа
+   */
+  const generateNonce = (
+    iGenerateNonceRequestDto: IGenerateNonceRequestDto,
+    options?: SecondParameter<typeof mainMutator<IGenerateNonceResponseDto>>,
+  ) => {
+    return mainMutator<IGenerateNonceResponseDto>(
+      {
+        url: `/api/v1/biometric/generate-nonce`,
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        data: iGenerateNonceRequestDto,
+      },
+      options,
+    );
+  };
+
+  /**
+   * Проверяет подпись nonce и открывает новую сессию. Публичный; nonce
+   * одноразовый — одна попытка на nonce.
+   * @summary Вход по биометрии
+   */
+  const verifySignature = (
+    iVerifyBiometricSignatureRequestDto: IVerifyBiometricSignatureRequestDto,
+    options?: SecondParameter<
+      typeof mainMutator<IVerifyBiometricSignatureResponseDto>
+    >,
+  ) => {
+    return mainMutator<IVerifyBiometricSignatureResponseDto>(
+      {
+        url: `/api/v1/biometric/verify-signature`,
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        data: iVerifyBiometricSignatureRequestDto,
+      },
+      options,
+    );
+  };
+
+  /**
+   * Список зарегистрированных устройств пользователя.
+   * @summary Мои биометрические устройства
+   */
+  const getDevices = (
+    options?: SecondParameter<typeof mainMutator<IBiometricDevicesResponseDto>>,
+  ) => {
+    return mainMutator<IBiometricDevicesResponseDto>(
+      { url: `/api/v1/biometric/devices`, method: "GET" },
+      options,
+    );
+  };
+
+  /**
+   * Удаляет зарегистрированное устройство.
+   * @summary Удаление биометрического устройства
+   */
+  const deleteDevice = (
+    deviceId: string,
+    options?: SecondParameter<typeof mainMutator<void>>,
+  ) => {
+    return mainMutator<void>(
+      { url: `/api/v1/biometric/${deviceId}`, method: "DELETE" },
+      options,
+    );
+  };
+
+  /**
    * Журнал безопасности текущего пользователя: входы (в том числе
    * неудачные), блокировки, 2FA, смена пароля, сессии, passkeys, биометрия.
    * Новые — первыми.
@@ -2706,6 +2803,11 @@ export const getWgAdmin = () => {
     verifyRegistration,
     generateAuthenticationOptions,
     verifyAuthentication,
+    registerBiometric,
+    generateNonce,
+    verifySignature,
+    getDevices,
+    deleteDevice,
     getMyAudit,
     listAuditEvents,
     getAppVersion,
@@ -3137,6 +3239,21 @@ export type GenerateAuthenticationOptionsResult = NonNullable<
 >;
 export type VerifyAuthenticationResult = NonNullable<
   Awaited<ReturnType<ReturnType<typeof getWgAdmin>["verifyAuthentication"]>>
+>;
+export type RegisterBiometricResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["registerBiometric"]>>
+>;
+export type GenerateNonceResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["generateNonce"]>>
+>;
+export type VerifySignatureResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["verifySignature"]>>
+>;
+export type GetDevicesResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["getDevices"]>>
+>;
+export type DeleteDeviceResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["deleteDevice"]>>
 >;
 export type GetMyAuditResult = NonNullable<
   Awaited<ReturnType<ReturnType<typeof getWgAdmin>["getMyAudit"]>>

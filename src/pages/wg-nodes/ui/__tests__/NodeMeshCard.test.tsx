@@ -13,9 +13,30 @@ const matrix: IWgMeshMatrix = {
     { id: "c", name: "fra" },
   ],
   cells: [
-    { fromNodeId: "b", toNodeId: "a", rttMs: 61.2, lossPercent: 0, ts },
-    { fromNodeId: "c", toNodeId: "a", rttMs: 95, lossPercent: 0, ts },
-    { fromNodeId: "a", toNodeId: "c", rttMs: null, lossPercent: 100, ts },
+    {
+      fromNodeId: "b",
+      toNodeId: "a",
+      rttMs: 61.2,
+      lossPercent: 0,
+      samples: 5,
+      ts,
+    },
+    {
+      fromNodeId: "c",
+      toNodeId: "a",
+      rttMs: 95,
+      lossPercent: 0,
+      samples: 5,
+      ts,
+    },
+    {
+      fromNodeId: "a",
+      toNodeId: "c",
+      rttMs: null,
+      lossPercent: 100,
+      samples: 5,
+      ts,
+    },
   ],
 };
 
@@ -36,6 +57,44 @@ describe("NodeMeshCard", () => {
     const table = screen.getByRole("table");
 
     expect(within(table).getAllByText("Альфа").length).toBeGreaterThan(0);
+  });
+
+  it("ячейка без свежих проб приглушена и не считается лучшим путём", () => {
+    const old = new Date(Date.now() - 10 * 60_000).toISOString();
+
+    render(
+      <TooltipProvider>
+        <NodeMeshCard
+          matrix={{
+            nodes: matrix.nodes,
+            cells: [
+              {
+                fromNodeId: "b",
+                toNodeId: "a",
+                rttMs: 40,
+                lossPercent: 0,
+                samples: 5,
+                ts: old,
+              },
+              {
+                fromNodeId: "c",
+                toNodeId: "a",
+                rttMs: 95,
+                lossPercent: 0,
+                samples: 5,
+                ts,
+              },
+            ],
+          }}
+        />
+      </TooltipProvider>,
+    );
+
+    const stale = screen.getByText("40").closest("td");
+
+    expect(stale?.hasAttribute("data-stale")).toBe(true);
+    expect(stale?.hasAttribute("data-best")).toBe(false);
+    expect(screen.getByText("95").closest("[data-best]")).toBeTruthy();
   });
 
   it("меньше двух нод — карточка не рендерится", () => {
