@@ -190,7 +190,13 @@ export const useWgNodeDetailVM = (nodeId: string) => {
   useSocketEvent<[WgNodeDto]>(
     "wg:node:updated",
     updated => {
-      if (updated.id === nodeId) node.setData(updated);
+      if (updated.id !== nodeId) return;
+      // Агент отвязан: прежние скорость и показатели хоста уже не текущие —
+      // снимок заново (сервер его сбросил).
+      const unbound = !!node.data?.agentId && !updated.agentId;
+
+      node.setData(updated);
+      if (unbound) void speed.reload();
     },
     canView,
   );
