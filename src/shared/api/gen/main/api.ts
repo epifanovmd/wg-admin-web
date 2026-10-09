@@ -1,5 +1,13 @@
 import type {
+  AgentAlertDto,
+  AgentDto,
   ApiResponseDto,
+  GetAgentAlertsParams,
+  GetAgentConfigsParams,
+  GetAgentEnrollmentTokensParams,
+  GetAgentEventsParams,
+  GetAgentLogsParams,
+  GetAgentsParams,
   GetMyAuditParams,
   GetPasskeysParams,
   GetProfilesParams,
@@ -8,6 +16,14 @@ import type {
   GetUsersParams,
   GetWgSocksMacClientParams,
   IAddWgInterfaceReplicaBody,
+  IAgentConfigEntryDto,
+  IAgentFetchBody,
+  IAgentInstallCommandDto,
+  IAgentLogsDto,
+  IAgentReleaseDto,
+  IAgentUpdateResultDto,
+  IAgentWorkerActionBody,
+  IAgentWorkerActionResultDto,
   IAppVersionDto,
   IAssignWgEndpointBody,
   IAssignWgForwardBody,
@@ -15,26 +31,34 @@ import type {
   IAssignWgNodeBody,
   IAssignWgPeerBody,
   IAssignWgSocksBody,
+  IBindWgNodeAgentBody,
   IBiometricDevicesResponseDto,
+  ICreateAgentEnrollmentTokenBody,
+  ICreateAgentInstallCommandBody,
   ICreateApiKeyBody,
   ICreateRoleRequestDto,
   ICreateWgEndpointBody,
   ICreateWgForwardBody,
   ICreateWgInterfaceBody,
   ICreateWgNodeBody,
+  ICreateWgNodeInstallCommandBody,
   ICreateWgPeerBody,
   ICreateWgSocksBody,
   ICreateWgSocksClientBody,
   ICreateWgSocksUserBody,
+  ICreatedAgentEnrollmentTokenDto,
   ICreatedApiKeyDto,
   ICreatedWgNodeDto,
   ICursorPageDtoAuditEventDto,
+  ICursorPageDtoIAgentEventDto,
   IDisable2FARequestDto,
   IEnable2FARequestDto,
   IGenerateAuthenticationOptionsRequestDto,
   IGenerateNonceRequestDto,
   IGenerateNonceResponseDto,
   IMoveWgInterfaceBody,
+  IPaginatedDtoAgentDto,
+  IPaginatedDtoAgentEnrollmentTokenDto,
   IPaginatedDtoApiKeyDto,
   IPaginatedDtoJobRunDto,
   IPaginatedDtoPasskeyDto,
@@ -53,6 +77,7 @@ import type {
   IRegisterBiometricResponseDto,
   IRoleDto,
   IRolePermissionsRequestDto,
+  ISetAgentConfigBody,
   ISignInRequestDto,
   ISignInResponseDto,
   ITokensDto,
@@ -61,6 +86,7 @@ import type {
   IUpdateWgForwardBody,
   IUpdateWgInterfaceBody,
   IUpdateWgNodeBody,
+  IUpdateWgNodeWorkerBody,
   IUpdateWgPeerBody,
   IUpdateWgSocksBody,
   IUpdateWgSocksUserBody,
@@ -82,16 +108,11 @@ import type {
   IVerifyBiometricSignatureResponseDto,
   IVerifyRegistrationRequestDto,
   IVerifyRegistrationResponseDto,
-  IWgAgentCommandCompleteBody,
-  IWgAgentCommandOutputBody,
-  IWgAgentDesiredState,
-  IWgAgentKeyDto,
-  IWgAgentReleaseInfo,
-  IWgAgentReportBody,
-  IWgAgentStatsBody,
   IWgInterfaceLive,
+  IWgInterfaceRestartResult,
   IWgLinkHealth,
   IWgMeshMatrix,
+  IWgNodeInstallCommandDto,
   IWgNodeLive,
   IWgNodeLogsDto,
   IWgNodeMetricPointDto,
@@ -117,10 +138,12 @@ import type {
   PublicKeyCredentialRequestOptionsJSON,
   PublicProfileDto,
   SetUsernameBody,
+  TAgentId,
+  TAgentWorkerName,
   TSignUpRequestDto,
+  TWgNodeWorker,
   UserDto,
   Uuid,
-  WgAgentStateParams,
   WgEndpointDto,
   WgEndpointOptionDto,
   WgEndpointOptionsParams,
@@ -128,7 +151,6 @@ import type {
   WgInterfaceDto,
   WgInterfaceOptionDto,
   WgInterfaceOptionsParams,
-  WgNodeCommandDto,
   WgNodeDto,
   WgNodeLogsParams,
   WgNodeMetricsParams,
@@ -147,54 +169,6 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 export const getWgAdmin = () => {
   /**
-   * Выпустить API-ключ сервиса. Полный ключ (`key`) возвращается только в
-   * этом ответе — сохраните его: в БД хранится лишь хеш.
-   * @summary Создание API-ключа
-   */
-  const createApiKey = (
-    iCreateApiKeyBody: ICreateApiKeyBody,
-    options?: SecondParameter<typeof mainMutator<ICreatedApiKeyDto>>,
-  ) => {
-    return mainMutator<ICreatedApiKeyDto>(
-      {
-        url: `/api/v1/api-keys`,
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        data: iCreateApiKeyBody,
-      },
-      options,
-    );
-  };
-
-  /**
-   * Все API-ключи, новые первыми. Секреты не возвращаются.
-   * @summary Список API-ключей
-   */
-  const listApiKeys = (
-    params?: ListApiKeysParams,
-    options?: SecondParameter<typeof mainMutator<IPaginatedDtoApiKeyDto>>,
-  ) => {
-    return mainMutator<IPaginatedDtoApiKeyDto>(
-      { url: `/api/v1/api-keys`, method: "GET", params },
-      options,
-    );
-  };
-
-  /**
-   * Отозвать ключ: запросы с ним сразу получают 401. Повторный отзыв — 204.
-   * @summary Отзыв API-ключа
-   */
-  const revokeApiKey = (
-    id: Uuid,
-    options?: SecondParameter<typeof mainMutator<void>>,
-  ) => {
-    return mainMutator<void>(
-      { url: `/api/v1/api-keys/${id}/revoke`, method: "POST" },
-      options,
-    );
-  };
-
-  /**
    * Каталог прав по группам с подписями — для редакторов ролей и прав
    * пользователей. Первая группа — «Система» (полный доступ `*`).
    * @summary Каталог прав
@@ -209,9 +183,394 @@ export const getWgAdmin = () => {
   };
 
   /**
-   * Создать ноду (VPS с агентом). Ключ агента возвращается только в этом
-   * ответе — сохранить сразу. Создатель — автор запроса; владелец, отличный
-   * от себя, — только с правом `wg:node:assign`.
+   * Агенты в порядке регистрации: связь, узел, воркеры (состояние,
+   * самочувствие, манифест, настройки), последняя точка метрик, проблемы.
+   * Право `agent:view` — все агенты, иначе — доступные через политику.
+   * @summary Список агентов
+   */
+  const getAgents = (
+    params?: GetAgentsParams,
+    options?: SecondParameter<typeof mainMutator<IPaginatedDtoAgentDto>>,
+  ) => {
+    return mainMutator<IPaginatedDtoAgentDto>(
+      { url: `/api/v1/agents`, method: "GET", params },
+      options,
+    );
+  };
+
+  /**
+   * Текущие проблемы: агент без связи, воркер упал, не зарегистрирован, не в
+   * порядке, отказал в настройке. Без `agentId` — у всех доступных агентов.
+   * @summary Проблемы агентов
+   */
+  const getAgentAlerts = (
+    params?: GetAgentAlertsParams,
+    options?: SecondParameter<typeof mainMutator<AgentAlertDto[]>>,
+  ) => {
+    return mainMutator<AgentAlertDto[]>(
+      { url: `/api/v1/agents/alerts`, method: "GET", params },
+      options,
+    );
+  };
+
+  /**
+   * События воркеров, новые первыми: фильтр по агенту, воркеру и типу;
+   * следующая страница — `cursor` из ответа.
+   * @summary Лента событий воркеров
+   */
+  const getAgentEvents = (
+    params?: GetAgentEventsParams,
+    options?: SecondParameter<typeof mainMutator<ICursorPageDtoIAgentEventDto>>,
+  ) => {
+    return mainMutator<ICursorPageDtoIAgentEventDto>(
+      { url: `/api/v1/agents/events`, method: "GET", params },
+      options,
+    );
+  };
+
+  /**
+   * Агент: `hello` (версия, узел, воркеры), последний `status` (воркеры с
+   * `state`, `health`, `pending`, манифестом и итогами настроек), метрики,
+   * проблемы, процесс с соединением.
+   * @summary Агент
+   */
+  const getAgent = (
+    id: TAgentId,
+    options?: SecondParameter<typeof mainMutator<AgentDto>>,
+  ) => {
+    return mainMutator<AgentDto>(
+      { url: `/api/v1/agents/${id}`, method: "GET" },
+      options,
+    );
+  };
+
+  /**
+   * Удалить запись агента, его настройки и историю; соединение закрывается.
+   * Агент с токеном регистрации зарегистрируется заново — уже другим.
+   * @summary Удаление агента
+   */
+  const deleteAgent = (
+    id: TAgentId,
+    options?: SecondParameter<typeof mainMutator<void>>,
+  ) => {
+    return mainMutator<void>(
+      { url: `/api/v1/agents/${id}`, method: "DELETE" },
+      options,
+    );
+  };
+
+  /**
+   * Отозвать агента: ключ больше не принимается, соединение закрывается.
+   * Повторный отзыв — тот же ответ.
+   * @summary Отзыв агента
+   */
+  const revokeAgent = (
+    id: TAgentId,
+    options?: SecondParameter<typeof mainMutator<AgentDto>>,
+  ) => {
+    return mainMutator<AgentDto>(
+      { url: `/api/v1/agents/${id}/revoke`, method: "POST" },
+      options,
+    );
+  };
+
+  /**
+   * Сменить ключ агента: агент создаёт новый секрет и переподключается с
+   * ним. Агент должен быть на связи.
+   * @summary Смена ключа агента
+   */
+  const rotateAgentKey = (
+    id: TAgentId,
+    options?: SecondParameter<typeof mainMutator<void>>,
+  ) => {
+    return mainMutator<void>(
+      { url: `/api/v1/agents/${id}/rotate-key`, method: "POST" },
+      options,
+    );
+  };
+
+  /**
+   * Обновить агента до версии выпуска (`AGENT_RELEASES_DIR`): итог — после
+   * запуска новой версии. Агент в контейнере себя не обновляет.
+   * @summary Обновление агента
+   */
+  const updateAgent = (
+    id: TAgentId,
+    options?: SecondParameter<typeof mainMutator<IAgentUpdateResultDto>>,
+  ) => {
+    return mainMutator<IAgentUpdateResultDto>(
+      { url: `/api/v1/agents/${id}/update`, method: "POST" },
+      options,
+    );
+  };
+
+  /**
+   * Последние строки журнала с узла: агента или воркера (`worker`).
+   * @summary Журнал агента
+   */
+  const getAgentLogs = (
+    id: TAgentId,
+    params?: GetAgentLogsParams,
+    options?: SecondParameter<typeof mainMutator<IAgentLogsDto>>,
+  ) => {
+    return mainMutator<IAgentLogsDto>(
+      { url: `/api/v1/agents/${id}/logs`, method: "GET", params },
+      options,
+    );
+  };
+
+  /**
+   * Выпустить токен регистрации агентов. Полный токен (`token`) — только в
+   * этом ответе: он кладётся в настройки агента (`enroll.token`) или в
+   * команду установки. `maxUses` не задан — многоразовый (парк машин).
+   * @summary Выпуск токена регистрации
+   */
+  const createAgentEnrollmentToken = (
+    iCreateAgentEnrollmentTokenBody: ICreateAgentEnrollmentTokenBody,
+    options?: SecondParameter<
+      typeof mainMutator<ICreatedAgentEnrollmentTokenDto>
+    >,
+  ) => {
+    return mainMutator<ICreatedAgentEnrollmentTokenDto>(
+      {
+        url: `/api/v1/agent-enrollment-tokens`,
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        data: iCreateAgentEnrollmentTokenBody,
+      },
+      options,
+    );
+  };
+
+  /**
+   * Токены регистрации, новые первыми; секреты не возвращаются.
+   * @summary Список токенов регистрации
+   */
+  const getAgentEnrollmentTokens = (
+    params?: GetAgentEnrollmentTokensParams,
+    options?: SecondParameter<
+      typeof mainMutator<IPaginatedDtoAgentEnrollmentTokenDto>
+    >,
+  ) => {
+    return mainMutator<IPaginatedDtoAgentEnrollmentTokenDto>(
+      { url: `/api/v1/agent-enrollment-tokens`, method: "GET", params },
+      options,
+    );
+  };
+
+  /**
+   * Отозвать токен: новые регистрации по нему невозможны, агенты остаются.
+   * Повторный отзыв — 204.
+   * @summary Отзыв токена регистрации
+   */
+  const revokeAgentEnrollmentToken = (
+    id: Uuid,
+    options?: SecondParameter<typeof mainMutator<void>>,
+  ) => {
+    return mainMutator<void>(
+      { url: `/api/v1/agent-enrollment-tokens/${id}/revoke`, method: "POST" },
+      options,
+    );
+  };
+
+  /**
+   * Выпуск агента и кого из доступных агентов можно обновить до него:
+   * агент и netprobe — из выпусков GitHub (`AGENT_RELEASES_GITHUB`) или
+   * базы выпуска (`AGENT_RELEASES_URL`), воркеры проекта wg и socks — из
+   * `AGENT_RELEASES_DIR`. Новую версию агента в источнике бэкенд замечает
+   * сам (сокет `agent:release`).
+   * @summary Выпуск агента
+   */
+  const getAgentRelease = (
+    options?: SecondParameter<typeof mainMutator<IAgentReleaseDto>>,
+  ) => {
+    return mainMutator<IAgentReleaseDto>(
+      { url: `/api/v1/agent-releases`, method: "GET" },
+      options,
+    );
+  };
+
+  /**
+   * Команда установки агента на новый узел одной строкой:
+   * `curl …/api/v1/agent-link/install.sh | sudo sh -s -- --token … [флаги]`
+   * (воркеры из выпуска — `workers`, флаг `--worker`).
+   * @summary Команда установки агента
+   */
+  const createAgentInstallCommand = (
+    iCreateAgentInstallCommandBody: ICreateAgentInstallCommandBody,
+    options?: SecondParameter<typeof mainMutator<IAgentInstallCommandDto>>,
+  ) => {
+    return mainMutator<IAgentInstallCommandDto>(
+      {
+        url: `/api/v1/agent-releases/install-command`,
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        data: iCreateAgentInstallCommandBody,
+      },
+      options,
+    );
+  };
+
+  /**
+   * Перезапустить воркер. Свободный — перезапускается сразу (`deferred:
+   * false` после запуска). Занятый (`health.busy`) — ответ сразу (`deferred:
+   * true`, `pending`, `actionId`), замена — после окончания работы, её итог —
+   * событие сокета `agent:action` (`id = actionId`, `deferred: true`);
+   * `force` — заменить сразу.
+   * @summary Перезапуск воркера
+   */
+  const restartAgentWorker = (
+    id: TAgentId,
+    worker: TAgentWorkerName,
+    iAgentWorkerActionBody: IAgentWorkerActionBody,
+    options?: SecondParameter<typeof mainMutator<IAgentWorkerActionResultDto>>,
+  ) => {
+    return mainMutator<IAgentWorkerActionResultDto>(
+      {
+        url: `/api/v1/agents/${id}/workers/${worker}/restart`,
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        data: iAgentWorkerActionBody,
+      },
+      options,
+    );
+  };
+
+  /**
+   * Обновить воркер из выпуска до новейшей сборки под агента. Свободный — сразу
+   * (версии в ответе); занятый — как у перезапуска: ответ `deferred: true`,
+   * итог — событие `agent:action`; `force` — сразу. Новая сборка не
+   * заработала — агент возвращает прежнюю.
+   * @summary Обновление воркера
+   */
+  const updateAgentWorker = (
+    id: TAgentId,
+    worker: TAgentWorkerName,
+    iAgentWorkerActionBody: IAgentWorkerActionBody,
+    options?: SecondParameter<typeof mainMutator<IAgentWorkerActionResultDto>>,
+  ) => {
+    return mainMutator<IAgentWorkerActionResultDto>(
+      {
+        url: `/api/v1/agents/${id}/workers/${worker}/update`,
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        data: iAgentWorkerActionBody,
+      },
+      options,
+    );
+  };
+
+  /**
+   * Запрос к воркеру через агента: метод, путь, заголовки, тело. Ответ —
+   * статус, заголовки и тело воркера потоком и заголовок
+   * `X-Agent-Worker-Status` (статус ответа воркера): по нему ответ воркера
+   * отличается от ошибки API (её тело — `{ code, message }`, заголовка нет).
+   * Служебные пути воркера (`/health`, `/metrics`, `/config/*`, `/cleanup`)
+   * недоступны. В аудит попадают изменяющие запросы (`POST`, `PUT`, `PATCH`,
+   * `DELETE`).
+   * @summary Запрос к воркеру
+   */
+  const fetchAgentWorker = (
+    id: TAgentId,
+    worker: TAgentWorkerName,
+    iAgentFetchBody: IAgentFetchBody,
+    options?: SecondParameter<typeof mainMutator<Blob>>,
+  ) => {
+    return mainMutator<Blob>(
+      {
+        url: `/api/v1/agents/${id}/workers/${worker}/fetch`,
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        data: iAgentFetchBody,
+        responseType: "blob",
+      },
+      options,
+    );
+  };
+
+  /**
+   * Ключи настроек агента (или одного воркера): значение и статус
+   * применения — желаемая, доставленная и применённая версии, ошибка.
+   * @summary Настройки воркеров агента
+   */
+  const getAgentConfigs = (
+    id: TAgentId,
+    params?: GetAgentConfigsParams,
+    options?: SecondParameter<typeof mainMutator<IAgentConfigEntryDto[]>>,
+  ) => {
+    return mainMutator<IAgentConfigEntryDto[]>(
+      { url: `/api/v1/agents/${id}/configs`, method: "GET", params },
+      options,
+    );
+  };
+
+  /**
+   * Ключ настроек воркера: значение и статус применения.
+   * @summary Настройка воркера
+   */
+  const getAgentWorkerConfig = (
+    id: TAgentId,
+    worker: TAgentWorkerName,
+    key: TAgentWorkerName,
+    options?: SecondParameter<typeof mainMutator<IAgentConfigEntryDto>>,
+  ) => {
+    return mainMutator<IAgentConfigEntryDto>(
+      {
+        url: `/api/v1/agents/${id}/workers/${worker}/configs/${key}`,
+        method: "GET",
+      },
+      options,
+    );
+  };
+
+  /**
+   * Записать значение ключа (новая версия). Значение проверяется по схеме
+   * ключа из манифеста воркера (400 `AGENT_CONFIG_INVALID`); агент получит
+   * его сразу или при подключении, итог — в статусе и событии сокета.
+   * @summary Запись настройки воркера
+   */
+  const setAgentWorkerConfig = (
+    id: TAgentId,
+    worker: TAgentWorkerName,
+    key: TAgentWorkerName,
+    iSetAgentConfigBody: ISetAgentConfigBody,
+    options?: SecondParameter<typeof mainMutator<IAgentConfigEntryDto>>,
+  ) => {
+    return mainMutator<IAgentConfigEntryDto>(
+      {
+        url: `/api/v1/agents/${id}/workers/${worker}/configs/${key}`,
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        data: iSetAgentConfigBody,
+      },
+      options,
+    );
+  };
+
+  /**
+   * Удалить ключ: агент удалит его у себя и у воркера. Ключа нет — 404.
+   * @summary Удаление настройки воркера
+   */
+  const deleteAgentWorkerConfig = (
+    id: TAgentId,
+    worker: TAgentWorkerName,
+    key: TAgentWorkerName,
+    options?: SecondParameter<typeof mainMutator<void>>,
+  ) => {
+    return mainMutator<void>(
+      {
+        url: `/api/v1/agents/${id}/workers/${worker}/configs/${key}`,
+        method: "DELETE",
+      },
+      options,
+    );
+  };
+
+  /**
+   * Создать ноду (VPS с агентом). В ответе — команда установки агента с
+   * одноразовым токеном регистрации (токен виден только здесь; новый —
+   * `POST /{id}/install-command`). Создатель — автор запроса; владелец,
+   * отличный от себя, — только с правом `wg:node:assign`.
    * @summary Создание ноды
    */
   const createWgNode = (
@@ -341,22 +700,110 @@ export const getWgAdmin = () => {
   };
 
   /**
-   * Перевыпустить ключ агента: старый отзывается сразу, новый возвращается
-   * один раз.
-   * @summary Ротация ключа агента
+   * Команда установки агента на VPS: одноразовый токен регистрации с меткой
+   * ноды (агент привяжется к ней), экземпляр проекта (`--instance`), воркеры
+   * wg и socks, пакеты и параметры ядра. Токен виден только в ответе.
+   * @summary Команда установки агента
    */
-  const rotateWgAgentKey = (
+  const createWgNodeInstallCommand = (
     id: Uuid,
-    options?: SecondParameter<typeof mainMutator<IWgAgentKeyDto>>,
+    iCreateWgNodeInstallCommandBody: ICreateWgNodeInstallCommandBody,
+    options?: SecondParameter<typeof mainMutator<IWgNodeInstallCommandDto>>,
   ) => {
-    return mainMutator<IWgAgentKeyDto>(
-      { url: `/api/v1/wg/nodes/${id}/agent-key`, method: "POST" },
+    return mainMutator<IWgNodeInstallCommandDto>(
+      {
+        url: `/api/v1/wg/nodes/${id}/install-command`,
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        data: iCreateWgNodeInstallCommandBody,
+      },
       options,
     );
   };
 
   /**
-   * Последние строки журнала агента ноды (синхронно, через команду агенту).
+   * Привязать к ноде уже зарегистрированного агента (например, общим
+   * токеном окружения); прежний агент ноды отзывается.
+   * @summary Привязка агента к ноде
+   */
+  const bindWgNodeAgent = (
+    id: Uuid,
+    iBindWgNodeAgentBody: IBindWgNodeAgentBody,
+    options?: SecondParameter<typeof mainMutator<void>>,
+  ) => {
+    return mainMutator<void>(
+      {
+        url: `/api/v1/wg/nodes/${id}/agent`,
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        data: iBindWgNodeAgentBody,
+      },
+      options,
+    );
+  };
+
+  /**
+   * Обновить агента ноды до версии выпуска; итог — после запуска новой
+   * версии агента.
+   * @summary Обновление агента ноды
+   */
+  const updateWgNodeAgent = (
+    id: Uuid,
+    options?: SecondParameter<typeof mainMutator<IAgentUpdateResultDto>>,
+  ) => {
+    return mainMutator<IAgentUpdateResultDto>(
+      { url: `/api/v1/wg/nodes/${id}/agent/update`, method: "POST" },
+      options,
+    );
+  };
+
+  /**
+   * Обновить воркер агента ноды (`wg`, `socks`) из выпуска. Занятый воркер —
+   * `deferred: true`, итог — событием `agent:action`.
+   * @summary Обновление воркера ноды
+   */
+  const updateWgNodeWorker = (
+    id: Uuid,
+    worker: TWgNodeWorker,
+    iUpdateWgNodeWorkerBody: IUpdateWgNodeWorkerBody,
+    options?: SecondParameter<typeof mainMutator<IAgentWorkerActionResultDto>>,
+  ) => {
+    return mainMutator<IAgentWorkerActionResultDto>(
+      {
+        url: `/api/v1/wg/nodes/${id}/workers/${worker}/update`,
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        data: iUpdateWgNodeWorkerBody,
+      },
+      options,
+    );
+  };
+
+  /**
+   * Перезапустить воркер агента ноды. Созданное воркером на узле
+   * (интерфейсы, туннели, пробросы) при этом не разбирается.
+   * @summary Перезапуск воркера ноды
+   */
+  const restartWgNodeWorker = (
+    id: Uuid,
+    worker: TWgNodeWorker,
+    iUpdateWgNodeWorkerBody: IUpdateWgNodeWorkerBody,
+    options?: SecondParameter<typeof mainMutator<IAgentWorkerActionResultDto>>,
+  ) => {
+    return mainMutator<IAgentWorkerActionResultDto>(
+      {
+        url: `/api/v1/wg/nodes/${id}/workers/${worker}/restart`,
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        data: iUpdateWgNodeWorkerBody,
+      },
+      options,
+    );
+  };
+
+  /**
+   * Последние строки журнала агента ноды или его воркера (`worker`) — с
+   * узла.
    * @summary Журнал агента
    */
   const wgNodeLogs = (
@@ -701,14 +1148,15 @@ export const getWgAdmin = () => {
   };
 
   /**
-   * Перезапустить интерфейс на ноде (`wg-quick down && up`).
+   * Перезапустить интерфейс на основной ноде (`wg-quick down && up`
+   * воркером wg агента); итог — в ответе. Агент не на связи — 503.
    * @summary Перезапуск интерфейса
    */
   const restartWgInterface = (
     id: Uuid,
-    options?: SecondParameter<typeof mainMutator<WgNodeCommandDto>>,
+    options?: SecondParameter<typeof mainMutator<IWgInterfaceRestartResult>>,
   ) => {
-    return mainMutator<WgNodeCommandDto>(
+    return mainMutator<IWgInterfaceRestartResult>(
       { url: `/api/v1/wg/interfaces/${id}/restart`, method: "POST" },
       options,
     );
@@ -1617,223 +2065,6 @@ export const getWgAdmin = () => {
   };
 
   /**
-   * Видимые задачи: свои, либо задачи scope (`scopeType` + `scopeId`), если
-   * политика scope разрешает просмотр. Новые — первыми.
-   * @summary Список задач
-   */
-  const listJobs = (
-    params?: ListJobsParams,
-    options?: SecondParameter<typeof mainMutator<IPaginatedDtoJobRunDto>>,
-  ) => {
-    return mainMutator<IPaginatedDtoJobRunDto>(
-      { url: `/api/v1/jobs`, method: "GET", params },
-      options,
-    );
-  };
-
-  /**
-   * Задача: статус, прогресс, хвост лога, результат или ошибка.
-   * @summary Задача
-   */
-  const getJob = (
-    id: Uuid,
-    options?: SecondParameter<typeof mainMutator<JobRunDto>>,
-  ) => {
-    return mainMutator<JobRunDto>(
-      { url: `/api/v1/jobs/${id}`, method: "GET" },
-      options,
-    );
-  };
-
-  /**
-   * Отменить задачу: ждущая снимается сразу, выполняющаяся получает сигнал
-   * отмены. Завершённую отменить нельзя (409).
-   * @summary Отмена задачи
-   */
-  const cancelJob = (
-    id: Uuid,
-    options?: SecondParameter<typeof mainMutator<void>>,
-  ) => {
-    return mainMutator<void>(
-      { url: `/api/v1/jobs/${id}/cancel`, method: "POST" },
-      options,
-    );
-  };
-
-  /**
-   * Желаемое состояние ноды (long-poll): ответ приходит при изменении
-   * конфигурации, появлении команд или по таймауту ожидания.
-   * @summary Desired state (long-poll)
-   */
-  const wgAgentState = (
-    params?: WgAgentStateParams,
-    options?: SecondParameter<typeof mainMutator<IWgAgentDesiredState>>,
-  ) => {
-    return mainMutator<IWgAgentDesiredState>(
-      { url: `/api/v1/wg-agent/state`, method: "GET", params },
-      options,
-    );
-  };
-
-  /**
-   * Отчёт агента: применённая версия, ошибка применения, версии ПО,
-   * сведения об ОС и фактические статусы интерфейсов.
-   * @summary Отчёт о состоянии
-   */
-  const wgAgentReport = (
-    iWgAgentReportBody: IWgAgentReportBody,
-    options?: SecondParameter<typeof mainMutator<void>>,
-  ) => {
-    return mainMutator<void>(
-      {
-        url: `/api/v1/wg-agent/state`,
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        data: iWgAgentReportBody,
-      },
-      options,
-    );
-  };
-
-  /**
-   * Статистика `wg show all dump` и системные метрики хоста.
-   * @summary Статистика
-   */
-  const wgAgentStats = (
-    iWgAgentStatsBody: IWgAgentStatsBody,
-    options?: SecondParameter<typeof mainMutator<void>>,
-  ) => {
-    return mainMutator<void>(
-      {
-        url: `/api/v1/wg-agent/stats`,
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        data: iWgAgentStatsBody,
-      },
-      options,
-    );
-  };
-
-  /**
-   * Агент взял команду в работу.
-   * @summary Команда: взята
-   */
-  const wgAgentCommandAck = (
-    id: Uuid,
-    options?: SecondParameter<typeof mainMutator<void>>,
-  ) => {
-    return mainMutator<void>(
-      { url: `/api/v1/wg-agent/commands/${id}/ack`, method: "POST" },
-      options,
-    );
-  };
-
-  /**
-   * Фрагмент вывода команды: дописывается в `output` команды (с пределом).
-   * @summary Команда: вывод
-   */
-  const wgAgentCommandOutput = (
-    id: Uuid,
-    iWgAgentCommandOutputBody: IWgAgentCommandOutputBody,
-    options?: SecondParameter<typeof mainMutator<void>>,
-  ) => {
-    return mainMutator<void>(
-      {
-        url: `/api/v1/wg-agent/commands/${id}/output`,
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        data: iWgAgentCommandOutputBody,
-      },
-      options,
-    );
-  };
-
-  /**
-   * Итог выполнения команды.
-   * @summary Команда: завершена
-   */
-  const wgAgentCommandComplete = (
-    id: Uuid,
-    iWgAgentCommandCompleteBody: IWgAgentCommandCompleteBody,
-    options?: SecondParameter<typeof mainMutator<void>>,
-  ) => {
-    return mainMutator<void>(
-      {
-        url: `/api/v1/wg-agent/commands/${id}/complete`,
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        data: iWgAgentCommandCompleteBody,
-      },
-      options,
-    );
-  };
-
-  /**
-   * Бинарь агента своей архитектуры (установка и команда `agent-update`):
-   * sha256 — в заголовке `X-Agent-Sha256`, агент и установщик его сверяют.
-   * @summary Бинарь агента
-   */
-  const wgAgentBinary = (
-    arch: string,
-    options?: SecondParameter<typeof mainMutator<Blob>>,
-  ) => {
-    return mainMutator<Blob>(
-      {
-        url: `/api/v1/wg-agent/binary/${arch}`,
-        method: "GET",
-        responseType: "blob",
-      },
-      options,
-    );
-  };
-
-  /**
-   * Установщик агента (sh) для ручной установки на сервер:
-   * `curl -fsSL <бэкенд>/api/v1/wg-agent/install.sh | sudo sh -s -- --key <ключ>`.
-   * Секретов не содержит — бинарь скачивается по ключу агента.
-   * @summary Установщик агента
-   */
-  const wgAgentInstallScript = (
-    options?: SecondParameter<typeof mainMutator<string>>,
-  ) => {
-    return mainMutator<string>(
-      { url: `/api/v1/wg-agent/install.sh`, method: "GET" },
-      options,
-    );
-  };
-
-  /**
-   * Версия агента, которую бэкенд может раздать, и sha256 бинарей. Нода с
-   * другим `agentCodeHash` для своей архитектуры — кандидат на обновление.
-   * @summary Доступная версия агента
-   */
-  const wgAgentRelease = (
-    options?: SecondParameter<typeof mainMutator<IWgAgentReleaseInfo>>,
-  ) => {
-    return mainMutator<IWgAgentReleaseInfo>(
-      { url: `/api/v1/wg/agent/release`, method: "GET" },
-      options,
-    );
-  };
-
-  /**
-   * Обновить агента на ноде: агент скачает бинарь своей архитектуры,
-   * сверит sha256 и перезапустится (не вышел на связь трижды — откат на
-   * прежнюю версию). Архитектура ноды неизвестна или бинарь под неё не
-   * собран — 404.
-   * @summary Обновить агента
-   */
-  const updateWgAgent = (
-    nodeId: Uuid,
-    options?: SecondParameter<typeof mainMutator<WgNodeCommandDto>>,
-  ) => {
-    return mainMutator<WgNodeCommandDto>(
-      { url: `/api/v1/wg/agent/nodes/${nodeId}/update`, method: "POST" },
-      options,
-    );
-  };
-
-  /**
    * Получить пользователя.
    * Этот эндпоинт позволяет получить данные пользователя, который выполнил запрос.
    * @summary Получение данных текущего пользователя
@@ -2527,6 +2758,50 @@ export const getWgAdmin = () => {
   };
 
   /**
+   * Видимые задачи: свои, либо задачи scope (`scopeType` + `scopeId`), если
+   * политика scope разрешает просмотр. Новые — первыми.
+   * @summary Список задач
+   */
+  const listJobs = (
+    params?: ListJobsParams,
+    options?: SecondParameter<typeof mainMutator<IPaginatedDtoJobRunDto>>,
+  ) => {
+    return mainMutator<IPaginatedDtoJobRunDto>(
+      { url: `/api/v1/jobs`, method: "GET", params },
+      options,
+    );
+  };
+
+  /**
+   * Задача: статус, прогресс, хвост лога, результат или ошибка.
+   * @summary Задача
+   */
+  const getJob = (
+    id: Uuid,
+    options?: SecondParameter<typeof mainMutator<JobRunDto>>,
+  ) => {
+    return mainMutator<JobRunDto>(
+      { url: `/api/v1/jobs/${id}`, method: "GET" },
+      options,
+    );
+  };
+
+  /**
+   * Отменить задачу: ждущая снимается сразу, выполняющаяся получает сигнал
+   * отмены. Завершённую отменить нельзя (409).
+   * @summary Отмена задачи
+   */
+  const cancelJob = (
+    id: Uuid,
+    options?: SecondParameter<typeof mainMutator<void>>,
+  ) => {
+    return mainMutator<void>(
+      { url: `/api/v1/jobs/${id}/cancel`, method: "POST" },
+      options,
+    );
+  };
+
+  /**
    * Регистрирует публичный ключ устройства для входа по биометрии.
    * @summary Регистрация биометрии
    */
@@ -2661,11 +2936,77 @@ export const getWgAdmin = () => {
     );
   };
 
+  /**
+   * Выпустить API-ключ сервиса. Полный ключ (`key`) возвращается только в
+   * этом ответе — сохраните его: в БД хранится лишь хеш.
+   * @summary Создание API-ключа
+   */
+  const createApiKey = (
+    iCreateApiKeyBody: ICreateApiKeyBody,
+    options?: SecondParameter<typeof mainMutator<ICreatedApiKeyDto>>,
+  ) => {
+    return mainMutator<ICreatedApiKeyDto>(
+      {
+        url: `/api/v1/api-keys`,
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        data: iCreateApiKeyBody,
+      },
+      options,
+    );
+  };
+
+  /**
+   * Все API-ключи, новые первыми. Секреты не возвращаются.
+   * @summary Список API-ключей
+   */
+  const listApiKeys = (
+    params?: ListApiKeysParams,
+    options?: SecondParameter<typeof mainMutator<IPaginatedDtoApiKeyDto>>,
+  ) => {
+    return mainMutator<IPaginatedDtoApiKeyDto>(
+      { url: `/api/v1/api-keys`, method: "GET", params },
+      options,
+    );
+  };
+
+  /**
+   * Отозвать ключ: запросы с ним сразу получают 401. Повторный отзыв — 204.
+   * @summary Отзыв API-ключа
+   */
+  const revokeApiKey = (
+    id: Uuid,
+    options?: SecondParameter<typeof mainMutator<void>>,
+  ) => {
+    return mainMutator<void>(
+      { url: `/api/v1/api-keys/${id}/revoke`, method: "POST" },
+      options,
+    );
+  };
+
   return {
-    createApiKey,
-    listApiKeys,
-    revokeApiKey,
     getPermissionCatalog,
+    getAgents,
+    getAgentAlerts,
+    getAgentEvents,
+    getAgent,
+    deleteAgent,
+    revokeAgent,
+    rotateAgentKey,
+    updateAgent,
+    getAgentLogs,
+    createAgentEnrollmentToken,
+    getAgentEnrollmentTokens,
+    revokeAgentEnrollmentToken,
+    getAgentRelease,
+    createAgentInstallCommand,
+    restartAgentWorker,
+    updateAgentWorker,
+    fetchAgentWorker,
+    getAgentConfigs,
+    getAgentWorkerConfig,
+    setAgentWorkerConfig,
+    deleteAgentWorkerConfig,
     createWgNode,
     listWgNodes,
     wgNodeOptions,
@@ -2674,7 +3015,11 @@ export const getWgAdmin = () => {
     deleteWgNode,
     assignWgNode,
     revokeWgNode,
-    rotateWgAgentKey,
+    createWgNodeInstallCommand,
+    bindWgNodeAgent,
+    updateWgNodeAgent,
+    updateWgNodeWorker,
+    restartWgNodeWorker,
     wgNodeLogs,
     createWgEndpoint,
     listWgEndpoints,
@@ -2750,19 +3095,6 @@ export const getWgAdmin = () => {
     deleteWgForward,
     assignWgForward,
     revokeWgForward,
-    listJobs,
-    getJob,
-    cancelJob,
-    wgAgentState,
-    wgAgentReport,
-    wgAgentStats,
-    wgAgentCommandAck,
-    wgAgentCommandOutput,
-    wgAgentCommandComplete,
-    wgAgentBinary,
-    wgAgentInstallScript,
-    wgAgentRelease,
-    updateWgAgent,
     getMyUser,
     updateMyUser,
     confirmEmailChange,
@@ -2803,6 +3135,9 @@ export const getWgAdmin = () => {
     verifyRegistration,
     generateAuthenticationOptions,
     verifyAuthentication,
+    listJobs,
+    getJob,
+    cancelJob,
     registerBiometric,
     generateNonce,
     verifySignature,
@@ -2811,19 +3146,82 @@ export const getWgAdmin = () => {
     getMyAudit,
     listAuditEvents,
     getAppVersion,
+    createApiKey,
+    listApiKeys,
+    revokeApiKey,
   };
 };
-export type CreateApiKeyResult = NonNullable<
-  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["createApiKey"]>>
->;
-export type ListApiKeysResult = NonNullable<
-  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["listApiKeys"]>>
->;
-export type RevokeApiKeyResult = NonNullable<
-  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["revokeApiKey"]>>
->;
 export type GetPermissionCatalogResult = NonNullable<
   Awaited<ReturnType<ReturnType<typeof getWgAdmin>["getPermissionCatalog"]>>
+>;
+export type GetAgentsResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["getAgents"]>>
+>;
+export type GetAgentAlertsResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["getAgentAlerts"]>>
+>;
+export type GetAgentEventsResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["getAgentEvents"]>>
+>;
+export type GetAgentResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["getAgent"]>>
+>;
+export type DeleteAgentResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["deleteAgent"]>>
+>;
+export type RevokeAgentResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["revokeAgent"]>>
+>;
+export type RotateAgentKeyResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["rotateAgentKey"]>>
+>;
+export type UpdateAgentResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["updateAgent"]>>
+>;
+export type GetAgentLogsResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["getAgentLogs"]>>
+>;
+export type CreateAgentEnrollmentTokenResult = NonNullable<
+  Awaited<
+    ReturnType<ReturnType<typeof getWgAdmin>["createAgentEnrollmentToken"]>
+  >
+>;
+export type GetAgentEnrollmentTokensResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["getAgentEnrollmentTokens"]>>
+>;
+export type RevokeAgentEnrollmentTokenResult = NonNullable<
+  Awaited<
+    ReturnType<ReturnType<typeof getWgAdmin>["revokeAgentEnrollmentToken"]>
+  >
+>;
+export type GetAgentReleaseResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["getAgentRelease"]>>
+>;
+export type CreateAgentInstallCommandResult = NonNullable<
+  Awaited<
+    ReturnType<ReturnType<typeof getWgAdmin>["createAgentInstallCommand"]>
+  >
+>;
+export type RestartAgentWorkerResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["restartAgentWorker"]>>
+>;
+export type UpdateAgentWorkerResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["updateAgentWorker"]>>
+>;
+export type FetchAgentWorkerResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["fetchAgentWorker"]>>
+>;
+export type GetAgentConfigsResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["getAgentConfigs"]>>
+>;
+export type GetAgentWorkerConfigResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["getAgentWorkerConfig"]>>
+>;
+export type SetAgentWorkerConfigResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["setAgentWorkerConfig"]>>
+>;
+export type DeleteAgentWorkerConfigResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["deleteAgentWorkerConfig"]>>
 >;
 export type CreateWgNodeResult = NonNullable<
   Awaited<ReturnType<ReturnType<typeof getWgAdmin>["createWgNode"]>>
@@ -2849,8 +3247,22 @@ export type AssignWgNodeResult = NonNullable<
 export type RevokeWgNodeResult = NonNullable<
   Awaited<ReturnType<ReturnType<typeof getWgAdmin>["revokeWgNode"]>>
 >;
-export type RotateWgAgentKeyResult = NonNullable<
-  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["rotateWgAgentKey"]>>
+export type CreateWgNodeInstallCommandResult = NonNullable<
+  Awaited<
+    ReturnType<ReturnType<typeof getWgAdmin>["createWgNodeInstallCommand"]>
+  >
+>;
+export type BindWgNodeAgentResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["bindWgNodeAgent"]>>
+>;
+export type UpdateWgNodeAgentResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["updateWgNodeAgent"]>>
+>;
+export type UpdateWgNodeWorkerResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["updateWgNodeWorker"]>>
+>;
+export type RestartWgNodeWorkerResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["restartWgNodeWorker"]>>
 >;
 export type WgNodeLogsResult = NonNullable<
   Awaited<ReturnType<ReturnType<typeof getWgAdmin>["wgNodeLogs"]>>
@@ -3077,45 +3489,6 @@ export type AssignWgForwardResult = NonNullable<
 export type RevokeWgForwardResult = NonNullable<
   Awaited<ReturnType<ReturnType<typeof getWgAdmin>["revokeWgForward"]>>
 >;
-export type ListJobsResult = NonNullable<
-  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["listJobs"]>>
->;
-export type GetJobResult = NonNullable<
-  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["getJob"]>>
->;
-export type CancelJobResult = NonNullable<
-  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["cancelJob"]>>
->;
-export type WgAgentStateResult = NonNullable<
-  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["wgAgentState"]>>
->;
-export type WgAgentReportResult = NonNullable<
-  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["wgAgentReport"]>>
->;
-export type WgAgentStatsResult = NonNullable<
-  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["wgAgentStats"]>>
->;
-export type WgAgentCommandAckResult = NonNullable<
-  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["wgAgentCommandAck"]>>
->;
-export type WgAgentCommandOutputResult = NonNullable<
-  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["wgAgentCommandOutput"]>>
->;
-export type WgAgentCommandCompleteResult = NonNullable<
-  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["wgAgentCommandComplete"]>>
->;
-export type WgAgentBinaryResult = NonNullable<
-  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["wgAgentBinary"]>>
->;
-export type WgAgentInstallScriptResult = NonNullable<
-  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["wgAgentInstallScript"]>>
->;
-export type WgAgentReleaseResult = NonNullable<
-  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["wgAgentRelease"]>>
->;
-export type UpdateWgAgentResult = NonNullable<
-  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["updateWgAgent"]>>
->;
 export type GetMyUserResult = NonNullable<
   Awaited<ReturnType<ReturnType<typeof getWgAdmin>["getMyUser"]>>
 >;
@@ -3240,6 +3613,15 @@ export type GenerateAuthenticationOptionsResult = NonNullable<
 export type VerifyAuthenticationResult = NonNullable<
   Awaited<ReturnType<ReturnType<typeof getWgAdmin>["verifyAuthentication"]>>
 >;
+export type ListJobsResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["listJobs"]>>
+>;
+export type GetJobResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["getJob"]>>
+>;
+export type CancelJobResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["cancelJob"]>>
+>;
 export type RegisterBiometricResult = NonNullable<
   Awaited<ReturnType<ReturnType<typeof getWgAdmin>["registerBiometric"]>>
 >;
@@ -3263,4 +3645,13 @@ export type ListAuditEventsResult = NonNullable<
 >;
 export type GetAppVersionResult = NonNullable<
   Awaited<ReturnType<ReturnType<typeof getWgAdmin>["getAppVersion"]>>
+>;
+export type CreateApiKeyResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["createApiKey"]>>
+>;
+export type ListApiKeysResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["listApiKeys"]>>
+>;
+export type RevokeApiKeyResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["revokeApiKey"]>>
 >;

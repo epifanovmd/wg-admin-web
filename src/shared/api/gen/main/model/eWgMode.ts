@@ -1,6 +1,5 @@
 /**
- * Реализация WireGuard на ноде. `userspace` (wireguard-go) живёт в процессе
- * агента: перезапуск контейнера агента роняет интерфейсы.
+ * Реализация WireGuard на ноде: модуль ядра или wireguard-go.
  */
 export type EWgMode = (typeof EWgMode)[keyof typeof EWgMode];
 

@@ -59,7 +59,10 @@ export const DashboardNodesCard: FC<DashboardCardProps> = observer(({ vm }) => (
                     className="hidden whitespace-nowrap font-mono text-xs sm:inline-flex"
                   />
                 )}
-                <WgNodeStatusBadge status={node.status} />
+                <WgNodeStatusBadge
+                  status={node.status}
+                  message={node.statusMessage}
+                />
               </div>
             </div>
           );

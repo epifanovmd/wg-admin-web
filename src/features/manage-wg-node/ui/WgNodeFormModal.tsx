@@ -10,7 +10,7 @@ import { observer } from "mobx-react-lite";
 import { FC } from "react";
 
 import type { TWgNodeForm, WgNodeFormVM } from "../model/useWgNodeFormVM";
-import { AgentKeyInstructions } from "./AgentKeyInstructions";
+import { AgentInstallInstructions } from "./AgentInstallInstructions";
 
 interface WgNodeFormModalProps {
   vm: WgNodeFormVM;
@@ -51,7 +51,7 @@ export const WgNodeFormModal: FC<WgNodeFormModalProps> = observer(({ vm }) => (
       }
     >
       {vm.issued ? (
-        <AgentKeyInstructions issued={vm.issued} />
+        <AgentInstallInstructions install={vm.issued} />
       ) : (
         <Form
           id="wg-node-form"

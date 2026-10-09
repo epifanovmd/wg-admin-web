@@ -1,12 +1,10 @@
+import type { IWgNodeInstallCommandDto } from "./iWgNodeInstallCommandDto.ts";
 import type { WgNodeDto } from "./wgNodeDto.ts";
 
 /**
- * Ответ создания ноды: ключ агента возвращается только один раз.
+ * Ответ создания ноды: команда установки агента (токен — только здесь).
  */
 export interface ICreatedWgNodeDto {
   node: WgNodeDto;
-  /** Секрет ключа агента — сохранить сразу, повторно не выдаётся. */
-  agentKey: string;
-  /** Команда ручной установки агента на VPS с этим ключом. */
-  installCommand: string;
+  install: IWgNodeInstallCommandDto;
 }

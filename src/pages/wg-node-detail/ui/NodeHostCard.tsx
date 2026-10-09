@@ -1,19 +1,12 @@
 import { formatBps, type IWgNodeSysMetrics, WgRxTx } from "@entities/wg";
-import type { EWgAgentTransport, WgNodeDto } from "@shared/api/gen/main/model";
+import type { WgNodeDto } from "@shared/api/gen/main/model";
 import { Alert, Badge, Card, InfoField } from "@shared/ui";
 import { FC } from "react";
 
 interface NodeHostCardProps {
   node: WgNodeDto;
   sys: IWgNodeSysMetrics | null;
-  /** Как агент на связи сейчас: постоянный канал или HTTP. */
-  transport: EWgAgentTransport | null;
 }
-
-const TRANSPORT_LABEL: Record<EWgAgentTransport, string> = {
-  link: "постоянный канал",
-  http: "HTTP — запасной путь",
-};
 
 const formatLoad = (sys: IWgNodeSysMetrics): string =>
   [sys.load1, sys.load5, sys.load15]
@@ -21,11 +14,7 @@ const formatLoad = (sys: IWgNodeSysMetrics): string =>
     .join(" / ");
 
 /** Хост ноды: реализация WireGuard, нагрузка, сеть и занятые UDP-порты. */
-export const NodeHostCard: FC<NodeHostCardProps> = ({
-  node,
-  sys,
-  transport,
-}) => {
+export const NodeHostCard: FC<NodeHostCardProps> = ({ node, sys }) => {
   const wgMode = node.osInfo?.wgMode;
   const ports = node.osInfo?.udpPorts ?? [];
   const ipMismatch =
@@ -38,9 +27,9 @@ export const NodeHostCard: FC<NodeHostCardProps> = ({
       <div className="flex flex-col gap-4">
         {wgMode === "userspace" && (
           <Alert variant="warning" title="WireGuard работает в userspace">
-            Модуля ядра нет, интерфейсы держит wireguard-go внутри агента:
-            перезапуск службы агента (в том числе при обновлении) кратковременно
-            роняет VPN.
+            Модуля ядра нет, интерфейсы обслуживает wireguard-go — отдельный
+            процесс в пространстве пользователя: скорость ниже, чем с модулем
+            ядра.
           </Alert>
         )}
 
@@ -79,11 +68,6 @@ export const NodeHostCard: FC<NodeHostCardProps> = ({
                   {ipMismatch && (
                     <span className="text-xs text-muted-foreground">
                       не совпадает с publicHost {node.publicHost}
-                    </span>
-                  )}
-                  {transport && (
-                    <span className="text-xs text-muted-foreground">
-                      связь: {TRANSPORT_LABEL[transport]}
                     </span>
                   )}
                 </span>

@@ -1,3 +1,4 @@
+import { useAgentRelease } from "@entities/agent";
 import { IUserStore } from "@entities/user";
 import { IWgNodesStore, WG_PERMISSIONS, wgOwners } from "@entities/wg";
 import { useAssignWgOwnerVM } from "@features/assign-wg-owner";
@@ -7,11 +8,7 @@ import {
   useWgNodeFormVM,
 } from "@features/manage-wg-node";
 import { IMainApi } from "@shared/api";
-import type {
-  IWgAgentReleaseInfo,
-  IWgMeshMatrix,
-  WgNodeDto,
-} from "@shared/api/gen/main/model";
+import type { IWgMeshMatrix, WgNodeDto } from "@shared/api/gen/main/model";
 import { useEntity } from "@shared/lib/holders";
 import { useCloseWhenForbidden } from "@shared/lib/hooks";
 import { useSocketEvent, useSocketRoom } from "@shared/lib/socket";
@@ -74,12 +71,8 @@ export const useWgNodesVM = () => {
     enabled: canViewMesh,
   });
 
-  // Раздаваемая бэкендом версия агента: какие ноды отстают.
-  const release = useEntity<IWgAgentReleaseInfo>({
-    queryFn: () => api.wgAgentRelease(),
-    autoLoad: true,
-    enabled: canAgent,
-  });
+  // Выпуск агента: какие агенты нод можно обновить (новая версия — по сокету).
+  const release = useAgentRelease(canAgent);
 
   useEffect(() => {
     if (canView) void nodes.load();

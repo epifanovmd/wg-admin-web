@@ -29,8 +29,16 @@ export interface WgNodeDto {
   /** @nullable */
   publicHost: string | null;
   status: EWgNodeStatus;
-  /** Есть ли выпущенный ключ агента. */
-  hasAgentKey: boolean;
+  /**
+   * Пояснение к статусу: что не так с агентом или воркерами.
+   * @nullable
+   */
+  statusMessage: string | null;
+  /**
+   * Агент ноды (`/api/v1/agents/{agentId}`); нет — агент не установлен.
+   * @nullable
+   */
+  agentId: string | null;
   configVersion: number;
   appliedVersion: number;
   /** Конфигурация на ноде актуальна. */
@@ -41,14 +49,9 @@ export interface WgNodeDto {
   agentVersion: string | null;
   /** @nullable */
   wgVersion: string | null;
-  /**
-   * sha256 бинаря агента; сравнивается с `release` для обновления.
-   * @nullable
-   */
-  agentCodeHash: string | null;
   osInfo: IWgNodeOsInfo | null;
   /**
-   * IP, с которого агент обращается к бэкенду.
+   * IP, с которого агент подключился к бэкенду.
    * @nullable
    */
   agentRemoteIp: string | null;

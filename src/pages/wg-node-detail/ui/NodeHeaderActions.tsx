@@ -1,4 +1,4 @@
-import { RotateWgAgentKeyButton } from "@features/manage-wg-node";
+import { WgNodeInstallCommandButton } from "@features/manage-wg-node";
 import type { WgNodeDto } from "@shared/api/gen/main/model";
 import { Button } from "@shared/ui";
 import {
@@ -12,14 +12,13 @@ import { observer } from "mobx-react-lite";
 import { FC } from "react";
 
 import type { WgNodeDetailVM } from "../model/useWgNodeDetailVM";
-import { AgentUpdateButton } from "./AgentUpdateButton";
 
 interface NodeHeaderActionsProps {
   vm: WgNodeDetailVM;
   node: WgNodeDto;
 }
 
-/** Действия с нодой в шапке: агент, ключ, изменение и удаление. */
+/** Действия с нодой в шапке: установка агента, изменение и удаление. */
 export const NodeHeaderActions: FC<NodeHeaderActionsProps> = observer(
   ({ vm, node }) => (
     <div className="flex flex-wrap gap-2">
@@ -32,7 +31,7 @@ export const NodeHeaderActions: FC<NodeHeaderActionsProps> = observer(
           Установить агента
         </Button>
       )}
-      {vm.canProvision && node.hasAgentKey && (
+      {vm.canProvision && node.agentId && (
         <Button
           variant="outline"
           leftIcon={<PackageX size={15} />}
@@ -41,17 +40,7 @@ export const NodeHeaderActions: FC<NodeHeaderActionsProps> = observer(
           Удалить агента
         </Button>
       )}
-      {vm.canAgent && (
-        <>
-          <AgentUpdateButton
-            node={node}
-            release={vm.release}
-            loading={vm.updateAgent.isLoading}
-            onUpdate={() => void vm.updateAgent.mutate()}
-          />
-          <RotateWgAgentKeyButton nodeId={node.id} />
-        </>
-      )}
+      {vm.canAgent && <WgNodeInstallCommandButton nodeId={node.id} />}
       {vm.canUpdate && (
         <Button
           variant="outline"

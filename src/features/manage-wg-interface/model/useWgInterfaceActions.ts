@@ -4,6 +4,14 @@ import { notifyApiError } from "@shared/lib/http";
 import { INotificationService } from "@shared/lib/notifications";
 import { useConfirm } from "@shared/ui";
 
+/** Состояние интерфейса после перезапуска воркером wg. */
+const INTERFACE_RESTART_STATUS: Record<string, { label: string; ok: boolean }> =
+  {
+    up: { label: "поднят", ok: true },
+    down: { label: "не поднят", ok: false },
+    error: { label: "ошибка", ok: false },
+  };
+
 interface UseWgInterfaceActionsOptions {
   /** Интерфейс изменился (ответ сервера или локальная правка). */
   onChanged: (iface: WgInterfaceDto) => void;
@@ -42,8 +50,21 @@ export const useWgInterfaceActions = ({
   const restart = async (iface: WgInterfaceDto) => {
     const res = await api.restartWgInterface(iface.id);
 
-    if (res.error) notifyApiError(toast, res.error);
-    else toast.success(`Интерфейс ${iface.name} перезапускается`);
+    if (res.error) {
+      notifyApiError(toast, res.error);
+
+      return;
+    }
+
+    const view = INTERFACE_RESTART_STATUS[res.data.status];
+
+    if (view?.ok === false) {
+      toast.warning(`Интерфейс ${iface.name} перезапущен: ${view.label}`);
+    } else {
+      toast.success(
+        `Интерфейс ${iface.name} перезапущен${view ? `: ${view.label}` : ""}`,
+      );
+    }
   };
 
   const remove = async (iface: WgInterfaceDto): Promise<boolean> => {

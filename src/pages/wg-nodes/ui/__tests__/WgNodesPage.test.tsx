@@ -28,28 +28,32 @@ const node = {
   publicHost: "192.0.2.30",
   description: null,
   status: "online",
-  agentVersion: "2.0.0",
-  agentCodeHash: "old",
+  statusMessage: null,
+  agentId: "a1",
+  agentVersion: "1.0.0",
   osInfo: { arch: "amd64" },
   lastSeenAt: null,
   applyError: null,
   inSync: true,
-  hasAgentKey: true,
   ownerId: "u2",
   createdById: null,
 } as unknown as WgNodeDto;
 
-const wgAgentRelease = vi.fn();
+const getAgentRelease = vi.fn();
 
 const bind = (permissions: string[]) => {
-  wgAgentRelease.mockReset().mockResolvedValue({
-    data: { version: "2.2.2", hashes: { amd64: "new" } },
+  getAgentRelease.mockReset().mockResolvedValue({
+    data: {
+      manifest: { version: "1.0.1", artifacts: [] },
+      candidates: [{ agentId: "a1", current: "1.0.0", target: "1.0.1" }],
+      workerCandidates: [],
+    },
   });
   iocContainer.bind(ISocketTransport.Tid).toConstantValue(createFakeSocket());
   iocContainer.bind(IMainApi.Tid).toConstantValue({
     wgStatsMesh: vi.fn().mockResolvedValue({ data: null }),
     deleteWgNode: vi.fn().mockResolvedValue({ data: null }),
-    wgAgentRelease,
+    getAgentRelease,
   });
   iocContainer
     .bind(INotificationService.Tid)
@@ -155,19 +159,19 @@ describe("WgNodesPage", () => {
     expect(screen.getByRole("button", { name: "Новая нода" })).toBeTruthy();
   });
 
-  it("агент отстаёт от релиза бэкенда — значок обновления с версией", async () => {
+  it("агент ноды — кандидат на обновление выпуска: значок с версией", async () => {
     bind([WG_PERMISSIONS.NODE_VIEW, WG_PERMISSIONS.NODE_AGENT]);
     renderPage();
 
     expect(await screen.findByText("обновление")).toBeTruthy();
-    expect(screen.getByLabelText("Доступна версия агента v2.2.2")).toBeTruthy();
+    expect(screen.getByLabelText("Доступна версия агента 1.0.1")).toBeTruthy();
   });
 
-  it("без права на агента — релиз не запрашивается, значка нет", () => {
+  it("без права на агента — выпуск не запрашивается, значка нет", () => {
     bind([WG_PERMISSIONS.NODE_VIEW]);
     renderPage();
 
-    expect(wgAgentRelease).not.toHaveBeenCalled();
+    expect(getAgentRelease).not.toHaveBeenCalled();
     expect(screen.queryByText("обновление")).toBeNull();
   });
 });

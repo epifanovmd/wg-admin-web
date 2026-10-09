@@ -35,7 +35,7 @@ export type TSshJobMode = "install" | "uninstall";
 
 /**
  * Установка и удаление агента на VPS по SSH: бэкенд ставит задачу, установщик
- * разворачивает службу systemd wg-admin-agent; SSH-данные используются один раз.
+ * ставит службу agent-wg с воркерами wg и socks; SSH-данные используются один раз.
  */
 export const useProvisionWgNodeVM = ({ onStarted }: UseProvisionOptions) => {
   const api = IMainApi.useInstance();

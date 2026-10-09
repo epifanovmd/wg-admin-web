@@ -1,5 +1,8 @@
 import type { EWgMode } from "./eWgMode.ts";
 
+/**
+ * Сведения об ОС ноды: от агента (узел) и воркера wg (режим, порты).
+ */
 export interface IWgNodeOsInfo {
   platform?: string;
   release?: string;

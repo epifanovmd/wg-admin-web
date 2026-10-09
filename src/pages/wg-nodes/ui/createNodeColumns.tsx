@@ -1,13 +1,6 @@
-import {
-  nodeSyncView,
-  resolveAgentUpdate,
-  WgNodeStatusBadge,
-  WgOwnershipCell,
-} from "@entities/wg";
-import type {
-  IWgAgentReleaseInfo,
-  WgNodeDto,
-} from "@shared/api/gen/main/model";
+import { agentUpdateTarget } from "@entities/agent";
+import { nodeSyncView, WgNodeStatusBadge, WgOwnershipCell } from "@entities/wg";
+import type { IAgentReleaseDto, WgNodeDto } from "@shared/api/gen/main/model";
 import { formatter } from "@shared/lib/utils";
 import {
   Badge,
@@ -26,8 +19,8 @@ import type { WgNodesVM } from "../model/useWgNodesVM";
 const column = createColumnHelper<WgNodeDto>();
 
 interface NodeColumnsOptions {
-  /** Раздаваемая бэкендом версия агента; null — не загружена или нет права. */
-  release: IWgAgentReleaseInfo | null;
+  /** Выпуск агента и кого можно обновить; null — не загружен или нет права. */
+  release: IAgentReleaseDto | null;
   /** VM — через ref: колонки стабильны, ячейки не перемонтируются. */
   vm: RefObject<WgNodesVM>;
 }
@@ -69,34 +62,48 @@ export const createNodeColumns = ({ release, vm }: NodeColumnsOptions) => [
     id: "status",
     header: "Статус",
     size: 130,
-    cell: ({ row }) => <WgNodeStatusBadge status={row.original.status} />,
+    cell: ({ row }) => (
+      <WgNodeStatusBadge
+        status={row.original.status}
+        message={row.original.statusMessage}
+      />
+    ),
   }),
   column.display({
     id: "agent",
     header: "Агент",
     size: 190,
-    cell: ({ row }) => (
-      <div className="text-xs text-muted-foreground">
-        <p className="flex items-center gap-1.5">
-          {row.original.agentVersion ? `v${row.original.agentVersion}` : "—"}
-          {resolveAgentUpdate(row.original, release) === "available" && (
-            <Tooltip content={`Доступна версия агента v${release?.version}`}>
-              <Badge
-                variant="warning"
-                aria-label={`Доступна версия агента v${release?.version}`}
-              >
-                обновление
-              </Badge>
-            </Tooltip>
-          )}
-        </p>
-        <p>
-          {row.original.lastSeenAt
-            ? formatter.date.format(row.original.lastSeenAt)
-            : "не выходил на связь"}
-        </p>
-      </div>
-    ),
+    cell: ({ row }) => {
+      const node = row.original;
+      const target = agentUpdateTarget(release, node.agentId);
+
+      return (
+        <div className="text-xs text-muted-foreground">
+          <p className="flex items-center gap-1.5">
+            {node.agentId
+              ? node.agentVersion
+                ? `v${node.agentVersion}`
+                : "версия неизвестна"
+              : "не установлен"}
+            {target && (
+              <Tooltip content={`Доступна версия агента ${target}`}>
+                <Badge
+                  variant="warning"
+                  aria-label={`Доступна версия агента ${target}`}
+                >
+                  обновление
+                </Badge>
+              </Tooltip>
+            )}
+          </p>
+          <p>
+            {node.lastSeenAt
+              ? formatter.date.format(node.lastSeenAt)
+              : "не выходил на связь"}
+          </p>
+        </div>
+      );
+    },
   }),
   column.display({
     id: "sync",

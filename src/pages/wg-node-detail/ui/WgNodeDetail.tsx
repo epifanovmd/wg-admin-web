@@ -14,6 +14,7 @@ import { cn } from "@shared/lib/utils";
 import {
   Alert,
   Button,
+  Empty,
   PageEmpty,
   PageHeader,
   PageLayout,
@@ -23,6 +24,13 @@ import {
   TabsList,
   TabsTrigger,
 } from "@shared/ui";
+import {
+  WgNodeAgentCard,
+  WgNodeConfigsList,
+  WgNodeEventsTab,
+  WgNodeLogsTab,
+  WgNodeWorkersCard,
+} from "@widgets/wg-node-agent";
 import { Plus } from "lucide-react";
 import { observer } from "mobx-react-lite";
 import { FC, useEffect, useState } from "react";
@@ -30,8 +38,6 @@ import { FC, useEffect, useState } from "react";
 import { useWgNodeDetailVM } from "../model/useWgNodeDetailVM";
 import { NodeHeaderActions } from "./NodeHeaderActions";
 import { NodeInterfacesTab } from "./NodeInterfacesTab";
-import { NodeLogsRefreshButton } from "./NodeLogsRefreshButton";
-import { NodeLogsTab } from "./NodeLogsTab";
 import { NodeOverviewTab } from "./NodeOverviewTab";
 import { ProvisionJobBanner } from "./ProvisionJobBanner";
 
@@ -39,22 +45,22 @@ interface WgNodeDetailProps {
   nodeId: string;
 }
 
-/** Карточка ноды: шапка с действиями и вкладки обзора, интерфейсов и журнала. */
+/**
+ * Карточка ноды: шапка с действиями и вкладки обзора, интерфейсов, агента
+ * (связь, воркеры, настройки), событий воркеров и журнала.
+ */
 export const WgNodeDetail: FC<WgNodeDetailProps> = observer(({ nodeId }) => {
   const vm = useWgNodeDetailVM(nodeId);
   const node = vm.node.data;
   // Журнал — на всю высоту экрана с прокруткой внутри, остальные вкладки — обычная страница.
   const [tab, setTab] = useState("overview");
 
-  const openTab = (next: string) => {
-    setTab(next);
-    // Журнал запрашивается при каждом открытии вкладки.
-    if (next === "logs") vm.loadLogs();
-  };
+  const agent = vm.agentContext;
 
-  // Вкладка без права (отозвано на открытой странице) — к обзору.
+  // Вкладка без права (отозвано на открытой странице) или без агента — к обзору.
   const tabAllowed =
-    (tab !== "logs" || vm.canLogs) &&
+    (tab !== "logs" || (vm.canLogs && !!agent)) &&
+    (tab !== "events" || !!agent) &&
     (tab !== "interfaces" || vm.canViewInterfaces);
 
   useEffect(() => {
@@ -70,7 +76,10 @@ export const WgNodeDetail: FC<WgNodeDetailProps> = observer(({ nodeId }) => {
             title={
               <span className="flex items-center gap-3">
                 {node.name}
-                <WgNodeStatusBadge status={node.status} />
+                <WgNodeStatusBadge
+                  status={node.status}
+                  message={node.statusMessage}
+                />
               </span>
             }
             subtitle={node.publicHost ?? "публичный хост не задан"}
@@ -92,6 +101,11 @@ export const WgNodeDetail: FC<WgNodeDetailProps> = observer(({ nodeId }) => {
               job={vm.provisionJob}
               nodeStatus={node.status}
             />
+            {node.statusMessage && node.status === "error" && (
+              <Alert variant="destructive" title="Нода не в порядке">
+                {node.statusMessage}
+              </Alert>
+            )}
             {node.applyError && (
               <Alert
                 variant="destructive"
@@ -102,7 +116,7 @@ export const WgNodeDetail: FC<WgNodeDetailProps> = observer(({ nodeId }) => {
             )}
             <Tabs
               value={tab}
-              onValueChange={openTab}
+              onValueChange={setTab}
               className={cn(tab === "logs" && "flex min-h-0 flex-1 flex-col")}
             >
               <div className="flex flex-wrap items-center justify-between gap-3">
@@ -111,8 +125,10 @@ export const WgNodeDetail: FC<WgNodeDetailProps> = observer(({ nodeId }) => {
                   {vm.canViewInterfaces && (
                     <TabsTrigger value="interfaces">Интерфейсы</TabsTrigger>
                   )}
-                  {vm.canLogs && (
-                    <TabsTrigger value="logs">Журнал агента</TabsTrigger>
+                  <TabsTrigger value="agent">Агент</TabsTrigger>
+                  {agent && <TabsTrigger value="events">События</TabsTrigger>}
+                  {vm.canLogs && agent && (
+                    <TabsTrigger value="logs">Журнал</TabsTrigger>
                   )}
                 </TabsList>
                 {tab === "interfaces" && vm.interfaceAccess.canCreate && (
@@ -122,12 +138,6 @@ export const WgNodeDetail: FC<WgNodeDetailProps> = observer(({ nodeId }) => {
                   >
                     Новый интерфейс
                   </Button>
-                )}
-                {tab === "logs" && (
-                  <NodeLogsRefreshButton
-                    loading={vm.logs.isBusy}
-                    onLoad={vm.loadLogs}
-                  />
                 )}
               </div>
               <TabsContent value="overview" className="pt-4">
@@ -157,16 +167,41 @@ export const WgNodeDetail: FC<WgNodeDetailProps> = observer(({ nodeId }) => {
                   }
                 />
               </TabsContent>
-              {vm.canLogs && (
+              <TabsContent value="agent" className="pt-4">
+                {agent ? (
+                  <div className="flex flex-col gap-4">
+                    <WgNodeAgentCard context={agent} />
+                    <WgNodeWorkersCard context={agent} />
+                    <WgNodeConfigsList agent={agent.agent} />
+                  </div>
+                ) : vm.isAgentLoading ? (
+                  <PageLoader label="Загрузка агента…" />
+                ) : (
+                  <Empty
+                    title={
+                      node.agentId
+                        ? "Агент ноды недоступен"
+                        : "Агент не установлен"
+                    }
+                    description={
+                      node.agentId
+                        ? "Сведения об агенте не загрузились"
+                        : "Установите агента по SSH или командой установки на VPS — он выйдет на связь и привяжется к ноде"
+                    }
+                  />
+                )}
+              </TabsContent>
+              {agent && (
+                <TabsContent value="events" className="pt-4">
+                  <WgNodeEventsTab agent={agent.agent} />
+                </TabsContent>
+              )}
+              {vm.canLogs && agent && (
                 <TabsContent
                   value="logs"
                   className="flex min-h-0 flex-1 flex-col pt-4"
                 >
-                  <NodeLogsTab
-                    logs={vm.logs.data}
-                    loading={vm.logs.isBusy}
-                    error={vm.logs.error?.message ?? null}
-                  />
+                  <WgNodeLogsTab nodeId={nodeId} agent={agent.agent} />
                 </TabsContent>
               )}
             </Tabs>

@@ -60,6 +60,9 @@ export default defineConfig(({ mode }) => {
         "/api": { target: env.VITE_BASE_URL, changeOrigin: true },
       },
     },
+    // Страницы грузятся лениво; общий чанк с клиентом API крупный,
+    // проверка размера чанков для панели управления не нужна.
+    build: { chunkSizeWarningLimit: Infinity },
     preview: { host, port },
   };
 });

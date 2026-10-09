@@ -1,7 +1,7 @@
 import { IMainApi } from "@shared/api";
 import type {
   ICreatedWgNodeDto,
-  IWgAgentKeyDto,
+  IWgNodeInstallCommandDto,
   WgNodeDto,
 } from "@shared/api/gen/main/model";
 import { notifyApiError } from "@shared/lib/http";
@@ -32,14 +32,14 @@ interface UseWgNodeFormOptions {
 
 /**
  * Создание и редактирование ноды. При создании сервер один раз возвращает
- * ключ агента — он показывается до закрытия модалки.
+ * команду установки агента с токеном — она показывается до закрытия модалки.
  */
 export const useWgNodeFormVM = ({ onSaved }: UseWgNodeFormOptions) => {
   const api = IMainApi.useInstance();
   const toast = INotificationService.useInstance();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<WgNodeDto | null>(null);
-  const [issued, setIssued] = useState<IWgAgentKeyDto | null>(null);
+  const [issued, setIssued] = useState<IWgNodeInstallCommandDto | null>(null);
   const form = useZodForm(wgNodeFormSchema);
 
   const openCreate = () => {
@@ -86,7 +86,7 @@ export const useWgNodeFormVM = ({ onSaved }: UseWgNodeFormOptions) => {
     const created = res.data as ICreatedWgNodeDto;
 
     onSaved(created.node);
-    setIssued(created);
+    setIssued(created.install);
   };
 
   return {

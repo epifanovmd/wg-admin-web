@@ -96,7 +96,7 @@ export const NodeOverviewTab: FC<NodeOverviewTabProps> = ({
         />
       </div>
 
-      <NodeHostCard node={node} sys={sys} transport={live?.transport ?? null} />
+      <NodeHostCard node={node} sys={sys} />
       <NodeLinksCard links={links} />
 
       <Card title="Скорость" description="Обновляется по сокету">

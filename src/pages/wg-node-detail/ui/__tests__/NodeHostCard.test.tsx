@@ -28,7 +28,7 @@ const sys = {
 
 describe("NodeHostCard", () => {
   it("показывает режим WG, load, conntrack, сетевые интерфейсы и порты", () => {
-    render(<NodeHostCard node={node} sys={sys} transport="link" />);
+    render(<NodeHostCard node={node} sys={sys} />);
 
     expect(screen.getByText("Модуль ядра")).toBeTruthy();
     expect(screen.getByText("0.50 / 0.40 / 0.30")).toBeTruthy();
@@ -36,7 +36,6 @@ describe("NodeHostCard", () => {
     expect(screen.getByText("eth0")).toBeTruthy();
     expect(screen.getByText("51820")).toBeTruthy();
     expect(screen.queryByText(/не совпадает/)).toBeNull();
-    expect(screen.getByText("связь: постоянный канал")).toBeTruthy();
   });
 
   it("wireguard-go — предупреждение; IP агента не совпадает с publicHost — подсказка", () => {
@@ -50,13 +49,11 @@ describe("NodeHostCard", () => {
           } as WgNodeDto
         }
         sys={null}
-        transport="http"
       />,
     );
 
     expect(screen.getByText("wireguard-go")).toBeTruthy();
-    expect(screen.getByText(/перезапуск службы агента/)).toBeTruthy();
+    expect(screen.getByText(/пространстве пользователя/)).toBeTruthy();
     expect(screen.getByText(/не совпадает/)).toBeTruthy();
-    expect(screen.getByText("связь: HTTP — запасной путь")).toBeTruthy();
   });
 });

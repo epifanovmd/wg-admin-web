@@ -1,3 +1,4 @@
+import { useAgentRelease } from "@entities/agent";
 import { IUserStore } from "@entities/user";
 import {
   type IWgNodeLive,
@@ -15,34 +16,34 @@ import {
 import {
   useDeleteWgNode,
   useProvisionWgNodeVM,
+  useWgNodeAgentActions,
   useWgNodeFormVM,
+  useWorkerActionResults,
 } from "@features/manage-wg-node";
 import { IMainApi } from "@shared/api";
 import type {
-  IWgAgentReleaseInfo,
+  AgentDto,
   IWgLinkHealth,
   IWgNodeMetricPointDto,
   JobRunDto,
   WgInterfaceDto,
   WgNodeDto,
 } from "@shared/api/gen/main/model";
-import { useCollection, useEntity, useMutation } from "@shared/lib/holders";
+import { useCollection, useEntity } from "@shared/lib/holders";
 import { useCloseWhenForbidden } from "@shared/lib/hooks";
-import { notifyApiError } from "@shared/lib/http";
 import { INotificationService } from "@shared/lib/notifications";
 import { useSocketEvent, useSocketRoom } from "@shared/lib/socket";
 import { useNavigate } from "@tanstack/react-router";
+import type { IWgNodeAgentContext } from "@widgets/wg-node-agent";
 
 /** Scope задач ноды на бэкенде (установка и удаление агента). */
 const NODE_JOB_SCOPE = "wg-node";
 
-/** Строк журнала агента за запрос. */
-const LOG_LINES = 300;
-
 /**
- * Карточка ноды: данные, интерфейсы, live-статистика и метрики, журнал и
- * обновление агента, действия. Загрузка и подписки — только с правом просмотра;
- * действия — по области прав на эту ноду (своя — владелец или создатель).
+ * Карточка ноды: данные, интерфейсы, live-статистика и метрики, агент ноды
+ * (воркеры, настройки, события, журнал) и действия. Загрузка и подписки —
+ * только с правом просмотра; действия — по области прав на эту ноду (своя —
+ * владелец или создатель).
  */
 export const useWgNodeDetailVM = (nodeId: string) => {
   const api = IMainApi.useInstance();
@@ -114,21 +115,24 @@ export const useWgNodeDetailVM = (nodeId: string) => {
     enabled: canView,
   });
 
-  const release = useEntity<IWgAgentReleaseInfo>({
-    queryFn: () => api.wgAgentRelease(),
-    autoLoad: true,
-    enabled: canView && userStore.scope(WG_PERMISSIONS.NODE_AGENT) !== null,
+  const canAgentAny = userStore.scope(WG_PERMISSIONS.NODE_AGENT) !== null;
+  const agentId = canView ? (node.data?.agentId ?? null) : null;
+
+  // Агент ноды; дальше — `agent:updated` из комнаты агента.
+  const agent = useEntity<AgentDto, string>({
+    queryFn: id => api.getAgent(id),
+    watch: [agentId ?? ""],
+    enabled: !!agentId,
   });
 
-  const logs = useEntity<string, string>({
-    queryFn: async id => {
-      const res = await api.wgNodeLogs(id, { lines: LOG_LINES });
+  // Выпуск агента: до какой версии можно обновить агента и воркеры (новая
+  // версия агента — по сокету).
+  const release = useAgentRelease(canView && canAgentAny);
 
-      return res.error
-        ? { error: res.error }
-        : { data: res.data.content || "Журнал пуст" };
-    },
-  });
+  const refreshAgent = () => {
+    if (agentId) void agent.refresh(agentId);
+    if (canView && canAgentAny) void release.refresh();
+  };
 
   // Live-снимок для мгновенной отрисовки, дальше — события комнаты.
   const speed = useWgLiveSpeed<IWgNodeLive>({
@@ -148,6 +152,16 @@ export const useWgNodeDetailVM = (nodeId: string) => {
   useSocketRoom("wg-interfaces", interfaceScope === "all" ? "all" : null, () =>
     interfaces.refresh(nodeId),
   );
+  // Комната агента: сервер держит наблюдателя — частые метрики и журнал.
+  useSocketRoom("agent", agentId, refreshAgent);
+  useSocketEvent<[AgentDto]>(
+    "agent:updated",
+    next => {
+      if (next.id === agentId) agent.setData(next);
+    },
+    !!agentId,
+  );
+  useWorkerActionResults(agentId, refreshAgent);
   useSocketEvent<[{ id: string }]>(
     "wg:node:deleted",
     ({ id }) => {
@@ -191,17 +205,9 @@ export const useWgNodeDetailVM = (nodeId: string) => {
     canViewInterfaces,
   );
 
-  /** Журнал ждёт ответа агента: пока идёт запрос, повторный не нужен. */
-  const loadLogs = () => {
-    if (logs.isBusy) return;
-    if (logs.data === null) void logs.load(nodeId);
-    else void logs.refresh(nodeId);
-  };
-
-  const updateAgent = useMutation({
-    mutationFn: () => api.updateWgAgent(nodeId),
-    onSuccess: () => toast.success("Агент обновляется и перезапустится"),
-    onError: error => notifyApiError(toast, error),
+  const agentActions = useWgNodeAgentActions({
+    nodeId,
+    onChanged: refreshAgent,
   });
 
   const interfaceActions = useWgInterfaceActions({
@@ -224,6 +230,17 @@ export const useWgNodeDetailVM = (nodeId: string) => {
   const canLogs = canOnNode(WG_PERMISSIONS.NODE_LOGS);
   const canProvision = canOnNode(WG_PERMISSIONS.NODE_PROVISION);
   const canAssign = canOnNode(WG_PERMISSIONS.NODE_ASSIGN);
+
+  const agentContext: IWgNodeAgentContext | null =
+    agentId && agent.data?.id === agentId
+      ? {
+          nodeId,
+          agent: agent.data,
+          release: release.data,
+          actions: agentActions,
+          access: { canManage: canAgent, canLogs },
+        }
+      : null;
 
   const openOwner = () => {
     const current = node.data;
@@ -271,10 +288,9 @@ export const useWgNodeDetailVM = (nodeId: string) => {
     isMetricsLoading: metrics.isLoading,
     links: links.data ?? [],
     provisionJob: provisionJob.data,
-    release: release.data,
-    logs,
-    loadLogs,
-    updateAgent,
+    /** Агент ноды для вкладок; агента нет или он не загружен — `null`. */
+    agentContext,
+    isAgentLoading: !!agentId && !agentContext && !agent.isError,
     interfaceActions,
     nodeForm,
     interfaceForm,

@@ -1,4 +1,3 @@
-import type { EWgAgentTransport } from "./eWgAgentTransport.ts";
 import type { IWgNodeSysMetrics } from "./iWgNodeSysMetrics.ts";
 
 /**
@@ -14,7 +13,5 @@ export interface IWgNodeLive {
   rxBps: number;
   txBps: number;
   sys: IWgNodeSysMetrics | null;
-  /** Канал связи агента; `null` — неизвестен. */
-  transport: EWgAgentTransport | null;
   ts: string;
 }
