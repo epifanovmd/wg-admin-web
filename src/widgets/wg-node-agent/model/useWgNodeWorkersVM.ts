@@ -6,7 +6,7 @@ import type { IWgNodeAgentContext } from "./types";
 /** Действия над воркером в строке таблицы. */
 export interface IWorkerRowAccess {
   canRestart: boolean;
-  /** Версия выпуска, до которой можно обновить; нельзя — `null`. */
+  /** Новая версия, до которой можно обновить; нельзя — `null`. */
   updateTo: string | null;
   /** Воркер занят или замена ждёт его — можно заменить сразу. */
   canReplaceNow: boolean;

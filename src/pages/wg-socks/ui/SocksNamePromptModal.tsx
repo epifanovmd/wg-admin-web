@@ -24,7 +24,7 @@ export const SocksNamePromptModal: FC<SocksNamePromptModalProps> = observer(
           description={
             isUser
               ? "Пароль сгенерируется автоматически"
-              : "Выпустится клиентский сертификат, подписанный CA прокси"
+              : "Создастся клиентский сертификат, подписанный CA прокси"
           }
           footer={
             <>
@@ -36,7 +36,7 @@ export const SocksNamePromptModal: FC<SocksNamePromptModalProps> = observer(
                 form="wg-socks-name-form"
                 loading={vm.form.formState.isSubmitting}
               >
-                {isUser ? "Добавить" : "Выпустить"}
+                {isUser ? "Добавить" : "Создать"}
               </Button>
             </>
           }

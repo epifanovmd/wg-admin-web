@@ -16,7 +16,7 @@ interface WgNodeAgentCardProps {
   context: IWgNodeAgentContext;
 }
 
-/** Агент ноды: связь, версия (и обновление до выпуска), узел, подключение. */
+/** Агент ноды: связь, версия (и обновление до новой версии), узел, подключение. */
 export const WgNodeAgentCard: FC<WgNodeAgentCardProps> = observer(
   ({ context: { agent, release, actions, access } }) => {
     const target = agentUpdateTarget(release, agent.id);

@@ -173,7 +173,7 @@ const createColumns = (vmRef: RefObject<WgPeersTableVM>) => [
                 )}
                 {access.canPsk && (
                   <DropdownMenuItem onSelect={() => void vm.rotatePsk(peer)}>
-                    Перевыпустить PSK
+                    Заменить PSK
                   </DropdownMenuItem>
                 )}
                 {access.canDelete && (

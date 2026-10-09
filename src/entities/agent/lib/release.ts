@@ -1,6 +1,6 @@
 import type { IAgentReleaseDto } from "@shared/api/gen/main/model";
 
-/** Версия выпуска, до которой можно обновить агента; нельзя — `null`. */
+/** Новая версия, до которой можно обновить агента; нельзя — `null`. */
 export const agentUpdateTarget = (
   release: IAgentReleaseDto | null,
   agentId: string | null,
@@ -10,7 +10,7 @@ export const agentUpdateTarget = (
       ?.target) ||
   null;
 
-/** Версия выпуска, до которой можно обновить воркер агента; нельзя — `null`. */
+/** Новая версия, до которой можно обновить воркер агента; нельзя — `null`. */
 export const workerUpdateTarget = (
   release: IAgentReleaseDto | null,
   agentId: string | null,
@@ -22,17 +22,17 @@ export const workerUpdateTarget = (
     )?.target) ||
   null;
 
-/** Событие `agent:release`: в источнике выпуска появилась новая версия агента. */
+/** Событие `agent:release`: там, откуда берутся сборки агента, появилась новая версия. */
 export interface IAgentReleaseNotice {
   version: string;
-  /** Прежняя версия; нет — выпуск получен впервые после запуска бэкенда. */
+  /** Прежняя версия; нет — сборки получены впервые после запуска бэкенда. */
   previous?: string;
-  /** `github:owner/repo` или база выпуска. */
+  /** Откуда берутся сборки: `github:owner/repo` (GitHub Releases) или url. */
   from: string;
 }
 
 /**
- * Текст уведомления о новой версии агента; первое получение выпуска после
+ * Текст уведомления о новой версии агента; первое получение сборок после
  * запуска бэкенда (без прежней версии) — без уведомления.
  */
 export const agentReleaseMessage = (

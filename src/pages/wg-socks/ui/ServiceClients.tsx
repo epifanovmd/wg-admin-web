@@ -33,7 +33,7 @@ export const ServiceClients: FC<ServiceSectionProps> = observer(
         </div>
         {service.clients.length === 0 ? (
           <p className="text-xs text-muted-foreground">
-            Нет устройств — выпустите сертификат, чтобы скачать клиент.
+            Нет устройств — создайте сертификат, чтобы скачать клиент.
           </p>
         ) : (
           <ul className="divide-y rounded-md border">

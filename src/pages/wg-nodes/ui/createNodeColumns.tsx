@@ -19,7 +19,7 @@ import type { WgNodesVM } from "../model/useWgNodesVM";
 const column = createColumnHelper<WgNodeDto>();
 
 interface NodeColumnsOptions {
-  /** Выпуск агента и кого можно обновить; null — не загружен или нет права. */
+  /** Сборки агента и кого можно обновить; null — не загружен или нет права. */
   release: IAgentReleaseDto | null;
   /** VM — через ref: колонки стабильны, ячейки не перемонтируются. */
   vm: RefObject<WgNodesVM>;

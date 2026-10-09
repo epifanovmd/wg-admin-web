@@ -19,7 +19,7 @@ export const WgEndpointsPage: FC = observer(() => {
       header={
         <PageHeader
           title="Точки подключения"
-          subtitle="Стабильные адреса клиентов: смена ноды или релея не требует перевыпуска конфигов"
+          subtitle="Стабильные адреса клиентов: смена ноды или релея не требует новых конфигов"
           actions={
             vm.canCreate && (
               <Button

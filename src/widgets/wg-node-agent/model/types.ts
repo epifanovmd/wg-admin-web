@@ -13,7 +13,7 @@ export interface IWgNodeAgentAccess {
 export interface IWgNodeAgentContext {
   nodeId: string;
   agent: AgentDto;
-  /** Выпуск агента: кого можно обновить; нет права или каталога — `null`. */
+  /** Сборки агента: кого можно обновить; нет права или каталога — `null`. */
   release: IAgentReleaseDto | null;
   actions: WgNodeAgentActions;
   access: IWgNodeAgentAccess;

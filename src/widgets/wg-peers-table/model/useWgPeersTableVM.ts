@@ -215,9 +215,9 @@ export const useWgPeersTableVM = (filters: IWgPeersFilters) => {
 
   const rotatePsk = async (peer: WgPeerDto) => {
     const ok = await confirm({
-      title: `Перевыпустить preshared-ключ пира «${peer.name}»?`,
+      title: `Заменить preshared-ключ пира «${peer.name}»?`,
       description: "Клиенту потребуется новый конфиг.",
-      confirmLabel: "Перевыпустить",
+      confirmLabel: "Заменить",
       confirmVariant: "destructive",
     });
 
@@ -228,7 +228,7 @@ export const useWgPeersTableVM = (filters: IWgPeersFilters) => {
     if (res.error) notifyApiError(toast, res.error);
     else {
       peers.updateItem(peer.id, res.data);
-      toast.success("Скачайте новый конфиг", { title: "PSK перевыпущен" });
+      toast.success("Скачайте новый конфиг", { title: "PSK заменён" });
     }
   };
 

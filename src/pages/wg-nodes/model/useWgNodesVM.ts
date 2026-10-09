@@ -71,7 +71,7 @@ export const useWgNodesVM = () => {
     enabled: canViewMesh,
   });
 
-  // Выпуск агента: какие агенты нод можно обновить (новая версия — по сокету).
+  // Сборки агента: какие агенты нод можно обновить (новая версия — по сокету).
   const release = useAgentRelease(canAgent);
 
   useEffect(() => {

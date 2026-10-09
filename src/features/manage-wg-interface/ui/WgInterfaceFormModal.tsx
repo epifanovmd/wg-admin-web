@@ -105,7 +105,7 @@ export const WgInterfaceFormModal: FC<WgInterfaceFormModalProps> = observer(
           <SwitchFormField<TWgInterfaceForm>
             name="natEnabled"
             label="NAT (masquerade)"
-            description="Выпускать трафик пиров в интернет через ноду"
+            description="Пускать трафик пиров в интернет через ноду"
           />
         </Form>
       </ModalContent>

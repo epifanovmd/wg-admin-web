@@ -125,7 +125,7 @@ export const useWgNodeDetailVM = (nodeId: string) => {
     enabled: !!agentId,
   });
 
-  // Выпуск агента: до какой версии можно обновить агента и воркеры (новая
+  // Сборки агента: до какой версии можно обновить агента и воркеры (новая
   // версия агента — по сокету).
   const release = useAgentRelease(canView && canAgentAny);
 

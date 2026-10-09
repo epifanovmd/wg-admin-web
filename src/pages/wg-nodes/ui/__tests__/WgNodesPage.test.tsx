@@ -159,7 +159,7 @@ describe("WgNodesPage", () => {
     expect(screen.getByRole("button", { name: "Новая нода" })).toBeTruthy();
   });
 
-  it("агент ноды — кандидат на обновление выпуска: значок с версией", async () => {
+  it("агент ноды — кандидат на обновление до новой версии: значок с версией", async () => {
     bind([WG_PERMISSIONS.NODE_VIEW, WG_PERMISSIONS.NODE_AGENT]);
     renderPage();
 
@@ -167,7 +167,7 @@ describe("WgNodesPage", () => {
     expect(screen.getByLabelText("Доступна версия агента 1.0.1")).toBeTruthy();
   });
 
-  it("без права на агента — выпуск не запрашивается, значка нет", () => {
+  it("без права на агента — сборки не запрашиваются, значка нет", () => {
     bind([WG_PERMISSIONS.NODE_VIEW]);
     renderPage();
 

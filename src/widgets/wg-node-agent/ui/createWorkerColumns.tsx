@@ -43,7 +43,7 @@ export const createWorkerColumns = ({ vm }: WorkerColumnsOptions) => [
         <p className={MUTED_CLASS}>
           {[
             worker.manifest?.version ?? worker.version ?? "версия не сообщена",
-            worker.release && "из выпуска",
+            worker.release && "сборка с сервера",
             !!worker.restarts && `перезапусков: ${worker.restarts}`,
           ]
             .filter(Boolean)

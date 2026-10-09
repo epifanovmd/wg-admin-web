@@ -33,13 +33,12 @@ const defineApi = (name: string, input: Options["input"]): Options => ({
 });
 
 /**
- * Спека — из соседнего репозитория шаблона бэкенда (`yarn generate` там обновляет
+ * Спека — из соседнего репозитория бэкенда wg-admin (`yarn generate` там обновляет
  * `src/routing/swagger.json`). С запущенного сервера:
  * `MAIN_SWAGGER=http://localhost:8181/api-docs/swagger.json yarn generate:orval`.
  */
 const MAIN_SWAGGER =
-  process.env.MAIN_SWAGGER ??
-  "../wg-admin-api/src/routing/swagger.json";
+  process.env.MAIN_SWAGGER ?? "../wg-admin-api/src/routing/swagger.json";
 
 export default defineConfig({
   main: defineApi("main", { target: MAIN_SWAGGER }),

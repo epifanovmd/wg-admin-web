@@ -35,7 +35,7 @@ const release: IAgentReleaseDto = {
 };
 
 describe("agent release", () => {
-  it("агент — кандидат на обновление: версия выпуска", () => {
+  it("агент — кандидат на обновление: новая версия", () => {
     expect(agentUpdateTarget(release, "a1")).toBe("1.0.1");
     expect(agentUpdateTarget(release, "a2")).toBeNull();
     expect(agentUpdateTarget(release, null)).toBeNull();

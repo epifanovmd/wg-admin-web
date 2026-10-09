@@ -106,7 +106,7 @@ export const WgPeerFormModal: FC<WgPeerFormModalProps> = observer(({ vm }) => (
               name="publicKey"
               label="Импорт: публичный ключ клиента"
               placeholder="необязательно — иначе ключи создаст сервер"
-              description="При импорте приватный ключ не хранится, конфиг и QR не выпускаются"
+              description="При импорте приватный ключ не хранится, конфиг и QR не создаются"
             />
             <SwitchFormField<TWgPeerForm>
               name="withPresharedKey"

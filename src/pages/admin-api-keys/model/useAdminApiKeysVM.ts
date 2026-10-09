@@ -31,7 +31,7 @@ export const useAdminApiKeysVM = () => {
     enabled: canView,
   });
 
-  // Новые ключи — первыми: выпущенный где-то ещё попадает на первую страницу.
+  // Новые ключи — первыми: созданный где-то ещё попадает на первую страницу.
   useSocketRoom("api-keys", canView ? "all" : null, () =>
     keys.reload({ refresh: true }),
   );

@@ -30,7 +30,7 @@ export const WgSocksServices: FC<WgSocksServicesProps> = observer(({ vm }) => {
       <Empty
         size="sm"
         title="Прокси пока нет"
-        description="Сервис выпустит сертификаты, клиент для устройства скачивается готовым"
+        description="Сервис создаст сертификаты, клиент для устройства скачивается готовым"
       />
     );
   }

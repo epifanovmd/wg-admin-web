@@ -7,8 +7,8 @@ import { useSocketEvent } from "@shared/lib/socket";
 import { agentReleaseMessage, type IAgentReleaseNotice } from "../lib/release";
 
 /**
- * Выпуск агента и кого можно обновить. Бэкенд сам следит за новыми версиями
- * агента: на `agent:release` выпуск перечитывается (обновление видно без
+ * Сборки агента и кого можно обновить. Бэкенд сам следит за новыми версиями
+ * агента: на `agent:release` сборки перечитываются (обновление видно без
  * перезагрузки страницы), о новой версии — уведомление (одно на версию).
  */
 export const useAgentRelease = (enabled: boolean) => {

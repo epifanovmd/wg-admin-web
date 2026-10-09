@@ -10,7 +10,7 @@ export interface ICreateWgPeerBody {
   userId?: string | null;
   /**
    * Импорт существующего клиента: его публичный ключ. Приватный ключ тогда
-   * не хранится, конфиг/QR не выпускаются.
+   * не хранится, конфиг/QR не создаются.
    * @nullable
    */
   publicKey?: string | null;

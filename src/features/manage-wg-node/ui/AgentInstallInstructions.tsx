@@ -17,7 +17,7 @@ export const AgentInstallInstructions: FC<AgentInstallInstructionsProps> = ({
       {formatter.date.format(install.expiresAt)}. Выполните команду на VPS
       (Linux с systemd, от root): она поставит агента службой agent-wg с
       воркерами wg и socks, и агент привяжется к этой ноде. Установка по SSH из
-      админки выпустит токен сама.
+      админки создаст токен сама.
     </Alert>
     <div className="flex flex-col gap-1">
       <span className="text-sm text-muted-foreground">Команда установки</span>
