@@ -2,6 +2,7 @@ import type { AgentAlertDto } from "./agentAlertDto.ts";
 import type { IAgentHostDto } from "./iAgentHostDto.ts";
 import type { IAgentMetricsPointDto } from "./iAgentMetricsPointDto.ts";
 import type { IAgentSessionDto } from "./iAgentSessionDto.ts";
+import type { IAgentUpdateInfoDto } from "./iAgentUpdateInfoDto.ts";
 import type { IAgentWorkerDto } from "./iAgentWorkerDto.ts";
 import type { RecordStringString } from "./recordStringString.ts";
 
@@ -33,6 +34,8 @@ export interface AgentDto {
   outbox?: number;
   /** Последняя точка метрик. */
   metrics?: IAgentMetricsPointDto;
+  /** Новая версия, которую агент нашёл в своём каталоге сборок сам; нет — новее нет или не проверял. */
+  update?: IAgentUpdateInfoDto;
   alerts: AgentAlertDto[];
   session?: IAgentSessionDto;
 }

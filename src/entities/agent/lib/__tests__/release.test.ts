@@ -18,6 +18,7 @@ const release: IAgentReleaseDto = {
       target: "1.0.1",
       os: "linux",
       arch: "amd64",
+      source: "server",
     },
   ],
   workerCandidates: [

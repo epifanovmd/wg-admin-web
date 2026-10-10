@@ -1,3 +1,5 @@
+import type { TAgentUpdateSource } from "./tAgentUpdateSource.ts";
+
 /**
  * Агент, которого можно обновить до новой версии.
  */
@@ -9,4 +11,5 @@ export interface IAgentUpdateCandidateDto {
   target: string;
   os: string;
   arch: string;
+  source: TAgentUpdateSource;
 }
