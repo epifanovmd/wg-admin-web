@@ -4,7 +4,7 @@ import type { IAgentWorkerArtifactDto } from "./iAgentWorkerArtifactDto.ts";
 
 /**
  * Итоговый манифест сборок: агент и netprobe — из удалённого источника, воркеры
- * проекта (wg, socks) — из `AGENT_RELEASES_DIR`.
+ * проекта (wg, socks) — из ``release/` архивов `AGENT_BUNDLE_DIR``.
  */
 export interface IAgentReleaseManifestDto {
   version: string;

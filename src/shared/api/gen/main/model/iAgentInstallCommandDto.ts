@@ -1,4 +1,4 @@
 export interface IAgentInstallCommandDto {
-  /** `curl … | sudo sh -s -- …`. */
+  /** `curl …/api/v1/agent-bundle/install.sh | sudo sh -s -- --token …`. */
   command: string;
 }

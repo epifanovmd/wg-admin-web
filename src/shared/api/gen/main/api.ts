@@ -290,7 +290,7 @@ export const getWgAdmin = () => {
   };
 
   /**
-   * Обновить агента до новой версии (`AGENT_RELEASES_DIR`): итог — после
+   * Обновить агента до новой версии из источника сборок агента: итог — после
    * запуска новой версии. Агент в контейнере себя не обновляет.
    * @summary Обновление агента
    */
@@ -377,7 +377,7 @@ export const getWgAdmin = () => {
    * Сборки агента и кого из доступных агентов можно обновить до их версии:
    * агент и netprobe — из релизов GitHub (`AGENT_RELEASES_GITHUB`) или
    * адреса сборок (`AGENT_RELEASES_URL`), воркеры проекта wg и socks — из
-   * `AGENT_RELEASES_DIR`. Новую версию агента в источнике бэкенд замечает
+   * `release/` архивов `AGENT_BUNDLE_DIR`. Новую версию агента в источнике бэкенд замечает
    * сам (сокет `agent:release`).
    * @summary Сборки агента
    */
@@ -392,8 +392,9 @@ export const getWgAdmin = () => {
 
   /**
    * Команда установки агента на новый узел одной строкой:
-   * `curl …/api/v1/agent-link/install.sh | sudo sh -s -- --token … [флаги]`
-   * (воркеры с сервера — `workers`, флаг `--worker`).
+   * `curl …/api/v1/agent-bundle/install.sh | sudo sh -s -- --token …` — скрипт
+   * ставит архив папки агента (`agent pack`): экземпляр, воркеры, пакеты и права —
+   * из неё.
    * @summary Команда установки агента
    */
   const createAgentInstallCommand = (
