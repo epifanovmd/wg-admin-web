@@ -1,4 +1,5 @@
 import { cn } from "@shared/lib/utils";
+import { Badge } from "@shared/ui";
 import { Link } from "@tanstack/react-router";
 import { FC } from "react";
 
@@ -32,5 +33,6 @@ export const HeaderNavItem: FC<HeaderNavItemProps> = ({
     )}
     <item.icon size={NAV_ICON_SIZE} className="flex-shrink-0" />
     <span className={cn(list && "flex-1", "truncate")}>{item.label}</span>
+    {item.badge ? <Badge variant="secondary">{item.badge}</Badge> : null}
   </Link>
 );

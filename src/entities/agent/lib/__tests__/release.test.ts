@@ -2,6 +2,7 @@ import type { IAgentReleaseDto } from "@shared/api/gen/main/model";
 import { describe, expect, it } from "vitest";
 
 import {
+  agentFoundMessage,
   agentReleaseMessage,
   agentUpdateTarget,
   workerUpdateTarget,
@@ -61,5 +62,11 @@ describe("agent release", () => {
     expect(
       agentReleaseMessage({ version: "1.1.0", from: "github:example/agent" }),
     ).toBeNull();
+  });
+
+  it("версия, найденная агентом, — уведомление с именем агента", () => {
+    expect(
+      agentFoundMessage({ ...release.candidates[0], source: "agent" }),
+    ).toBe("Агент «example-node» нашёл версию 1.0.1 (сейчас 1.0.0)");
   });
 });

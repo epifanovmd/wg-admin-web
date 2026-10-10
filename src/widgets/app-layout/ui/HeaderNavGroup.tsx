@@ -1,5 +1,6 @@
 import { cn } from "@shared/lib/utils";
 import {
+  Badge,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -19,6 +20,7 @@ interface HeaderNavGroupProps {
 export const HeaderNavGroup: FC<HeaderNavGroupProps> = ({ group }) => {
   const pathname = useLocation({ select: location => location.pathname });
   const active = group.items.some(item => pathname.startsWith(String(item.to)));
+  const badge = group.items.reduce((sum, item) => sum + (item.badge ?? 0), 0);
 
   return (
     <DropdownMenu>
@@ -32,6 +34,7 @@ export const HeaderNavGroup: FC<HeaderNavGroupProps> = ({ group }) => {
           )}
         >
           {group.label}
+          {badge > 0 && <Badge variant="secondary">{badge}</Badge>}
           <ChevronDown size={14} aria-hidden />
         </button>
       </DropdownMenuTrigger>
@@ -44,7 +47,10 @@ export const HeaderNavGroup: FC<HeaderNavGroupProps> = ({ group }) => {
                 aria-hidden
                 className="text-muted-foreground"
               />
-              {item.label}
+              <span className="flex-1">{item.label}</span>
+              {item.badge ? (
+                <Badge variant="secondary">{item.badge}</Badge>
+              ) : null}
             </Link>
           </DropdownMenuItem>
         ))}

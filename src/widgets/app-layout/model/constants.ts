@@ -24,6 +24,8 @@ export interface NavItem {
   to: LinkProps["to"];
   label: string;
   icon: LucideIcon;
+  /** Число у пункта (например, доступные обновления); нет или 0 — без значка. */
+  badge?: number;
   /** Пункт виден, только если есть право (из списка — любое). */
   permission?: Permission | Permission[];
 }

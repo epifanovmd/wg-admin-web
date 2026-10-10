@@ -79,7 +79,7 @@ export const createNodeColumns = ({ release, vm }: NodeColumnsOptions) => [
 
       return (
         <div className="text-xs text-muted-foreground">
-          <p className="flex items-center gap-1.5">
+          <p className="flex flex-wrap items-center gap-1.5 whitespace-nowrap">
             {node.agentId
               ? node.agentVersion
                 ? `v${node.agentVersion}`
@@ -91,7 +91,7 @@ export const createNodeColumns = ({ release, vm }: NodeColumnsOptions) => [
                   variant="warning"
                   aria-label={`Доступна версия агента ${target}`}
                 >
-                  обновление
+                  → {target}
                 </Badge>
               </Tooltip>
             )}

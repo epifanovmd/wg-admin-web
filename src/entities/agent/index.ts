@@ -14,6 +14,7 @@ export {
 } from "./lib/log";
 export type { IAgentReleaseNotice } from "./lib/release";
 export {
+  agentFoundMessage,
   agentReleaseMessage,
   agentUpdateTarget,
   workerUpdateTarget,

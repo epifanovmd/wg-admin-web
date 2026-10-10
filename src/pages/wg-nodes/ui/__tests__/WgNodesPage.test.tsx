@@ -163,7 +163,7 @@ describe("WgNodesPage", () => {
     bind([WG_PERMISSIONS.NODE_VIEW, WG_PERMISSIONS.NODE_AGENT]);
     renderPage();
 
-    expect(await screen.findByText("обновление")).toBeTruthy();
+    expect(await screen.findByText("→ 1.0.1")).toBeTruthy();
     expect(screen.getByLabelText("Доступна версия агента 1.0.1")).toBeTruthy();
   });
 
@@ -172,6 +172,6 @@ describe("WgNodesPage", () => {
     renderPage();
 
     expect(getAgentRelease).not.toHaveBeenCalled();
-    expect(screen.queryByText("обновление")).toBeNull();
+    expect(screen.queryByText(/^→ /)).toBeNull();
   });
 });

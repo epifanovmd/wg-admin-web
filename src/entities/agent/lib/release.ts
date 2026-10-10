@@ -1,4 +1,7 @@
-import type { IAgentReleaseDto } from "@shared/api/gen/main/model";
+import type {
+  IAgentReleaseDto,
+  IAgentUpdateCandidateDto,
+} from "@shared/api/gen/main/model";
 
 /** Новая версия, до которой можно обновить агента; нельзя — `null`. */
 export const agentUpdateTarget = (
@@ -41,3 +44,9 @@ export const agentReleaseMessage = (
   notice.previous && notice.previous !== notice.version
     ? `Доступна версия агента ${notice.version} (была ${notice.previous})`
     : null;
+
+/** Текст уведомления о версии, которую агент нашёл в своём каталоге сборок сам. */
+export const agentFoundMessage = (
+  candidate: IAgentUpdateCandidateDto,
+): string =>
+  `Агент «${candidate.name}» нашёл версию ${candidate.target} (сейчас ${candidate.current})`;
