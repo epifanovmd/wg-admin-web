@@ -36,6 +36,16 @@ export interface AgentDto {
   metrics?: IAgentMetricsPointDto;
   /** Новая версия, которую агент нашёл в своём каталоге сборок сам; нет — новее нет или не проверял. */
   update?: IAgentUpdateInfoDto;
+  /**
+   * Режим обновления агента: `self` — обновляется по команде сервера;
+   * `external` (в контейнере) и `disabled` — нет. Нет — агент старше 1.4.
+   */
+  updateMode?: string;
+  /**
+   * Как агент поставлен на узел: `systemd`, `user` (без root, служба пользователя),
+   * `manual` (без root, без службы); нет — запущен иначе (в контейнере, `--run`).
+   */
+  install?: string;
   alerts: AgentAlertDto[];
   session?: IAgentSessionDto;
 }

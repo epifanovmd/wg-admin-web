@@ -392,7 +392,7 @@ export const getWgAdmin = () => {
 
   /**
    * Команда установки агента на новый узел одной строкой:
-   * `curl …/api/v1/agent-bundle/install.sh | sudo sh -s -- --token …` — скрипт
+   * `curl …/api/v1/agent-link/bundle/install.sh | sudo sh -s -- --token …` — скрипт
    * ставит архив папки агента (`agent pack`): экземпляр, воркеры, пакеты и права —
    * из неё.
    * @summary Команда установки агента
