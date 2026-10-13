@@ -1,27 +1,23 @@
+import type { IAgentWorkerDtoPending } from "./iAgentWorkerDtoPending.ts";
+import type { IAgentWorkerDtoState } from "./iAgentWorkerDtoState.ts";
 import type { IAgentWorkerHealthDto } from "./iAgentWorkerHealthDto.ts";
 import type { IAgentWorkerManifestDto } from "./iAgentWorkerManifestDto.ts";
-import type { RecordStringIAgentWorkerConfigReportDto } from "./recordStringIAgentWorkerConfigReportDto.ts";
 
 /**
- * Воркер агента: из `hello` и последнего `status`. `state` — `starting`,
- * `running` (зарегистрирован), `invalid` (не ответил как нужно на
- * `GET /health` или `GET /manifest`, причина — `message`), `backoff`,
- * `stopped`.
+ * Воркер агента.
  */
 export interface IAgentWorkerDto {
   name: string;
-  state?: string;
-  message?: string;
   version?: string;
-  /** Ставится и обновляется с сервера (`release: true`). */
-  release?: boolean;
-  /** Встроенный `sysmetrics`: часть агента. */
-  builtin?: boolean;
-  restarts?: number;
+  /** Воркер со сборкой с сервера (обновляется `worker.update`). */
+  release: boolean;
+  state: IAgentWorkerDtoState;
+  message?: string;
+  restarts: number;
   health?: IAgentWorkerHealthDto;
-  /** `restart` | `update` — замена ждёт, пока воркер занят. */
-  pending?: string;
+  /** Плановая замена ждёт, пока воркер занят. */
+  pending?: IAgentWorkerDtoPending;
   manifest?: IAgentWorkerManifestDto;
-  /** Ключ → что на диске агента и итог применения. */
-  configs?: RecordStringIAgentWorkerConfigReportDto;
+  /** Версия в каталоге сборок новее работающей. */
+  updateAvailable?: string;
 }

@@ -1,13 +1,11 @@
-import type {
-  IAgentLogEntryDto,
-  TAgentLogLevel,
-} from "@shared/api/gen/main/model";
+import type { IAgentLogEntryDto } from "@shared/api/gen/main/model";
 
 import { formatClock } from "./format";
 
-export type { TAgentLogLevel };
+/** Уровень журнала агента. */
+export type TAgentLogLevel = "debug" | "info" | "warn" | "error";
 
-/** Уровни журнала агента — от подробного к важному. */
+/** Уровни лога агента — от подробного к важному. */
 export const AGENT_LOG_LEVELS: readonly TAgentLogLevel[] = [
   "debug",
   "info",
@@ -22,7 +20,7 @@ export const AGENT_LOG_LEVEL_LABELS: Record<TAgentLogLevel, string> = {
   error: "Ошибки",
 };
 
-/** Запись журнала агента или воркера. */
+/** Запись лога агента или воркера. */
 export type IAgentLogEntry = IAgentLogEntryDto;
 
 /** Сколько записей держит живой журнал. */
@@ -30,10 +28,11 @@ export const AGENT_LOG_KEEP = 500;
 
 /** Запись не ниже выбранного уровня. */
 export const isLogLevelShown = (
-  entry: Pick<IAgentLogEntry, "level">,
+  entry: IAgentLogEntry,
   level: TAgentLogLevel,
 ): boolean =>
-  AGENT_LOG_LEVELS.indexOf(entry.level) >= AGENT_LOG_LEVELS.indexOf(level);
+  AGENT_LOG_LEVELS.indexOf(entry.level as TAgentLogLevel) >=
+  AGENT_LOG_LEVELS.indexOf(level);
 
 /** Новые записи — в конец, старые сверх `keep` отбрасываются. */
 export const appendLogEntries = (
@@ -45,14 +44,8 @@ export const appendLogEntries = (
 const formatAttr = (value: unknown): string =>
   typeof value === "string" ? value : JSON.stringify(value);
 
-/** Строка журнала: «21:45:15 WARN  [agent] сообщение key=value». */
-export const formatLogEntry = (entry: {
-  at: number;
-  level: string;
-  source: string;
-  msg: string;
-  attrs?: Record<string, unknown>;
-}): string =>
+/** Строка журнала: «21:45:15 WARN [agent] сообщение key=value». */
+export const formatLogEntry = (entry: IAgentLogEntry): string =>
   [
     formatClock(entry.at),
     entry.level.toUpperCase().padEnd(5),

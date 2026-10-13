@@ -2,16 +2,14 @@
  * Событие воркера.
  */
 export interface IAgentEventDto {
-  /** Id сообщения агента. */
-  id: string;
   agentId: string;
+  id: string;
   worker: string;
   type: string;
   data?: unknown;
-  /** Когда случилось на узле, мс. */
-  at: number;
-  /** Когда принято, мс. */
-  receivedAt: number;
-  /** `data` не подошло под схему события из манифеста воркера: замечания. */
+  /** Замечания проверки `data` по схеме события из манифеста воркера. */
   problems?: string[];
+  /** Время на узле и приёма, мс. */
+  at: number;
+  receivedAt: number;
 }

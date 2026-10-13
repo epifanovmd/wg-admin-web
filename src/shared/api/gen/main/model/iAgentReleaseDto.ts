@@ -1,13 +1,7 @@
-import type { IAgentReleaseManifestDto } from "./iAgentReleaseManifestDto.ts";
-import type { IAgentUpdateCandidateDto } from "./iAgentUpdateCandidateDto.ts";
-import type { IAgentWorkerUpdateCandidateDto } from "./iAgentWorkerUpdateCandidateDto.ts";
+import type { IAgentWorkerBuildDto } from "./iAgentWorkerBuildDto.ts";
 
-/**
- * Сборки агента и кого можно обновить.
- */
 export interface IAgentReleaseDto {
-  /** `null` — каталог сборок не задан или пуст. */
-  manifest: IAgentReleaseManifestDto | null;
-  candidates: IAgentUpdateCandidateDto[];
-  workerCandidates: IAgentWorkerUpdateCandidateDto[];
+  /** Каталог архивов для узлов задан (`AGENT_BUNDLE_DIR`). */
+  bundle: boolean;
+  workers: IAgentWorkerBuildDto[];
 }

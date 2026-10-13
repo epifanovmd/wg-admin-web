@@ -28,7 +28,7 @@ const unknownView = (value: string): IStatusView => ({
   variant: "muted",
 });
 
-/** Состояние воркера у агента. */
+/** Состояние воркера у агента (§13 спецификации). */
 const WORKER_STATE: Record<string, IStatusView> = {
   starting: { label: "запускается", variant: "muted" },
   running: { label: "работает", variant: "success" },
@@ -40,7 +40,7 @@ const WORKER_STATE: Record<string, IStatusView> = {
 export const workerStateView = (state: string): IStatusView =>
   WORKER_STATE[state] ?? unknownView(state);
 
-/** Самочувствие по ответу `GET /health`; ответа нет — `null`. */
+/** Самочувствие по пульсу воркера; пульса не было — `null`. */
 export const workerHealthView = (
   worker: IAgentWorkerDto,
 ): IStatusView | null => {
@@ -65,6 +65,18 @@ export const workerPendingView = (pending: string): IStatusView =>
 /** Воркер не работает или сам сообщил, что не в порядке. */
 export const isWorkerTroubled = (worker: IAgentWorkerDto): boolean =>
   worker.state !== "running" || worker.health?.ok === false;
+
+/** Виды проблем агента. */
+const AGENT_ALERT: Record<string, IStatusView> = {
+  offline: { label: "нет связи", variant: "destructive" },
+  workerDown: { label: "воркер упал", variant: "destructive" },
+  workerInvalid: { label: "воркер не зарегистрирован", variant: "destructive" },
+  workerUnhealthy: { label: "воркер не в порядке", variant: "warning" },
+  configFailed: { label: "настройка не применилась", variant: "destructive" },
+};
+
+export const agentAlertView = (type: string): IStatusView =>
+  AGENT_ALERT[type] ?? unknownView(type);
 
 /** Статус ключа настроек воркера. */
 const CONFIG_STATE: Record<string, IStatusView> = {

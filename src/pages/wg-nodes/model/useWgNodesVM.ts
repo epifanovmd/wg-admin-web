@@ -1,4 +1,4 @@
-import { useAgentRelease } from "@entities/agent";
+import { AGENT_PERMISSIONS, IAgentsStore } from "@entities/agent";
 import { IUserStore } from "@entities/user";
 import { IWgNodesStore, WG_PERMISSIONS, wgOwners } from "@entities/wg";
 import { useAssignWgOwnerVM } from "@features/assign-wg-owner";
@@ -37,8 +37,9 @@ export const useWgNodesVM = () => {
   const canViewMesh =
     canViewAll && userStore.scope(WG_PERMISSIONS.STATS_VIEW) === "all";
   const canCreate = userStore.can(WG_PERMISSIONS.NODE_CREATE);
-  const canAgent =
-    canView && userStore.scope(WG_PERMISSIONS.NODE_AGENT) !== null;
+  const agents = IAgentsStore.useInstance();
+  // Новые версии агентов — из стора агентов (нужно право на агентов).
+  const canViewAgents = canView && userStore.can(AGENT_PERMISSIONS.VIEW);
 
   const accessOf = (node: WgNodeDto): IWgNodeRowAccess => {
     const owners = wgOwners(node);
@@ -71,12 +72,21 @@ export const useWgNodesVM = () => {
     enabled: canViewMesh,
   });
 
-  // Сборки агента: какие агенты нод можно обновить (новая версия — по сокету).
-  const release = useAgentRelease(canAgent);
-
   useEffect(() => {
     if (canView) void nodes.load();
   }, [canView, nodes]);
+  useEffect(() => {
+    if (canViewAgents) void agents.load();
+  }, [canViewAgents, agents]);
+
+  // Какие агенты нод можно обновить и до какой версии (агент нашёл её сам).
+  const updateTargets = new Map(
+    canViewAgents
+      ? agents.candidates
+          .filter(candidate => !candidate.worker)
+          .map(candidate => [candidate.agentId, candidate.target] as const)
+      : [],
+  );
 
   useCloseWhenForbidden(
     form.open,
@@ -107,7 +117,7 @@ export const useWgNodesVM = () => {
     isLoading: nodes.isLoading,
     error: nodes.error,
     mesh: mesh.data,
-    release: release.data ?? null,
+    updateTargets,
     form,
     provision,
     remove,

@@ -1,14 +1,11 @@
-import type { AgentAlertDto } from "./agentAlertDto.ts";
+import type { IAgentAlertDto } from "./iAgentAlertDto.ts";
 import type { IAgentHostDto } from "./iAgentHostDto.ts";
 import type { IAgentMetricsPointDto } from "./iAgentMetricsPointDto.ts";
-import type { IAgentSessionDto } from "./iAgentSessionDto.ts";
-import type { IAgentUpdateInfoDto } from "./iAgentUpdateInfoDto.ts";
 import type { IAgentWorkerDto } from "./iAgentWorkerDto.ts";
 import type { RecordStringString } from "./recordStringString.ts";
 
 /**
- * Агент, как его видит бэкенд: связь, узел, воркеры (состояние, самочувствие,
- * манифест, настройки), последняя точка метрик, текущие проблемы.
+ * Агент.
  */
 export interface AgentDto {
   id: string;
@@ -16,36 +13,25 @@ export interface AgentDto {
   labels: RecordStringString;
   online: boolean;
   revoked: boolean;
-  /** Время регистрации, мс. */
+  version?: string;
+  /** self | external | disabled. */
+  updateMode?: string;
+  /** Как поставлен: systemd | user | manual. */
+  install?: string;
+  host?: IAgentHostDto;
+  remoteIp?: string;
+  /** Отметки времени, мс: регистрация, последняя связь, запуск программы агента. */
   enrolledAt: number;
   lastSeenAt?: number;
-  connectedAt?: number;
-  /** IP последнего подключения. */
-  address?: string;
-  /** Версия агента. */
-  version?: string;
-  bootId?: string;
   startedAt?: number;
-  host?: IAgentHostDto;
-  workers: IAgentWorkerDto[];
-  /** Когда пришёл последний `status`, мс. */
-  statusAt?: number;
-  /** Сколько важных сообщений агента ждут подтверждения. */
+  /** Новая версия агента в его каталоге сборок. */
+  updateAvailable?: string;
+  /** Номер желаемого и применённый агентом. */
+  desiredRev: number;
+  appliedRev?: number;
+  /** Итоги и события, ждущие отправки на узле. */
   outbox?: number;
-  /** Последняя точка метрик. */
+  workers: IAgentWorkerDto[];
   metrics?: IAgentMetricsPointDto;
-  /** Новая версия, которую агент нашёл в своём каталоге сборок сам; нет — новее нет или не проверял. */
-  update?: IAgentUpdateInfoDto;
-  /**
-   * Режим обновления агента: `self` — обновляется по команде сервера;
-   * `external` (в контейнере) и `disabled` — нет. Нет — агент старше 1.4.
-   */
-  updateMode?: string;
-  /**
-   * Как агент поставлен на узел: `systemd`, `user` (без root, служба пользователя),
-   * `manual` (без root, без службы); нет — запущен иначе (в контейнере, `--run`).
-   */
-  install?: string;
-  alerts: AgentAlertDto[];
-  session?: IAgentSessionDto;
+  alerts: IAgentAlertDto[];
 }

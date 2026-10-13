@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { parseJsonText } from "../json";
 import {
   appendLogEntries,
   formatLogEntry,
@@ -37,5 +38,13 @@ describe("agent log", () => {
     });
 
     expect(line).toMatch(/WARN {2}\[agent\] диск mount=\/ used=91$/);
+  });
+});
+
+describe("agent JSON", () => {
+  it("разбор JSON: пусто — без значения, ошибка — текстом", () => {
+    expect(parseJsonText("  ")).toEqual({ value: undefined });
+    expect(parseJsonText('{"a":1}')).toEqual({ value: { a: 1 } });
+    expect("error" in parseJsonText("{")).toBe(true);
   });
 });

@@ -1,4 +1,4 @@
-import { useAgentRelease } from "@entities/agent";
+import { AGENT_PERMISSIONS, IAgentsStore, isAgentLive } from "@entities/agent";
 import { IUserStore } from "@entities/user";
 import {
   type IWgNodeLive,
@@ -7,6 +7,7 @@ import {
   wgOwners,
 } from "@entities/wg";
 import { useAssignWgOwnerVM } from "@features/assign-wg-owner";
+import { useAgentActions } from "@features/manage-agent";
 import {
   useMoveWgInterfaceVM,
   useWgInterfaceAccess,
@@ -16,9 +17,7 @@ import {
 import {
   useDeleteWgNode,
   useProvisionWgNodeVM,
-  useWgNodeAgentActions,
   useWgNodeFormVM,
-  useWorkerActionResults,
 } from "@features/manage-wg-node";
 import { IMainApi } from "@shared/api";
 import type {
@@ -34,21 +33,23 @@ import { useCloseWhenForbidden } from "@shared/lib/hooks";
 import { INotificationService } from "@shared/lib/notifications";
 import { useSocketEvent, useSocketRoom } from "@shared/lib/socket";
 import { useNavigate } from "@tanstack/react-router";
-import type { IWgNodeAgentContext } from "@widgets/wg-node-agent";
+import type { IAgentTabsAccess } from "@widgets/agent-tabs";
+import { useEffect } from "react";
 
 /** Scope задач ноды на бэкенде (установка и удаление агента). */
 const NODE_JOB_SCOPE = "wg-node";
 
 /**
  * Карточка ноды: данные, интерфейсы, live-статистика и метрики, агент ноды
- * (воркеры, настройки, события, журнал) и действия. Загрузка и подписки —
- * только с правом просмотра; действия — по области прав на эту ноду (своя —
- * владелец или создатель).
+ * (стор агентов: комната агента и `agent:updated`; вкладки — права ноды) и
+ * действия. Загрузка и подписки — только с правом просмотра; действия — по
+ * области прав на эту ноду (своя — владелец или создатель).
  */
 export const useWgNodeDetailVM = (nodeId: string) => {
   const api = IMainApi.useInstance();
   const toast = INotificationService.useInstance();
   const userStore = IUserStore.useInstance();
+  const agents = IAgentsStore.useInstance();
   const navigate = useNavigate();
   const canView = userStore.scope(WG_PERMISSIONS.NODE_VIEW) !== null;
   // Интерфейсы ноды — отдельный список с отдельным правом просмотра.
@@ -115,23 +116,27 @@ export const useWgNodeDetailVM = (nodeId: string) => {
     enabled: canView,
   });
 
-  const canAgentAny = userStore.scope(WG_PERMISSIONS.NODE_AGENT) !== null;
   const agentId = canView ? (node.data?.agentId ?? null) : null;
+  const canViewAgents = userStore.can(AGENT_PERMISSIONS.VIEW);
 
-  // Агент ноды; дальше — `agent:updated` из комнаты агента.
-  const agent = useEntity<AgentDto, string>({
-    queryFn: id => api.getAgent(id),
+  // Агент ноды — в сторе агентов; дальше — `agent:updated` из комнаты агента.
+  const agentCard = useEntity<true, string>({
+    queryFn: async id => {
+      const { error } = await agents.fetch(id);
+
+      return error ? { error } : { data: true };
+    },
     watch: [agentId ?? ""],
     enabled: !!agentId,
   });
 
-  // Сборки агента: до какой версии можно обновить агента и воркеры (новая
-  // версия агента — по сокету).
-  const release = useAgentRelease(canView && canAgentAny);
+  useEffect(() => {
+    // Сборки воркеров — с правом на агентов: из них кандидаты обновления.
+    if (agentId && canViewAgents) void agents.loadRelease();
+  }, [agentId, agents, canViewAgents]);
 
   const refreshAgent = () => {
-    if (agentId) void agent.refresh(agentId);
-    if (canView && canAgentAny) void release.refresh();
+    if (agentId) void agentCard.refresh(agentId);
   };
 
   // Live-снимок для мгновенной отрисовки, дальше — события комнаты.
@@ -157,11 +162,10 @@ export const useWgNodeDetailVM = (nodeId: string) => {
   useSocketEvent<[AgentDto]>(
     "agent:updated",
     next => {
-      if (next.id === agentId) agent.setData(next);
+      if (next.id === agentId) agents.upsert(next);
     },
     !!agentId,
   );
-  useWorkerActionResults(agentId, refreshAgent);
   useSocketEvent<[{ id: string }]>(
     "wg:node:deleted",
     ({ id }) => {
@@ -211,11 +215,6 @@ export const useWgNodeDetailVM = (nodeId: string) => {
     canViewInterfaces,
   );
 
-  const agentActions = useWgNodeAgentActions({
-    nodeId,
-    onChanged: refreshAgent,
-  });
-
   const interfaceActions = useWgInterfaceActions({
     onChanged: upsertInterface,
     onDeleted: iface => interfaces.removeItem(iface.id),
@@ -237,16 +236,15 @@ export const useWgNodeDetailVM = (nodeId: string) => {
   const canProvision = canOnNode(WG_PERMISSIONS.NODE_PROVISION);
   const canAssign = canOnNode(WG_PERMISSIONS.NODE_ASSIGN);
 
-  const agentContext: IWgNodeAgentContext | null =
-    agentId && agent.data?.id === agentId
-      ? {
-          nodeId,
-          agent: agent.data,
-          release: release.data,
-          actions: agentActions,
-          access: { canManage: canAgent, canLogs },
-        }
-      : null;
+  const agent = agentId ? (agents.byId(agentId) ?? null) : null;
+  const agentActions = useAgentActions();
+  const agentLive = canAgent && !!agent && isAgentLive(agent);
+  const agentAccess: IAgentTabsAccess = {
+    canManage: canAgent,
+    canConfig: canAgent,
+    canCommand: canAgent,
+    canLogs,
+  };
 
   const openOwner = () => {
     const current = node.data;
@@ -295,8 +293,19 @@ export const useWgNodeDetailVM = (nodeId: string) => {
     links: links.data ?? [],
     provisionJob: provisionJob.data,
     /** Агент ноды для вкладок; агента нет или он не загружен — `null`. */
-    agentContext,
-    isAgentLoading: !!agentId && !agentContext && !agent.isError,
+    agent,
+    agentAccess,
+    agentAlerts: agentId ? agents.alertsOf(agentId) : [],
+    agentActions,
+    /** Можно обновить агента: на связи и есть новая версия. */
+    canUpdateAgent: agentLive && !!agent?.updateAvailable,
+    /** Новая версия для обновления; без права видеть сборки — неизвестна. */
+    updateTarget: agentId
+      ? (agents.updateCandidate(agentId)?.target ?? null)
+      : null,
+    canRotate: agentLive,
+    canViewAgents,
+    isAgentLoading: !!agentId && !agent && !agentCard.isError,
     interfaceActions,
     nodeForm,
     interfaceForm,

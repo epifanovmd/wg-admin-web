@@ -1,3 +1,4 @@
+import { AgentAlertsCard } from "@entities/agent";
 import { PermissionGate } from "@entities/user";
 import { WG_PERMISSIONS, WgNodeStatusBadge } from "@entities/wg";
 import { AssignWgOwnerModal } from "@features/assign-wg-owner";
@@ -24,13 +25,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "@shared/ui";
-import {
-  WgNodeAgentCard,
-  WgNodeConfigsList,
-  WgNodeEventsTab,
-  WgNodeLogsTab,
-  WgNodeWorkersCard,
-} from "@widgets/wg-node-agent";
+import { AgentTabs, type TAgentTab } from "@widgets/agent-tabs";
 import { Plus } from "lucide-react";
 import { observer } from "mobx-react-lite";
 import { FC, useEffect, useState } from "react";
@@ -46,22 +41,21 @@ interface WgNodeDetailProps {
 }
 
 /**
- * Карточка ноды: шапка с действиями и вкладки обзора, интерфейсов, агента
- * (связь, воркеры, настройки), событий воркеров и журнала.
+ * Карточка ноды: шапка с действиями и вкладки обзора, интерфейсов и агента
+ * (вкладки агента: обзор, воркеры, настройки, команды, события, журнал — права
+ * ноды).
  */
 export const WgNodeDetail: FC<WgNodeDetailProps> = observer(({ nodeId }) => {
   const vm = useWgNodeDetailVM(nodeId);
   const node = vm.node.data;
-  // Журнал — на всю высоту экрана с прокруткой внутри, остальные вкладки — обычная страница.
   const [tab, setTab] = useState("overview");
+  // Журнал агента — на всю высоту экрана с прокруткой внутри, остальное — страница.
+  const [agentTab, setAgentTab] = useState<TAgentTab>("overview");
 
-  const agent = vm.agentContext;
+  const { agent } = vm;
 
-  // Вкладка без права (отозвано на открытой странице) или без агента — к обзору.
-  const tabAllowed =
-    (tab !== "logs" || (vm.canLogs && !!agent)) &&
-    (tab !== "events" || !!agent) &&
-    (tab !== "interfaces" || vm.canViewInterfaces);
+  // Вкладка без права (отозвано на открытой странице) — к обзору.
+  const tabAllowed = tab !== "interfaces" || vm.canViewInterfaces;
 
   useEffect(() => {
     if (!tabAllowed) setTab("overview");
@@ -69,7 +63,7 @@ export const WgNodeDetail: FC<WgNodeDetailProps> = observer(({ nodeId }) => {
 
   return (
     <PageLayout
-      fill={tab === "logs"}
+      fill={tab === "agent" && !!agent && agentTab === "logs"}
       header={
         node && (
           <PageHeader
@@ -117,7 +111,11 @@ export const WgNodeDetail: FC<WgNodeDetailProps> = observer(({ nodeId }) => {
             <Tabs
               value={tab}
               onValueChange={setTab}
-              className={cn(tab === "logs" && "flex min-h-0 flex-1 flex-col")}
+              className={cn(
+                tab === "agent" &&
+                  agentTab === "logs" &&
+                  "flex min-h-0 flex-1 flex-col",
+              )}
             >
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <TabsList>
@@ -126,10 +124,6 @@ export const WgNodeDetail: FC<WgNodeDetailProps> = observer(({ nodeId }) => {
                     <TabsTrigger value="interfaces">Интерфейсы</TabsTrigger>
                   )}
                   <TabsTrigger value="agent">Агент</TabsTrigger>
-                  {agent && <TabsTrigger value="events">События</TabsTrigger>}
-                  {vm.canLogs && agent && (
-                    <TabsTrigger value="logs">Журнал</TabsTrigger>
-                  )}
                 </TabsList>
                 {tab === "interfaces" && vm.interfaceAccess.canCreate && (
                   <Button
@@ -167,13 +161,20 @@ export const WgNodeDetail: FC<WgNodeDetailProps> = observer(({ nodeId }) => {
                   }
                 />
               </TabsContent>
-              <TabsContent value="agent" className="pt-4">
+              <TabsContent
+                value="agent"
+                className="flex min-h-0 flex-1 flex-col gap-4 pt-4"
+              >
                 {agent ? (
-                  <div className="flex flex-col gap-4">
-                    <WgNodeAgentCard context={agent} />
-                    <WgNodeWorkersCard context={agent} />
-                    <WgNodeConfigsList agent={agent.agent} />
-                  </div>
+                  <>
+                    <AgentAlertsCard alerts={vm.agentAlerts} />
+                    <AgentTabs
+                      agent={agent}
+                      access={vm.agentAccess}
+                      value={agentTab}
+                      onValueChange={setAgentTab}
+                    />
+                  </>
                 ) : vm.isAgentLoading ? (
                   <PageLoader label="Загрузка агента…" />
                 ) : (
@@ -191,19 +192,6 @@ export const WgNodeDetail: FC<WgNodeDetailProps> = observer(({ nodeId }) => {
                   />
                 )}
               </TabsContent>
-              {agent && (
-                <TabsContent value="events" className="pt-4">
-                  <WgNodeEventsTab agent={agent.agent} />
-                </TabsContent>
-              )}
-              {vm.canLogs && agent && (
-                <TabsContent
-                  value="logs"
-                  className="flex min-h-0 flex-1 flex-col pt-4"
-                >
-                  <WgNodeLogsTab nodeId={nodeId} agent={agent.agent} />
-                </TabsContent>
-              )}
             </Tabs>
           </>
         )}

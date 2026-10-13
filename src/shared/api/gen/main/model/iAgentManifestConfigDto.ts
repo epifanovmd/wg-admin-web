@@ -1,11 +1,8 @@
-import type { RecordStringUnknown } from "./recordStringUnknown.ts";
+import type { RecordStringAny } from "./recordStringAny.ts";
 
-/**
- * Ключ настроек в манифесте воркера.
- */
 export interface IAgentManifestConfigDto {
   key: string;
   description?: string;
   /** JSON Schema значения. */
-  schema?: RecordStringUnknown;
+  schema?: RecordStringAny;
 }

@@ -7,3 +7,4 @@ export * from "./use-infinite-scroll-sentinel";
 export * from "./use-latest-ref";
 export * from "./use-merge-callback";
 export * from "./use-smooth-horizontal-scroll";
+export * from "./use-time-since";

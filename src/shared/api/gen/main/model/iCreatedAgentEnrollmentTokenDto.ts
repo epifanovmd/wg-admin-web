@@ -1,10 +1,9 @@
 import type { AgentEnrollmentTokenDto } from "./agentEnrollmentTokenDto.ts";
 
 /**
- * Выпущенный токен: `token` показывается один раз.
+ * Созданный токен: полный токен — только в этом ответе.
  */
 export interface ICreatedAgentEnrollmentTokenDto {
-  enrollmentToken: AgentEnrollmentTokenDto;
-  /** Полный токен `<prefix>.<secret>` — в настройки агента. */
   token: string;
+  enrollmentToken: AgentEnrollmentTokenDto;
 }

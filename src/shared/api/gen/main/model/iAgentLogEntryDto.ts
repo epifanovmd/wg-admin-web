@@ -1,15 +1,10 @@
-import type { RecordStringUnknown } from "./recordStringUnknown.ts";
-import type { TAgentLogLevel } from "./tAgentLogLevel.ts";
+import type { RecordStringAny } from "./recordStringAny.ts";
 
-/**
- * Запись журнала агента или воркера.
- */
 export interface IAgentLogEntryDto {
-  /** Время, мс. */
   at: number;
-  level: TAgentLogLevel;
+  level: string;
   /** `agent` или имя воркера. */
   source: string;
   msg: string;
-  attrs?: RecordStringUnknown;
+  attrs?: RecordStringAny;
 }

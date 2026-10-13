@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  agentAlertView,
   agentConnection,
   configStateView,
   isWorkerTroubled,
@@ -22,6 +23,7 @@ describe("agent status", () => {
       label: "не зарегистрирован",
       variant: "destructive",
     });
+    expect(workerStateView("backoff").variant).toBe("destructive");
     expect(workerStateView("paused")).toEqual({
       label: "paused",
       variant: "muted",
@@ -49,7 +51,12 @@ describe("agent status", () => {
     expect(isWorkerTroubled(makeWorker({ state: "starting" }))).toBe(true);
   });
 
-  it("отложенная замена и статус настройки", () => {
+  it("проблемы, отложенная замена и статус настройки", () => {
+    expect(agentAlertView("workerInvalid").label).toBe(
+      "воркер не зарегистрирован",
+    );
+    expect(agentAlertView("configFailed").variant).toBe("destructive");
+    expect(agentAlertView("other").label).toBe("other");
     expect(workerPendingView("update").label).toBe(
       "обновление — когда освободится",
     );

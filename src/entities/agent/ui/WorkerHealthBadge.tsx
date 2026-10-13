@@ -9,7 +9,7 @@ interface WorkerHealthBadgeProps {
   worker: IAgentWorkerDto;
 }
 
-/** Самочувствие воркера по `GET /health`; сообщение — в подсказке. Ответа нет — ничего. */
+/** Самочувствие воркера по пульсу; сообщение — в подсказке. Пульса не было — ничего. */
 export const WorkerHealthBadge: FC<WorkerHealthBadgeProps> = ({ worker }) => {
   const view = workerHealthView(worker);
 

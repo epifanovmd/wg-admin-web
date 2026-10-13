@@ -6,8 +6,8 @@ import { AgentEventFeed } from "../agent-event-feed";
 const event = (id: string, patch: Partial<IAgentEventDto> = {}) => ({
   id,
   agentId: "a-1",
-  worker: "wg",
-  type: "state.result",
+  worker: "echo",
+  type: "echo.done",
   at: 1,
   receivedAt: 2,
   ...patch,

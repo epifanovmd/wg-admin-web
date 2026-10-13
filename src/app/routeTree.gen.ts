@@ -30,6 +30,10 @@ const AppAdminApiKeysLazyRouteImport = createFileRoute('/_app/admin/api-keys')()
 const AppAdminAuditLazyRouteImport = createFileRoute('/_app/admin/audit')()
 const AppAdminRolesLazyRouteImport = createFileRoute('/_app/admin/roles')()
 const AppAdminUsersLazyRouteImport = createFileRoute('/_app/admin/users')()
+const AppAgentsIndexLazyRouteImport = createFileRoute('/_app/agents/')()
+const AppAgentsAgentIdLazyRouteImport = createFileRoute(
+  '/_app/agents/$agentId',
+)()
 const AppWgEndpointsLazyRouteImport = createFileRoute('/_app/wg/endpoints')()
 const AppWgForwardsLazyRouteImport = createFileRoute('/_app/wg/forwards')()
 const AppWgSocksLazyRouteImport = createFileRoute('/_app/wg/socks')()
@@ -130,6 +134,20 @@ const AppAdminUsersLazyRoute = AppAdminUsersLazyRouteImport.update({
 } as any).lazy(() =>
   import('./routes/_app/admin/users.lazy').then((d) => d.Route),
 )
+const AppAgentsIndexLazyRoute = AppAgentsIndexLazyRouteImport.update({
+  id: '/agents/',
+  path: '/agents/',
+  getParentRoute: () => AppRoute,
+} as any).lazy(() =>
+  import('./routes/_app/agents.index.lazy').then((d) => d.Route),
+)
+const AppAgentsAgentIdLazyRoute = AppAgentsAgentIdLazyRouteImport.update({
+  id: '/agents/$agentId',
+  path: '/agents/$agentId',
+  getParentRoute: () => AppRoute,
+} as any).lazy(() =>
+  import('./routes/_app/agents.$agentId.lazy').then((d) => d.Route),
+)
 const AppWgEndpointsLazyRoute = AppWgEndpointsLazyRouteImport.update({
   id: '/wg/endpoints',
   path: '/wg/endpoints',
@@ -205,10 +223,12 @@ export interface FileRoutesByFullPath {
   '/admin/audit': typeof AppAdminAuditLazyRoute
   '/admin/roles': typeof AppAdminRolesLazyRoute
   '/admin/users': typeof AppAdminUsersLazyRoute
+  '/agents/$agentId': typeof AppAgentsAgentIdLazyRoute
   '/wg/endpoints': typeof AppWgEndpointsLazyRoute
   '/wg/forwards': typeof AppWgForwardsLazyRoute
   '/wg/socks': typeof AppWgSocksLazyRoute
   '/wg/stats': typeof AppWgStatsLazyRoute
+  '/agents/': typeof AppAgentsIndexLazyRoute
   '/wg/interfaces/$interfaceId': typeof AppWgInterfacesInterfaceIdLazyRoute
   '/wg/nodes/$nodeId': typeof AppWgNodesNodeIdLazyRoute
   '/wg/peers/$peerId': typeof AppWgPeersPeerIdLazyRoute
@@ -229,10 +249,12 @@ export interface FileRoutesByTo {
   '/admin/audit': typeof AppAdminAuditLazyRoute
   '/admin/roles': typeof AppAdminRolesLazyRoute
   '/admin/users': typeof AppAdminUsersLazyRoute
+  '/agents/$agentId': typeof AppAgentsAgentIdLazyRoute
   '/wg/endpoints': typeof AppWgEndpointsLazyRoute
   '/wg/forwards': typeof AppWgForwardsLazyRoute
   '/wg/socks': typeof AppWgSocksLazyRoute
   '/wg/stats': typeof AppWgStatsLazyRoute
+  '/agents': typeof AppAgentsIndexLazyRoute
   '/wg/interfaces/$interfaceId': typeof AppWgInterfacesInterfaceIdLazyRoute
   '/wg/nodes/$nodeId': typeof AppWgNodesNodeIdLazyRoute
   '/wg/peers/$peerId': typeof AppWgPeersPeerIdLazyRoute
@@ -256,10 +278,12 @@ export interface FileRoutesById {
   '/_app/admin/audit': typeof AppAdminAuditLazyRoute
   '/_app/admin/roles': typeof AppAdminRolesLazyRoute
   '/_app/admin/users': typeof AppAdminUsersLazyRoute
+  '/_app/agents/$agentId': typeof AppAgentsAgentIdLazyRoute
   '/_app/wg/endpoints': typeof AppWgEndpointsLazyRoute
   '/_app/wg/forwards': typeof AppWgForwardsLazyRoute
   '/_app/wg/socks': typeof AppWgSocksLazyRoute
   '/_app/wg/stats': typeof AppWgStatsLazyRoute
+  '/_app/agents/': typeof AppAgentsIndexLazyRoute
   '/_app/wg/interfaces/$interfaceId': typeof AppWgInterfacesInterfaceIdLazyRoute
   '/_app/wg/nodes/$nodeId': typeof AppWgNodesNodeIdLazyRoute
   '/_app/wg/peers/$peerId': typeof AppWgPeersPeerIdLazyRoute
@@ -282,10 +306,12 @@ export interface FileRouteTypes {
     | '/admin/audit'
     | '/admin/roles'
     | '/admin/users'
+    | '/agents/$agentId'
     | '/wg/endpoints'
     | '/wg/forwards'
     | '/wg/socks'
     | '/wg/stats'
+    | '/agents/'
     | '/wg/interfaces/$interfaceId'
     | '/wg/nodes/$nodeId'
     | '/wg/peers/$peerId'
@@ -306,10 +332,12 @@ export interface FileRouteTypes {
     | '/admin/audit'
     | '/admin/roles'
     | '/admin/users'
+    | '/agents/$agentId'
     | '/wg/endpoints'
     | '/wg/forwards'
     | '/wg/socks'
     | '/wg/stats'
+    | '/agents'
     | '/wg/interfaces/$interfaceId'
     | '/wg/nodes/$nodeId'
     | '/wg/peers/$peerId'
@@ -332,10 +360,12 @@ export interface FileRouteTypes {
     | '/_app/admin/audit'
     | '/_app/admin/roles'
     | '/_app/admin/users'
+    | '/_app/agents/$agentId'
     | '/_app/wg/endpoints'
     | '/_app/wg/forwards'
     | '/_app/wg/socks'
     | '/_app/wg/stats'
+    | '/_app/agents/'
     | '/_app/wg/interfaces/$interfaceId'
     | '/_app/wg/nodes/$nodeId'
     | '/_app/wg/peers/$peerId'
@@ -455,6 +485,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAdminUsersLazyRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/agents/': {
+      id: '/_app/agents/'
+      path: '/agents'
+      fullPath: '/agents/'
+      preLoaderRoute: typeof AppAgentsIndexLazyRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/agents/$agentId': {
+      id: '/_app/agents/$agentId'
+      path: '/agents/$agentId'
+      fullPath: '/agents/$agentId'
+      preLoaderRoute: typeof AppAgentsAgentIdLazyRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/wg/endpoints': {
       id: '/_app/wg/endpoints'
       path: '/wg/endpoints'
@@ -531,10 +575,12 @@ interface AppRouteChildren {
   AppAdminAuditLazyRoute: typeof AppAdminAuditLazyRoute
   AppAdminRolesLazyRoute: typeof AppAdminRolesLazyRoute
   AppAdminUsersLazyRoute: typeof AppAdminUsersLazyRoute
+  AppAgentsAgentIdLazyRoute: typeof AppAgentsAgentIdLazyRoute
   AppWgEndpointsLazyRoute: typeof AppWgEndpointsLazyRoute
   AppWgForwardsLazyRoute: typeof AppWgForwardsLazyRoute
   AppWgSocksLazyRoute: typeof AppWgSocksLazyRoute
   AppWgStatsLazyRoute: typeof AppWgStatsLazyRoute
+  AppAgentsIndexLazyRoute: typeof AppAgentsIndexLazyRoute
   AppWgInterfacesInterfaceIdLazyRoute: typeof AppWgInterfacesInterfaceIdLazyRoute
   AppWgNodesNodeIdLazyRoute: typeof AppWgNodesNodeIdLazyRoute
   AppWgPeersPeerIdLazyRoute: typeof AppWgPeersPeerIdLazyRoute
@@ -552,10 +598,12 @@ const AppRouteChildren: AppRouteChildren = {
   AppAdminAuditLazyRoute: AppAdminAuditLazyRoute,
   AppAdminRolesLazyRoute: AppAdminRolesLazyRoute,
   AppAdminUsersLazyRoute: AppAdminUsersLazyRoute,
+  AppAgentsAgentIdLazyRoute: AppAgentsAgentIdLazyRoute,
   AppWgEndpointsLazyRoute: AppWgEndpointsLazyRoute,
   AppWgForwardsLazyRoute: AppWgForwardsLazyRoute,
   AppWgSocksLazyRoute: AppWgSocksLazyRoute,
   AppWgStatsLazyRoute: AppWgStatsLazyRoute,
+  AppAgentsIndexLazyRoute: AppAgentsIndexLazyRoute,
   AppWgInterfacesInterfaceIdLazyRoute: AppWgInterfacesInterfaceIdLazyRoute,
   AppWgNodesNodeIdLazyRoute: AppWgNodesNodeIdLazyRoute,
   AppWgPeersPeerIdLazyRoute: AppWgPeersPeerIdLazyRoute,

@@ -1,3 +1,4 @@
+import { IAgentsStore } from "@entities/agent";
 import { IUserStore } from "@entities/user";
 import { IWgNodesStore, WG_PERMISSIONS } from "@entities/wg";
 import { IMainApi } from "@shared/api";
@@ -39,22 +40,19 @@ const node = {
   createdById: null,
 } as unknown as WgNodeDto;
 
-const getAgentRelease = vi.fn();
+const agents = {
+  candidates: [{ agentId: "a1", current: "1.0.0", target: "1.0.1" }],
+  load: vi.fn(),
+};
 
 const bind = (permissions: string[]) => {
-  getAgentRelease.mockReset().mockResolvedValue({
-    data: {
-      manifest: { version: "1.0.1", artifacts: [] },
-      candidates: [{ agentId: "a1", current: "1.0.0", target: "1.0.1" }],
-      workerCandidates: [],
-    },
-  });
+  agents.load.mockReset().mockResolvedValue(undefined);
   iocContainer.bind(ISocketTransport.Tid).toConstantValue(createFakeSocket());
   iocContainer.bind(IMainApi.Tid).toConstantValue({
     wgStatsMesh: vi.fn().mockResolvedValue({ data: null }),
     deleteWgNode: vi.fn().mockResolvedValue({ data: null }),
-    getAgentRelease,
   });
+  iocContainer.bind(IAgentsStore.Tid).toConstantValue(agents);
   iocContainer
     .bind(INotificationService.Tid)
     .toConstantValue({ error: vi.fn(), success: vi.fn() });
@@ -88,6 +86,7 @@ afterEach(() => {
   iocContainer.unbind(INotificationService.Tid);
   iocContainer.unbind(IUserStore.Tid);
   iocContainer.unbind(IWgNodesStore.Tid);
+  iocContainer.unbind(IAgentsStore.Tid);
 });
 
 describe("WgNodesPage", () => {
@@ -160,18 +159,18 @@ describe("WgNodesPage", () => {
   });
 
   it("агент ноды — кандидат на обновление до новой версии: значок с версией", async () => {
-    bind([WG_PERMISSIONS.NODE_VIEW, WG_PERMISSIONS.NODE_AGENT]);
+    bind([WG_PERMISSIONS.NODE_VIEW, "agent:view"]);
     renderPage();
 
     expect(await screen.findByText("→ 1.0.1")).toBeTruthy();
     expect(screen.getByLabelText("Доступна версия агента 1.0.1")).toBeTruthy();
   });
 
-  it("без права на агента — сборки не запрашиваются, значка нет", () => {
-    bind([WG_PERMISSIONS.NODE_VIEW]);
+  it("без права на агентов — агенты не запрашиваются, значка нет", () => {
+    bind([WG_PERMISSIONS.NODE_VIEW, WG_PERMISSIONS.NODE_AGENT]);
     renderPage();
 
-    expect(getAgentRelease).not.toHaveBeenCalled();
+    expect(agents.load).not.toHaveBeenCalled();
     expect(screen.queryByText(/^→ /)).toBeNull();
   });
 });

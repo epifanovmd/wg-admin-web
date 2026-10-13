@@ -6,6 +6,7 @@ export * from "./enum-values";
 export * from "./flatten";
 export * from "./format-bytes";
 export * from "./format-duration";
+export * from "./format-since";
 export * from "./formatter";
 export * from "./join-ids";
 export * from "./lambda-value";

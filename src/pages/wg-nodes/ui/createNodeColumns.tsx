@@ -1,6 +1,5 @@
-import { agentUpdateTarget } from "@entities/agent";
 import { nodeSyncView, WgNodeStatusBadge, WgOwnershipCell } from "@entities/wg";
-import type { IAgentReleaseDto, WgNodeDto } from "@shared/api/gen/main/model";
+import type { WgNodeDto } from "@shared/api/gen/main/model";
 import { formatter } from "@shared/lib/utils";
 import {
   Badge,
@@ -19,14 +18,17 @@ import type { WgNodesVM } from "../model/useWgNodesVM";
 const column = createColumnHelper<WgNodeDto>();
 
 interface NodeColumnsOptions {
-  /** Сборки агента и кого можно обновить; null — не загружен или нет права. */
-  release: IAgentReleaseDto | null;
+  /** Новая версия агента по id агента; нет права на агентов — пусто. */
+  updateTargets: ReadonlyMap<string, string>;
   /** VM — через ref: колонки стабильны, ячейки не перемонтируются. */
   vm: RefObject<WgNodesVM>;
 }
 
 /** Колонки таблицы нод. */
-export const createNodeColumns = ({ release, vm }: NodeColumnsOptions) => [
+export const createNodeColumns = ({
+  updateTargets,
+  vm,
+}: NodeColumnsOptions) => [
   column.display({
     id: "name",
     header: "Нода",
@@ -75,7 +77,9 @@ export const createNodeColumns = ({ release, vm }: NodeColumnsOptions) => [
     size: 190,
     cell: ({ row }) => {
       const node = row.original;
-      const target = agentUpdateTarget(release, node.agentId);
+      const target = node.agentId
+        ? (updateTargets.get(node.agentId) ?? null)
+        : null;
 
       return (
         <div className="text-xs text-muted-foreground">

@@ -17,6 +17,7 @@ const setup = () => {
   const userStore = { load: vi.fn(), reset: vi.fn() };
   const nodesStore = { reset: vi.fn() };
   const jobStore = { reset: vi.fn() };
+  const agentsStore = { reset: vi.fn() };
   const initializer = { initialize: vi.fn(() => vi.fn()) };
   const store = new AppDataStore(
     auth as any,
@@ -26,6 +27,7 @@ const setup = () => {
     initializer as any,
     jobStore as any,
     nodesStore as any,
+    agentsStore as any,
   );
 
   runInAction(() => (auth.isAuthenticated = false));
@@ -86,6 +88,7 @@ describe("AppDataStore — восстановление сессии", () => {
       stub as any,
       stub as any,
       stub as any,
+      stub as any,
     );
 
     store.initialize();
@@ -116,6 +119,7 @@ describe("AppDataStore — восстановление сессии", () => {
     };
     const store = new AppDataStore(
       auth as any,
+      stub as any,
       stub as any,
       stub as any,
       stub as any,

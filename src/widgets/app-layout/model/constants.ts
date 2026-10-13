@@ -1,3 +1,4 @@
+import { AGENT_PERMISSIONS } from "@entities/agent";
 import { ADMIN_PERMISSIONS, type Permission } from "@entities/user";
 import { WG_PERMISSIONS } from "@entities/wg";
 import { ownPermission } from "@shared/lib/access";
@@ -7,6 +8,7 @@ import {
   ArrowLeftRight,
   BarChart3,
   Cable,
+  Cpu,
   KeyRound,
   LayoutGrid,
   ListChecks,
@@ -126,6 +128,12 @@ export const NAV_GROUPS: NavGroup[] = [
         label: "Аудит",
         icon: ScrollText,
         permission: ADMIN_PERMISSIONS.AUDIT_VIEW,
+      },
+      {
+        to: "/agents",
+        label: "Агенты",
+        icon: Cpu,
+        permission: AGENT_PERMISSIONS.VIEW,
       },
     ],
   },

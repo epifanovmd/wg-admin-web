@@ -1,11 +1,10 @@
-import type { RecordStringUnknown } from "./recordStringUnknown.ts";
+import type { RecordStringAny } from "./recordStringAny.ts";
 
 /**
- * Точка метрик: узел (`host`) и ответы `GET /metrics` воркеров.
+ * Точка метрик: узел и метрики воркеров из их пульса.
  */
 export interface IAgentMetricsPointDto {
-  /** Время сбора на узле, мс. */
   at: number;
-  host?: RecordStringUnknown;
-  workers?: RecordStringUnknown;
+  host?: RecordStringAny;
+  workers?: RecordStringAny;
 }

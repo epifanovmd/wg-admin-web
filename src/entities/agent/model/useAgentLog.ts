@@ -16,6 +16,7 @@ import type { IAgentLogEvent } from "./types";
 /** Ответ сервера на `agent:log-level`. */
 interface ILogLevelAck {
   ok: boolean;
+  error?: { code?: string; message?: string };
 }
 
 /** Повтор уровня, пока сервер не впустил сокет в комнату агента. */

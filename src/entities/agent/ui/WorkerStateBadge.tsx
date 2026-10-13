@@ -6,7 +6,7 @@ import { StatusViewBadge } from "./StatusViewBadge";
 
 interface WorkerStateBadgeProps {
   state: string;
-  /** Причина состояния (у `invalid` — что не так с `/health` или `/manifest`). */
+  /** Причина состояния (у `invalid` — почему воркер не зарегистрировался). */
   message?: string;
 }
 

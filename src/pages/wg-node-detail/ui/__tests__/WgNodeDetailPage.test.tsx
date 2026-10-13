@@ -1,3 +1,4 @@
+import { agentModule } from "@entities/agent";
 import { IUserStore } from "@entities/user";
 import { IWgNodesStore, WG_PERMISSIONS } from "@entities/wg";
 import { IMainApi } from "@shared/api";
@@ -53,15 +54,6 @@ const NODES: Record<string, WgNodeDto> = {
   n3: { ...node("n3", "Гамма"), status: "online", agentId: AGENT_ID },
 };
 
-const manifest = (configs: string[]) => ({
-  version: "1.0.0",
-  configs: configs.map(key => ({ key })),
-  routes: [],
-  events: [],
-  jobs: [],
-  requests: [],
-});
-
 const agent = {
   id: AGENT_ID,
   name: "Гамма",
@@ -69,52 +61,29 @@ const agent = {
   online: true,
   revoked: false,
   enrolledAt: 1,
-  version: "1.0.1",
+  lastSeenAt: Date.now(),
+  version: "1.0.0",
   host: { os: "linux", arch: "amd64", hostname: "example-host" },
+  desiredRev: 1,
   workers: [
     {
       name: "wg",
       state: "running",
-      version: "1.0.0",
+      version: "2.0.0",
       release: true,
+      restarts: 0,
       health: { ok: true },
-      manifest: manifest(["state", "probes"]),
+      manifest: { configs: [{ key: "state" }, { key: "probes" }] },
     },
     {
       name: "socks",
       state: "invalid",
-      message: "нет ответа на GET /health",
+      message: "нет регистрации",
       release: true,
+      restarts: 0,
     },
-    { name: "sysmetrics", state: "running", builtin: true },
   ],
   alerts: [],
-};
-
-const configs = [
-  {
-    worker: "wg",
-    key: "state",
-    status: {
-      agentId: AGENT_ID,
-      worker: "wg",
-      key: "state",
-      version: 3,
-      applied: 3,
-      state: "applied",
-      result: {
-        version: 3,
-        appliedAt: 1,
-        interfaces: [{ name: "wg0", status: "up" }],
-      },
-    },
-  },
-];
-
-const release = {
-  manifest: { version: "1.0.1", artifacts: [] },
-  candidates: [],
-  workerCandidates: [{ agentId: AGENT_ID, worker: "wg", target: "1.1.0" }],
 };
 
 const job = {
@@ -137,8 +106,7 @@ const live = {
   peersTotal: 0,
 };
 
-const wgNodeLogs = vi.fn();
-const restartWgNodeWorker = vi.fn();
+const getAgentLogs = vi.fn();
 
 /** Незаданные методы API отвечают пустыми данными. */
 const createApi = (overrides: Record<string, unknown>) =>
@@ -153,15 +121,11 @@ let permissions: string[] = [];
 
 beforeEach(() => {
   permissions = [WG_PERMISSIONS.NODE_VIEW];
-  wgNodeLogs.mockReset().mockResolvedValue({
+  getAgentLogs.mockReset().mockResolvedValue({
     data: {
-      content: "",
       entries: [{ at: 1, level: "info", source: "wg", msg: "строка журнала" }],
     },
   });
-  restartWgNodeWorker
-    .mockReset()
-    .mockResolvedValue({ data: { deferred: false } });
   runInAction(() => {
     params.nodeId = "n1";
   });
@@ -177,11 +141,10 @@ beforeEach(() => {
         scopeId === "n1"
           ? Promise.resolve({ data: { items: [job], total: 1 } })
           : new Promise(() => undefined),
-      wgNodeLogs,
-      restartWgNodeWorker,
+      getAgentLogs,
       getAgent: () => Promise.resolve({ data: agent }),
-      getAgentConfigs: () => Promise.resolve({ data: configs }),
-      getAgentRelease: () => Promise.resolve({ data: release }),
+      getAgentConfigs: () => Promise.resolve({ data: [] }),
+      getAgentMetrics: () => Promise.resolve({ data: [] }),
       getAgentEvents: () =>
         Promise.resolve({ data: { items: [], nextCursor: null } }),
       wgStatsCurrentNode: (id: string) =>
@@ -202,6 +165,7 @@ beforeEach(() => {
   iocContainer
     .bind(IWgNodesStore.Tid)
     .toConstantValue({ options: vi.fn().mockResolvedValue([]) });
+  iocContainer.load(agentModule);
 });
 
 afterEach(() => {
@@ -210,6 +174,7 @@ afterEach(() => {
   iocContainer.unbind(INotificationService.Tid);
   iocContainer.unbind(IUserStore.Tid);
   iocContainer.unbind(IWgNodesStore.Tid);
+  iocContainer.unload(agentModule);
   navigate.mockClear();
 });
 
@@ -248,62 +213,44 @@ describe("WgNodeDetailPage", () => {
     await screen.findByText("Гамма");
   };
 
-  it("вкладка «Агент»: связь, воркеры и итог применения настроек", async () => {
+  it("вкладка «Агент»: вкладки агента, воркеры; без права на агента — без команд и действий", async () => {
     await openAgentNode();
     fireEvent.mouseDown(screen.getByRole("tab", { name: "Агент" }));
+    fireEvent.mouseDown(await screen.findByRole("tab", { name: "Воркеры" }));
 
-    expect(await screen.findByText("на связи")).toBeTruthy();
-    expect(screen.getByText("example-host")).toBeTruthy();
-    expect(screen.getAllByText("работает").length).toBeGreaterThan(0);
-    expect(screen.getByText("не зарегистрирован")).toBeTruthy();
-    expect(await screen.findByText("wg0")).toBeTruthy();
-    expect(screen.getByText("применено")).toBeTruthy();
-    // Ключ из манифеста без значения на сервере.
-    expect(screen.getByText("не задан")).toBeTruthy();
-    // Без права на агента действий с воркерами нет.
-    expect(
-      screen.queryByRole("button", { name: "Перезапустить воркер wg" }),
-    ).toBeNull();
+    expect(await screen.findByText("wg")).toBeTruthy();
+    expect(screen.getByText("socks")).toBeTruthy();
+    expect(screen.getByRole("tab", { name: "Настройки" })).toBeTruthy();
+    expect(screen.getByRole("tab", { name: "Журнал" })).toBeTruthy();
+    expect(screen.queryByRole("tab", { name: "Команды" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Сменить ключ" })).toBeNull();
   });
 
-  it("перезапуск и обновление воркера — через ноду, с правом на агента", async () => {
+  it("с правом на агента ноды — команды воркерам и смена ключа", async () => {
     permissions = [WG_PERMISSIONS.NODE_VIEW, WG_PERMISSIONS.NODE_AGENT];
     await openAgentNode();
     fireEvent.mouseDown(screen.getByRole("tab", { name: "Агент" }));
 
-    expect(
-      await screen.findByRole("button", { name: "Обновить воркер wg" }),
-    ).toBeTruthy();
-    // Встроенный воркер — часть агента: его не перезапускают.
-    expect(
-      screen.queryByRole("button", { name: "Перезапустить воркер sysmetrics" }),
-    ).toBeNull();
-
-    fireEvent.click(
-      screen.getByRole("button", { name: "Перезапустить воркер wg" }),
-    );
-    fireEvent.click(
-      await screen.findByRole("button", { name: "Перезапустить" }),
-    );
-
-    await waitFor(() =>
-      expect(restartWgNodeWorker).toHaveBeenCalledWith("n3", "wg", {
-        force: false,
-      }),
-    );
+    expect(await screen.findByRole("tab", { name: "Команды" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Сменить ключ" })).toBeTruthy();
   });
 
-  it("журнал с узла — агента по умолчанию, с правом на журнал", async () => {
+  it("журнал с узла — запрос к агенту ноды, с правом на журнал", async () => {
     permissions = [WG_PERMISSIONS.NODE_VIEW, WG_PERMISSIONS.NODE_LOGS];
     await openAgentNode();
+    fireEvent.mouseDown(screen.getByRole("tab", { name: "Агент" }));
     fireEvent.mouseDown(await screen.findByRole("tab", { name: "Журнал" }));
-    fireEvent.click(screen.getByRole("button", { name: "Загрузить" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Загрузить" }));
 
-    expect(await screen.findByText(/\[wg\] строка журнала/)).toBeTruthy();
-    expect(wgNodeLogs).toHaveBeenCalledWith("n3", { lines: 300 });
+    await waitFor(() =>
+      expect(getAgentLogs).toHaveBeenCalledWith(
+        AGENT_ID,
+        expect.objectContaining({ lines: expect.any(Number) }),
+      ),
+    );
   });
 
-  it("нода без агента: «Агент не установлен», событий и журнала нет", async () => {
+  it("нода без агента: «Агент не установлен», вкладок агента нет", async () => {
     permissions = [WG_PERMISSIONS.NODE_VIEW, WG_PERMISSIONS.NODE_LOGS];
     render(page());
     await screen.findByText("Альфа");
@@ -311,7 +258,7 @@ describe("WgNodeDetailPage", () => {
 
     expect(await screen.findByText("Агент не установлен")).toBeTruthy();
     expect(screen.queryByRole("tab", { name: "Журнал" })).toBeNull();
-    expect(screen.queryByRole("tab", { name: "События" })).toBeNull();
+    expect(screen.queryByRole("tab", { name: "Воркеры" })).toBeNull();
   });
 
   it("нода удалена — уход к списку нод", async () => {

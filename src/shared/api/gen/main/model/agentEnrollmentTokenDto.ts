@@ -3,17 +3,13 @@ import type { RecordStringString } from "./recordStringString.ts";
 export interface AgentEnrollmentTokenDto {
   id: string;
   name: string;
-  /** Открытая часть токена: по ней токен узнают в списке. */
+  /** Начало токена — для узнавания в списке. */
   prefix: string;
   labels: RecordStringString;
-  /** @nullable */
-  maxUses: number | null;
+  maxUses?: number;
   uses: number;
-  /** @nullable */
-  expiresAt: string | null;
-  /** @nullable */
-  revokedAt: string | null;
-  /** @nullable */
-  createdBy: string | null;
+  expiresAt?: string;
+  revokedAt?: string;
+  createdBy?: string;
   createdAt: string;
 }
