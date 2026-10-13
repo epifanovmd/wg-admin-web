@@ -28,7 +28,7 @@ const node = {
   name: "Альфа",
   publicHost: "192.0.2.30",
   description: null,
-  status: "online",
+  status: "offline",
   statusMessage: null,
   agentId: "a1",
   agentVersion: "1.0.0",
@@ -106,6 +106,30 @@ describe("WgNodesPage", () => {
       expect(navigate).not.toHaveBeenCalled();
     },
   );
+
+  it("нода на связи — установки агента нет, есть только у ноды без агента на связи", () => {
+    bind([WG_PERMISSIONS.NODE_VIEW, WG_PERMISSIONS.NODE_PROVISION]);
+    const view = renderPage();
+
+    expect(
+      screen.getByRole("button", { name: "Установить агента" }),
+    ).toBeTruthy();
+    view.unmount();
+    iocContainer.unbind(IWgNodesStore.Tid);
+    iocContainer.bind(IWgNodesStore.Tid).toConstantValue({
+      nodes: [{ ...node, status: "online" }],
+      isLoading: false,
+      error: null,
+      load: vi.fn().mockResolvedValue(undefined),
+      upsert: vi.fn(),
+      remove: vi.fn(),
+    });
+    renderPage();
+
+    expect(
+      screen.queryByRole("button", { name: "Установить агента" }),
+    ).toBeNull();
+  });
 
   const OWN_NODE_RIGHTS = [
     ownPermission(WG_PERMISSIONS.NODE_VIEW),

@@ -235,6 +235,29 @@ describe("WgNodeDetailPage", () => {
     expect(screen.getByRole("button", { name: "Сменить ключ" })).toBeTruthy();
   });
 
+  it("установка и удаление агента не вместе: агент на связи — только удаление", async () => {
+    permissions = [WG_PERMISSIONS.NODE_VIEW, WG_PERMISSIONS.NODE_PROVISION];
+    await openAgentNode();
+
+    expect(
+      await screen.findByRole("button", { name: "Удалить агента" }),
+    ).toBeTruthy();
+    expect(
+      screen.queryByRole("button", { name: "Установить агента" }),
+    ).toBeNull();
+  });
+
+  it("нода без агента — только установка", async () => {
+    permissions = [WG_PERMISSIONS.NODE_VIEW, WG_PERMISSIONS.NODE_PROVISION];
+    render(page());
+    await screen.findByText("Альфа");
+
+    expect(
+      screen.getByRole("button", { name: "Установить агента" }),
+    ).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Удалить агента" })).toBeNull();
+  });
+
   it("журнал с узла — запрос к агенту ноды, с правом на журнал", async () => {
     permissions = [WG_PERMISSIONS.NODE_VIEW, WG_PERMISSIONS.NODE_LOGS];
     await openAgentNode();

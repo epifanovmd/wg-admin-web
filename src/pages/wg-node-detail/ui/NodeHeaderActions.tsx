@@ -29,7 +29,8 @@ export const NodeHeaderActions: FC<NodeHeaderActionsProps> = observer(
 
     return (
       <div className="flex flex-wrap gap-2">
-        {vm.canProvision && (
+        {/* Установка — когда агента нет или он не на связи (переустановка). */}
+        {vm.canProvision && !agent?.online && (
           <Button
             variant="outline"
             leftIcon={<HardDriveDownload size={15} />}

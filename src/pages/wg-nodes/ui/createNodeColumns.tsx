@@ -129,7 +129,8 @@ export const createNodeColumns = ({
 
       return (
         <TableRowActions>
-          {access.canProvision && (
+          {/* Установка — ноде без агента на связи (переустановка). */}
+          {access.canProvision && row.original.status !== "online" && (
             <Tooltip content="Установить агента">
               <IconButton
                 aria-label="Установить агента"
