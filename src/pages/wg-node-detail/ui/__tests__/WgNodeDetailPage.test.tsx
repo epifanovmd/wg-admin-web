@@ -205,6 +205,14 @@ describe("WgNodeDetailPage", () => {
     expect(screen.queryByText(/5\.0 МБ\/с/)).toBeNull();
   });
 
+  /** Меню «Ещё действия» в шапке ноды. */
+  const openMoreMenu = async () => {
+    fireEvent.keyDown(
+      await screen.findByRole("button", { name: "Ещё действия" }),
+      { key: "Enter" },
+    );
+  };
+
   const openAgentNode = async () => {
     runInAction(() => {
       params.nodeId = "n3";
@@ -223,7 +231,7 @@ describe("WgNodeDetailPage", () => {
     expect(screen.getByRole("tab", { name: "Настройки" })).toBeTruthy();
     expect(screen.getByRole("tab", { name: "Журнал" })).toBeTruthy();
     expect(screen.queryByRole("tab", { name: "Команды" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "Сменить ключ" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Ещё действия" })).toBeNull();
   });
 
   it("с правом на агента ноды — команды воркерам и смена ключа", async () => {
@@ -232,15 +240,22 @@ describe("WgNodeDetailPage", () => {
     fireEvent.mouseDown(screen.getByRole("tab", { name: "Агент" }));
 
     expect(await screen.findByRole("tab", { name: "Команды" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Сменить ключ" })).toBeTruthy();
+    await openMoreMenu();
+    expect(
+      await screen.findByRole("menuitem", { name: "Сменить ключ" }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("menuitem", { name: "Команда установки" }),
+    ).toBeTruthy();
   });
 
   it("установка и удаление агента не вместе: агент на связи — только удаление", async () => {
     permissions = [WG_PERMISSIONS.NODE_VIEW, WG_PERMISSIONS.NODE_PROVISION];
     await openAgentNode();
+    await openMoreMenu();
 
     expect(
-      await screen.findByRole("button", { name: "Удалить агента" }),
+      await screen.findByRole("menuitem", { name: "Удалить агента" }),
     ).toBeTruthy();
     // Агент загружен и на связи — установки нет.
     await waitFor(() =>
@@ -258,7 +273,8 @@ describe("WgNodeDetailPage", () => {
     expect(
       screen.getByRole("button", { name: "Установить агента" }),
     ).toBeTruthy();
-    expect(screen.queryByRole("button", { name: "Удалить агента" })).toBeNull();
+    // Удалять нечего — меню с удалением агента нет.
+    expect(screen.queryByRole("button", { name: "Ещё действия" })).toBeNull();
   });
 
   it("журнал с узла — запрос к агенту ноды, с правом на журнал", async () => {

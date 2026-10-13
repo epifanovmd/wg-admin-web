@@ -68,12 +68,14 @@ export const WgNodeDetail: FC<WgNodeDetailProps> = observer(({ nodeId }) => {
         node && (
           <PageHeader
             title={
-              <span className="flex items-center gap-3">
-                {node.name}
-                <WgNodeStatusBadge
-                  status={node.status}
-                  message={node.statusMessage}
-                />
+              <span className="flex min-w-0 items-center gap-3">
+                <span className="truncate">{node.name}</span>
+                <span className="inline-flex shrink-0">
+                  <WgNodeStatusBadge
+                    status={node.status}
+                    message={node.statusMessage}
+                  />
+                </span>
               </span>
             }
             subtitle={node.publicHost ?? "публичный хост не задан"}
