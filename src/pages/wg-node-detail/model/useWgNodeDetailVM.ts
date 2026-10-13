@@ -166,6 +166,14 @@ export const useWgNodeDetailVM = (nodeId: string) => {
     },
     !!agentId,
   );
+  // Агент удалён: из стора агентов (нода без агента придёт `wg:node:updated`).
+  useSocketEvent<[{ id: string }]>(
+    "agent:deleted",
+    ({ id }) => {
+      if (id === agentId) agents.remove(id);
+    },
+    !!agentId,
+  );
   useSocketEvent<[{ id: string }]>(
     "wg:node:deleted",
     ({ id }) => {

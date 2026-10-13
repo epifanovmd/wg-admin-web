@@ -242,9 +242,12 @@ describe("WgNodeDetailPage", () => {
     expect(
       await screen.findByRole("button", { name: "Удалить агента" }),
     ).toBeTruthy();
-    expect(
-      screen.queryByRole("button", { name: "Установить агента" }),
-    ).toBeNull();
+    // Агент загружен и на связи — установки нет.
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("button", { name: "Установить агента" }),
+      ).toBeNull(),
+    );
   });
 
   it("нода без агента — только установка", async () => {
@@ -281,6 +284,20 @@ describe("WgNodeDetailPage", () => {
 
     expect(await screen.findByText("Агент не установлен")).toBeTruthy();
     expect(screen.queryByRole("tab", { name: "Журнал" })).toBeNull();
+    expect(screen.queryByRole("tab", { name: "Воркеры" })).toBeNull();
+  });
+
+  it("агент ноды удалён — вкладки агента пропадают: агент убран из стора, нода без агента", async () => {
+    await openAgentNode();
+    fireEvent.mouseDown(screen.getByRole("tab", { name: "Агент" }));
+    expect(await screen.findByRole("tab", { name: "Воркеры" })).toBeTruthy();
+
+    act(() => {
+      socket.fire("agent:deleted", { id: AGENT_ID });
+      socket.fire("wg:node:updated", { ...NODES.n3, agentId: null });
+    });
+
+    expect(await screen.findByText("Агент не установлен")).toBeTruthy();
     expect(screen.queryByRole("tab", { name: "Воркеры" })).toBeNull();
   });
 
