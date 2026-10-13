@@ -66,7 +66,6 @@ export * from "./iAgentMetricsPointDto.ts";
 export * from "./iAgentReleaseArtifactDto.ts";
 export * from "./iAgentReleaseDto.ts";
 export * from "./iAgentReleaseManifestDto.ts";
-export * from "./iAgentRemoteReleaseDto.ts";
 export * from "./iAgentSessionDto.ts";
 export * from "./iAgentUpdateCandidateDto.ts";
 export * from "./iAgentUpdateInfoDto.ts";

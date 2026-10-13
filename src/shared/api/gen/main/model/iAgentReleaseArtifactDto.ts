@@ -11,6 +11,6 @@ export interface IAgentReleaseArtifactDto {
   sha256: string;
   signature?: string;
   source: TAgentReleaseSource;
-  /** Ссылка на сборку в источнике или путь от корня бэкенда. */
+  /** Ссылка на сборку: путь от корня бэкенда `/api/v1/agent-link/releases/<file>` или сам `file`, если он — адрес. */
   url: string;
 }
