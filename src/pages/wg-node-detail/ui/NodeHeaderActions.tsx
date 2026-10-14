@@ -1,3 +1,4 @@
+import { AgentIssueModal } from "@features/issue-agent";
 import {
   useWgNodeInstallCommandVM,
   WgNodeInstallCommandModal,
@@ -14,6 +15,7 @@ import {
 } from "@shared/ui";
 import { Link } from "@tanstack/react-router";
 import {
+  Archive,
   ArrowUpCircle,
   HardDriveDownload,
   KeyRound,
@@ -26,7 +28,7 @@ import {
   UserCog,
 } from "lucide-react";
 import { observer } from "mobx-react-lite";
-import { FC } from "react";
+import { FC, useState } from "react";
 
 import type { WgNodeDetailVM } from "../model/useWgNodeDetailVM";
 
@@ -43,6 +45,7 @@ export const NodeHeaderActions: FC<NodeHeaderActionsProps> = observer(
   ({ vm, node }) => {
     const { agent, agentActions } = vm;
     const installCommand = useWgNodeInstallCommandVM(node.id);
+    const [issueOpen, setIssueOpen] = useState(false);
 
     const canInstall = vm.canProvision && !agent?.online;
     const canUninstall = vm.canProvision && !!node.agentId;
@@ -115,6 +118,14 @@ export const NodeHeaderActions: FC<NodeHeaderActionsProps> = observer(
                   Команда установки
                 </DropdownMenuItem>
               )}
+              {vm.canAgent && (
+                <DropdownMenuItem
+                  icon={<Archive size={15} />}
+                  onSelect={() => setIssueOpen(true)}
+                >
+                  Архив агента
+                </DropdownMenuItem>
+              )}
               {rotatable && (
                 <DropdownMenuItem
                   icon={<KeyRound size={15} />}
@@ -162,6 +173,10 @@ export const NodeHeaderActions: FC<NodeHeaderActionsProps> = observer(
           </DropdownMenu>
         )}
         <WgNodeInstallCommandModal vm={installCommand} />
+        <AgentIssueModal
+          node={issueOpen ? node : null}
+          onClose={() => setIssueOpen(false)}
+        />
       </div>
     );
   },

@@ -5,6 +5,7 @@ import {
 } from "@entities/agent";
 import { PermissionGate } from "@entities/user";
 import { InstallAgentModal } from "@features/enroll-agent";
+import { AgentIssuePanel } from "@features/issue-agent";
 import { Button, PageHeader, PageLayout } from "@shared/ui";
 import { HardDriveDownload } from "lucide-react";
 import { observer } from "mobx-react-lite";
@@ -42,7 +43,10 @@ export const AgentsPage: FC = observer(() => {
         />
         <AgentsTable vm={vm} />
       </PermissionGate>
-      <InstallAgentModal vm={vm.install} />
+      <InstallAgentModal
+        vm={vm.install}
+        archive={vm.canEnroll && <AgentIssuePanel target={{}} />}
+      />
     </PageLayout>
   );
 });

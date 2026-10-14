@@ -21,8 +21,8 @@ export type {
   BadgeProps,
 } from "./badge";
 export { Badge, BadgeAnchor } from "./badge";
-export type { AsyncButtonProps, ButtonProps } from "./button";
-export { AsyncButton, Button } from "./button";
+export type { AsyncButtonProps, ButtonProps, CopyButtonProps } from "./button";
+export { AsyncButton, Button, CopyButton } from "./button";
 export type { CardHeaderProps, CardProps, CardTitleProps } from "./card";
 export {
   Card,

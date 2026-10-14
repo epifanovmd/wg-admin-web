@@ -19,6 +19,9 @@ import type {
   GetWgSocksMacClientParams,
   IAddWgInterfaceReplicaBody,
   IAgentInstallCommandDto,
+  IAgentInstallOptionsDto,
+  IAgentIssuedEnvDto,
+  IAgentIssuedLinkDto,
   IAgentLogsDto,
   IAgentMetricsPointDto,
   IAgentReleaseDto,
@@ -55,6 +58,10 @@ import type {
   IGenerateNonceRequestDto,
   IGenerateNonceResponseDto,
   IInstallCommandBody,
+  IIssueAgentBody,
+  IIssueAgentLinkBody,
+  IIssueWgNodeAgentBody,
+  IIssueWgNodeAgentLinkBody,
   IMoveWgInterfaceBody,
   IPaginatedDtoAgentDto,
   IPaginatedDtoAgentEnrollmentTokenDto,
@@ -447,6 +454,79 @@ export const getWgAdmin = () => {
   };
 
   /**
+   * Адрес бэкенда для агентов и архив агента: платформы, есть ли запуск в Docker Compose.
+   * @summary Варианты установки агента
+   */
+  const getAgentInstallOptions = (
+    options?: SecondParameter<typeof mainMutator<IAgentInstallOptionsDto>>,
+  ) => {
+    return mainMutator<IAgentInstallOptionsDto>(
+      { url: `/api/v1/agent-enrollment/install-options`, method: "GET" },
+      options,
+    );
+  };
+
+  /**
+   * Токен регистрации и `.env` с адресом, токеном и именем — для архива агента или образа
+   * (`--env-file`). Токен — только в этом ответе.
+   * @summary Выдать токен и .env агента
+   */
+  const issueAgentEnv = (
+    iIssueAgentBody: IIssueAgentBody,
+    options?: SecondParameter<typeof mainMutator<IAgentIssuedEnvDto>>,
+  ) => {
+    return mainMutator<IAgentIssuedEnvDto>(
+      {
+        url: `/api/v1/agent-enrollment/issue/env`,
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        data: iIssueAgentBody,
+      },
+      options,
+    );
+  };
+
+  /**
+   * Архив агента (все платформы) с `.env` (адрес, одноразовый токен, имя): распаковать и
+   * запустить — службой, на месте или в Docker. Архив на сервере не хранится.
+   * @summary Выдать архив агента с токеном
+   */
+  const issueAgentArchive = (
+    iIssueAgentBody: IIssueAgentBody,
+    options?: SecondParameter<typeof mainMutator<string>>,
+  ) => {
+    return mainMutator<string>(
+      {
+        url: `/api/v1/agent-enrollment/issue/archive`,
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        data: iIssueAgentBody,
+      },
+      options,
+    );
+  };
+
+  /**
+   * Одноразовая ссылка на архив агента с токеном (для передачи человеку): скачать можно один
+   * раз и до срока, токен создаётся при скачивании.
+   * @summary Выдать ссылку на архив агента
+   */
+  const issueAgentLink = (
+    iIssueAgentLinkBody: IIssueAgentLinkBody,
+    options?: SecondParameter<typeof mainMutator<IAgentIssuedLinkDto>>,
+  ) => {
+    return mainMutator<IAgentIssuedLinkDto>(
+      {
+        url: `/api/v1/agent-enrollment/issue/link`,
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        data: iIssueAgentLinkBody,
+      },
+      options,
+    );
+  };
+
+  /**
    * Каталог сборок воркеров проекта (`AGENT_BUNDLE_DIR/release`).
    * @summary Сборки воркеров
    */
@@ -714,6 +794,69 @@ export const getWgAdmin = () => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         data: iCreateWgNodeInstallCommandBody,
+      },
+      options,
+    );
+  };
+
+  /**
+   * `.env` агента ноды: адрес, одноразовый токен с меткой ноды (агент привяжется к ней), имя
+   * агента — для архива агента или образа (`--env-file`). Токен — только в этом ответе.
+   * @summary Выдать .env агента ноды
+   */
+  const issueWgNodeAgentEnv = (
+    id: Uuid,
+    iIssueWgNodeAgentBody: IIssueWgNodeAgentBody,
+    options?: SecondParameter<typeof mainMutator<IAgentIssuedEnvDto>>,
+  ) => {
+    return mainMutator<IAgentIssuedEnvDto>(
+      {
+        url: `/api/v1/wg/nodes/${id}/agent/issue/env`,
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        data: iIssueWgNodeAgentBody,
+      },
+      options,
+    );
+  };
+
+  /**
+   * Архив агента (все платформы) с `.env` агента ноды: распаковать и запустить — службой, на
+   * месте или в Docker.
+   * @summary Выдать архив агента ноды
+   */
+  const issueWgNodeAgentArchive = (
+    id: Uuid,
+    iIssueWgNodeAgentBody: IIssueWgNodeAgentBody,
+    options?: SecondParameter<typeof mainMutator<string>>,
+  ) => {
+    return mainMutator<string>(
+      {
+        url: `/api/v1/wg/nodes/${id}/agent/issue/archive`,
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        data: iIssueWgNodeAgentBody,
+      },
+      options,
+    );
+  };
+
+  /**
+   * Одноразовая ссылка на архив агента ноды: скачать можно один раз и до срока, токен с
+   * меткой ноды создаётся при скачивании.
+   * @summary Выдать ссылку на архив агента ноды
+   */
+  const issueWgNodeAgentLink = (
+    id: Uuid,
+    iIssueWgNodeAgentLinkBody: IIssueWgNodeAgentLinkBody,
+    options?: SecondParameter<typeof mainMutator<IAgentIssuedLinkDto>>,
+  ) => {
+    return mainMutator<IAgentIssuedLinkDto>(
+      {
+        url: `/api/v1/wg/nodes/${id}/agent/issue/link`,
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        data: iIssueWgNodeAgentLinkBody,
       },
       options,
     );
@@ -2926,6 +3069,10 @@ export const getWgAdmin = () => {
     getAgentEnrollmentTokens,
     revokeAgentEnrollmentToken,
     createAgentInstallCommand,
+    getAgentInstallOptions,
+    issueAgentEnv,
+    issueAgentArchive,
+    issueAgentLink,
     getAgentRelease,
     restartAgentWorker,
     updateAgentWorker,
@@ -2941,6 +3088,9 @@ export const getWgAdmin = () => {
     assignWgNode,
     revokeWgNode,
     createWgNodeInstallCommand,
+    issueWgNodeAgentEnv,
+    issueWgNodeAgentArchive,
+    issueWgNodeAgentLink,
     bindWgNodeAgent,
     createWgEndpoint,
     listWgEndpoints,
@@ -3132,6 +3282,18 @@ export type CreateAgentInstallCommandResult = NonNullable<
     ReturnType<ReturnType<typeof getWgAdmin>["createAgentInstallCommand"]>
   >
 >;
+export type GetAgentInstallOptionsResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["getAgentInstallOptions"]>>
+>;
+export type IssueAgentEnvResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["issueAgentEnv"]>>
+>;
+export type IssueAgentArchiveResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["issueAgentArchive"]>>
+>;
+export type IssueAgentLinkResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["issueAgentLink"]>>
+>;
 export type GetAgentReleaseResult = NonNullable<
   Awaited<ReturnType<ReturnType<typeof getWgAdmin>["getAgentRelease"]>>
 >;
@@ -3178,6 +3340,15 @@ export type CreateWgNodeInstallCommandResult = NonNullable<
   Awaited<
     ReturnType<ReturnType<typeof getWgAdmin>["createWgNodeInstallCommand"]>
   >
+>;
+export type IssueWgNodeAgentEnvResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["issueWgNodeAgentEnv"]>>
+>;
+export type IssueWgNodeAgentArchiveResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["issueWgNodeAgentArchive"]>>
+>;
+export type IssueWgNodeAgentLinkResult = NonNullable<
+  Awaited<ReturnType<ReturnType<typeof getWgAdmin>["issueWgNodeAgentLink"]>>
 >;
 export type BindWgNodeAgentResult = NonNullable<
   Awaited<ReturnType<ReturnType<typeof getWgAdmin>["bindWgNodeAgent"]>>
