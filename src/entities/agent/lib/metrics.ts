@@ -269,38 +269,61 @@ export const workerMetrics = (
 /** Поле-момент времени (`at`, `startedAt`): как показатель бессмысленно. */
 const isTimeField = (key: string): boolean => key === "at" || /At$/.test(key);
 
-/**
- * Числовые поля значения (вложенные — через точку) — кандидаты в показатели;
- * моменты времени пропускаются.
- */
-export const numericFields = (
-  value: unknown,
-  prefix = "",
-  depth = 0,
-): string[] => {
-  if (!isRecord(value) || depth > 2) return [];
+/** Показатель: число, строка (адрес, устройство, текст ошибки) или да/нет. */
+export type TMetricValue = number | string | boolean;
 
-  return Object.entries(value)
-    .flatMap(([key, field]) => {
-      const path = prefix ? `${prefix}.${key}` : key;
+/** Строка длиннее — не показатель (смотреть в ответе целиком). */
+const MAX_METRIC_TEXT = 200;
 
-      if (typeof field === "number") return isTimeField(key) ? [] : [path];
+const metricValue = (field: unknown): TMetricValue | undefined => {
+  if (typeof field === "number")
+    return Number.isFinite(field) ? field : undefined;
+  if (typeof field === "boolean") return field;
+  if (typeof field === "string" && field && field.length <= MAX_METRIC_TEXT) {
+    return field;
+  }
 
-      return numericFields(field, path, depth + 1);
-    })
-    .sort();
+  return undefined;
 };
 
-/** Число по пути «a.b.c»; не число — `undefined`. */
-export const readNumber = (
+/**
+ * Поля-показатели значения (вложенные — через точку): сначала строки и да/нет
+ * (что это и как настроено), затем числа; моменты времени пропускаются.
+ */
+export const metricFields = (value: unknown): string[] => {
+  const collect = (node: unknown, prefix: string, depth: number): string[] => {
+    if (!isRecord(node) || depth > 2) return [];
+
+    return Object.entries(node).flatMap(([key, field]) => {
+      const path = prefix ? `${prefix}.${key}` : key;
+
+      if (metricValue(field) !== undefined) {
+        return isTimeField(key) && typeof field === "number" ? [] : [path];
+      }
+
+      return collect(field, path, depth + 1);
+    });
+  };
+  const fields = collect(value, "", 0);
+  const isNumber = (path: string) =>
+    typeof readMetric(value, path) === "number";
+
+  return [
+    ...fields.filter(path => !isNumber(path)).sort(),
+    ...fields.filter(isNumber).sort(),
+  ];
+};
+
+/** Показатель по пути «a.b.c»; не показатель — `undefined`. */
+export const readMetric = (
   value: unknown,
   path: string,
-): number | undefined => {
+): TMetricValue | undefined => {
   let current: unknown = value;
 
   for (const key of path.split(".")) {
     current = isRecord(current) ? current[key] : undefined;
   }
 
-  return numberOr(current);
+  return metricValue(current);
 };

@@ -51,9 +51,10 @@ export {
   hasHostMetric,
   hostMetrics,
   hostPoints,
-  numericFields,
+  metricFields,
   pointHost,
-  readNumber,
+  readMetric,
+  type TMetricValue,
   workerMetrics,
 } from "./lib/metrics";
 export { AGENT_PERMISSIONS } from "./lib/permissions";

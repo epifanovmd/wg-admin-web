@@ -6,9 +6,9 @@ import {
   hostMetrics,
   hostPoints,
   mergeMetricsPoints,
-  numericFields,
+  metricFields,
   pointHost,
-  readNumber,
+  readMetric,
   workerMetrics,
 } from "../metrics";
 
@@ -78,17 +78,22 @@ describe("agent metrics", () => {
     expect(workerMetrics(undefined, "echo")).toBeUndefined();
   });
 
-  it("числовые поля, вложенные — через точку; моменты времени — нет", () => {
+  it("показатели: строки и да/нет, затем числа; вложенные — через точку; моменты времени и длинный текст — нет", () => {
     const data = {
       at: 1_791_000_000_000,
       hits: 3,
       name: "x",
+      empty: "",
+      dump: "x".repeat(500),
+      list: [1, 2],
       db: { size: 10, ok: true, checkedAt: 5 },
     };
 
-    expect(numericFields(data)).toEqual(["db.size", "hits"]);
-    expect(readNumber(data, "db.size")).toBe(10);
-    expect(readNumber(data, "name")).toBeUndefined();
-    expect(numericFields([1, 2])).toEqual([]);
+    expect(metricFields(data)).toEqual(["db.ok", "name", "db.size", "hits"]);
+    expect(readMetric(data, "db.size")).toBe(10);
+    expect(readMetric(data, "db.ok")).toBe(true);
+    expect(readMetric(data, "name")).toBe("x");
+    expect(readMetric(data, "dump")).toBeUndefined();
+    expect(metricFields([1, 2])).toEqual([]);
   });
 });

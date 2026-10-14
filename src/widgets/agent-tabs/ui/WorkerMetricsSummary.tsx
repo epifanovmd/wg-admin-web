@@ -1,4 +1,10 @@
-import { formatJson, numericFields, readNumber } from "@entities/agent";
+import {
+  formatJson,
+  metricFields,
+  readMetric,
+  type TMetricValue,
+} from "@entities/agent";
+import { cn } from "@shared/lib/utils";
 import { Collapse } from "@shared/ui";
 import { FC } from "react";
 
@@ -7,15 +13,19 @@ interface WorkerMetricsSummaryProps {
   metrics: unknown;
 }
 
-/** Числовых показателей в строку — не больше. */
-const MAX_FIELDS = 12;
+/** Показателей в сетке — не больше. */
+const MAX_FIELDS = 16;
 
-const formatNumber = (value: number): string =>
-  Number.isInteger(value)
+const formatMetric = (value: TMetricValue): string => {
+  if (typeof value === "boolean") return value ? "да" : "нет";
+  if (typeof value === "string") return value;
+
+  return Number.isInteger(value)
     ? value.toLocaleString("ru-RU")
     : value.toLocaleString("ru-RU", { maximumFractionDigits: 2 });
+};
 
-/** Метрики воркера компактно: числовые поля и ответ целиком по запросу. */
+/** Метрики воркера компактно: показатели (числа, строки, да/нет) и ответ целиком по запросу. */
 export const WorkerMetricsSummary: FC<WorkerMetricsSummaryProps> = ({
   metrics,
 }) => {
@@ -27,7 +37,7 @@ export const WorkerMetricsSummary: FC<WorkerMetricsSummaryProps> = ({
     );
   }
 
-  const fields = numericFields(metrics).slice(0, MAX_FIELDS);
+  const fields = metricFields(metrics).slice(0, MAX_FIELDS);
 
   return (
     <section className="flex flex-col gap-1.5">
@@ -36,17 +46,29 @@ export const WorkerMetricsSummary: FC<WorkerMetricsSummaryProps> = ({
       </h4>
       {fields.length > 0 && (
         <dl className="grid grid-cols-2 gap-x-4 gap-y-1 sm:grid-cols-3 xl:grid-cols-4">
-          {fields.map(field => (
-            <div
-              key={field}
-              className="flex min-w-0 justify-between gap-2 text-xs"
-            >
-              <dt className="truncate text-muted-foreground">{field}</dt>
-              <dd className="tabular-nums">
-                {formatNumber(readNumber(metrics, field) ?? 0)}
-              </dd>
-            </div>
-          ))}
+          {fields.map(field => {
+            const value = readMetric(metrics, field) ?? 0;
+            const text = formatMetric(value);
+
+            return (
+              <div
+                key={field}
+                className="flex min-w-0 justify-between gap-2 text-xs"
+              >
+                <dt className="shrink-0 text-muted-foreground">{field}</dt>
+                <dd
+                  title={text}
+                  className={cn(
+                    "min-w-0 truncate text-right",
+                    typeof value === "number" && "tabular-nums",
+                    value === false && "text-destructive",
+                  )}
+                >
+                  {text}
+                </dd>
+              </div>
+            );
+          })}
         </dl>
       )}
       <Collapse size="sm">
