@@ -2,13 +2,15 @@ services:
   wg-admin-web:
     build:
       context: .
-      # Версия сборки — из make (git describe, коммит, время сборки).
       args:
+        # Режим сборки vite (.env.[mode]): на сервере — production, make local-up — docker.
+        BUILD_MODE: ${BUILD_MODE:-production}
+        # Версия сборки — из make (git describe, коммит, время сборки).
         APP_VERSION: ${APP_VERSION:-}
         APP_COMMIT: ${APP_COMMIT:-}
         APP_BUILT_AT: ${APP_BUILT_AT:-}
-    image: wg-admin-web:latest
+    image: wg-admin-web:${TAG:-latest}
     container_name: wg-admin-web
     ports:
-      - "${APP_PORT:-3000}:80"
+      - "${APP_PORT:-4175}:80"
     restart: unless-stopped

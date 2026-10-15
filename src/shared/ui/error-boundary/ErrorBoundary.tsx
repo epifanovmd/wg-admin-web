@@ -56,6 +56,7 @@ export class ErrorBoundary extends Component<
       return;
     }
 
+    // eslint-disable-next-line no-console -- без onError ошибка рендера должна попасть в консоль
     console.error(
       "[ErrorBoundary] Uncaught error:",
       error,

@@ -5,12 +5,14 @@ node_modules/
 dist/
 coverage/
 
-# Временные файлы плагина TanStack Router
+# Временные файлы плагина TanStack Router и кэш ESLint
 .tanstack/
+.eslintcache
 
-# Env: локальные настройки разработки, сервера и деплоя (образец — .env.example)
+# Env: локальные настройки разработки, Docker, сервера и деплоя (образцы — *.example)
 .env*
 !.env.example
+!.env.docker.example
 !.env.deploy.example
 *.local
 

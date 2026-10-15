@@ -158,6 +158,7 @@ export class EntityHolder<
     isRefresh: boolean,
   ): Promise<IEntityHolderResult<TData, TError>> {
     if (!this._onFetch) {
+      // eslint-disable-next-line no-console -- предупреждение разработчику о холдере без обработчика
       console.warn(
         "[EntityHolder] load/refresh called but no onFetch was provided in options.",
       );

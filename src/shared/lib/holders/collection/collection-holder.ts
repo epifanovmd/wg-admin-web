@@ -139,6 +139,7 @@ export class CollectionHolder<
     isRefresh: boolean,
   ): Promise<ICollectionHolderResult<TItem, TError>> {
     if (!this._onFetch) {
+      // eslint-disable-next-line no-console -- предупреждение разработчику о холдере без обработчика
       console.warn(
         "[CollectionHolder] load/refresh called but no onFetch was provided in options.",
       );

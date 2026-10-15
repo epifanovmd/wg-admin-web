@@ -27,7 +27,8 @@ jobs:
       - run: yarn lint
       - run: yarn typecheck
       - run: yarn test
-      - run: yarn build
+      # Сборка как в образе make local-up: VITE_* — из .env.docker.example.
+      - run: cp .env.docker.example .env.docker && yarn build --mode docker
 
   # Деплой main на хост после проверок; без настроек DEPLOY_ENV — пропуск.
   deploy:

@@ -267,6 +267,7 @@ export class PagedHolder<
     isRefresh: boolean,
   ): Promise<IPagedHolderResult<TItem, TError>> {
     if (!this._onFetch) {
+      // eslint-disable-next-line no-console -- предупреждение разработчику о холдере без обработчика
       console.warn(
         "[PagedHolder] load/reload/goToPage called but no onFetch was provided in options.",
       );

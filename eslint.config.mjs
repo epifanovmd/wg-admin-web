@@ -47,6 +47,9 @@ export default tseslint.config(
       "react/prop-types": "off",
       "react/jsx-uses-vars": "error",
 
+      // Логи — только осознанно: исключение отмечается eslint-disable с причиной.
+      "no-console": "error",
+
       "no-undef": "off",
       "no-unused-vars": "off",
       "@typescript-eslint/no-unused-vars": [

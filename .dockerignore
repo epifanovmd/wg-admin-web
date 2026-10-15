@@ -5,6 +5,7 @@ node_modules
 dist
 coverage
 .tanstack
+.eslintcache
 
 # Git, CI и инструменты разработки
 .git
@@ -18,13 +19,14 @@ coverage
 docs
 *.md
 
-# Env разработки и деплоя; сборке нужен только .env.production
+# Env разработки и деплоя; сборке нужен только .env.[BUILD_MODE]: .env.production
+# (сервер) или .env.docker (make local-up)
 .env.development
-.env.development.local
 .env.local
 .env.*.local
 .env.deploy*
 .env.example
+.env.docker.example
 
 # Логи и временные файлы
 *.log

@@ -269,6 +269,7 @@ export class InfiniteHolder<
     mode: "loading" | "refreshing" | "loadMore",
   ): Promise<IInfiniteHolderResult<TItem, TError>> {
     if (!this._onFetch) {
+      // eslint-disable-next-line no-console -- предупреждение разработчику о холдере без обработчика
       console.warn(
         "[InfiniteHolder] load/refresh/loadMore called but no onFetch was provided in options.",
       );

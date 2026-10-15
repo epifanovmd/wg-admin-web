@@ -1,5 +1,6 @@
 # Сборка статики и раздача nginx. Адрес API и прочие VITE_* встраиваются при
-# сборке из .env.production (на хост кладёт `make env` или деплой из CI).
+# сборке из .env.$BUILD_MODE: на сервере — .env.production (кладёт `make env` или
+# деплой из CI), локально (make local-up) — .env.docker.
 ARG NODE_VERSION=22-alpine
 
 FROM node:${NODE_VERSION} AS deps
@@ -17,7 +18,10 @@ COPY . .
 ARG APP_VERSION=""
 ARG APP_COMMIT=""
 ARG APP_BUILT_AT=""
-RUN APP_VERSION=$APP_VERSION APP_COMMIT=$APP_COMMIT APP_BUILT_AT=$APP_BUILT_AT yarn build
+# Режим vite: какой .env.[mode] встраивается в сборку.
+ARG BUILD_MODE=production
+RUN APP_VERSION=$APP_VERSION APP_COMMIT=$APP_COMMIT APP_BUILT_AT=$APP_BUILT_AT \
+    yarn build --mode $BUILD_MODE
 
 FROM nginx:1.27-alpine AS runner
 COPY nginx.conf /etc/nginx/conf.d/default.conf

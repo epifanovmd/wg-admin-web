@@ -12,17 +12,21 @@ WG Admin — веб-админка WireGuard VPN (бэкенд — соседн�
 ## Команды
 
 ```sh
-yarn dev            # dev server :3000
+yarn dev            # dev server :3001; /api и /socket.io проксируются на бэкенд (:8182)
 yarn typecheck      # tsc: приложение + конфиги сборки (tsconfig.node.json)
 yarn lint / lint:fix
+yarn format / format:check
 yarn test           # vitest run (watch: test:dev, coverage: test:coverage)
-yarn build
-yarn generate:orval # регенерация src/shared/api/gen/ (MAIN_SWAGGER — путь/URL спецификации)
+yarn build          # production-сборка (другой env — --mode <mode>)
+yarn verify         # lint + typecheck + test + build
+yarn generate       # = generate:orval: регенерация src/shared/api/gen/ (MAIN_SWAGGER — путь/URL спецификации)
+make help           # Docker и деплой; make local-up — сборка в Docker на :4175
 ```
 
-Перед merge обязательны: lint + typecheck + test + build. Хуки lefthook: на коммит —
-eslint и prettier по изменённым файлам, на push — typecheck и тесты; CI (`ci.yml`) —
-всё вместе со сборкой.
+Перед merge обязательны: lint + typecheck + test + build (`yarn verify`). Хуки
+lefthook: на коммит — eslint и prettier по изменённым файлам, на push — typecheck и
+тесты; CI (`ci.yml`) — всё вместе со сборкой. Для живой проверки нужен запущенный
+бэкенд по адресу из `.env.development`.
 
 ## Никогда не редактировать вручную
 
@@ -93,7 +97,7 @@ aliases, build, auth, holders, ui, routing, testing, patterns. Загружай 
    (каждая — рабочее состояние). Показать пользователю, дождаться подтверждения.
 3. **Выполнение** — по одной итерации; после каждой — lint и typecheck; не переходить
    дальше, пока текущая не стабильна. Сообщать прогресс.
-4. **Проверка** — `yarn lint`, `yarn typecheck`, `yarn test`, `yarn build`; краткое резюме.
+4. **Проверка** — `yarn verify` (lint, typecheck, test, build); краткое резюме.
 
 ## Комментарии в коде
 

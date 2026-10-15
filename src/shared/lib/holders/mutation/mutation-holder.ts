@@ -87,6 +87,7 @@ export class MutationHolder<
     const fn = _params[1] ?? this._onMutate;
 
     if (!fn) {
+      // eslint-disable-next-line no-console -- предупреждение разработчику о холдере без обработчика
       console.warn(
         "[MutationHolder] execute() called but no mutation function provided. " +
           "Pass it inline or set onMutate in options.",

@@ -8,6 +8,11 @@ import { cjsInterop } from "vite-plugin-cjs-interop";
 
 const root = path.resolve(__dirname);
 
+/** Бэкенд по умолчанию (локальный wg-admin-api), если VITE_BASE_URL не задан. */
+const DEFAULT_API_URL = "http://localhost:8182";
+/** Порт dev-сервера по умолчанию, если VITE_PORT не задан. */
+const DEFAULT_PORT = 3001;
+
 /** Алиасы слоёв FSD; те же пути — в `paths` tsconfig.json. */
 export const alias = {
   "@app": path.resolve(root, "src/app"),
@@ -37,6 +42,8 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, root, "VITE_");
   const host = env.VITE_HOST || undefined;
   const port = env.VITE_PORT ? Number(env.VITE_PORT) : undefined;
+  const apiTarget = env.VITE_BASE_URL || DEFAULT_API_URL;
+  const socketTarget = env.VITE_SOCKET_BASE_URL || apiTarget;
 
   return {
     plugins: [
@@ -52,12 +59,12 @@ export default defineConfig(({ mode }) => {
     define,
     server: {
       host,
-      port: port ?? 3000,
+      port: port ?? DEFAULT_PORT,
       watch: { ignored: ["**/src/app/routeTree.gen.ts"] },
-      // HTTP API — через dev-сервер (без CORS); сокет подключается к
-      // VITE_SOCKET_BASE_URL напрямую.
+      // API и Socket.IO — через dev-сервер (тот же origin, CORS не нужен).
       proxy: {
-        "/api": { target: env.VITE_BASE_URL, changeOrigin: true },
+        "/api": { target: apiTarget, changeOrigin: true },
+        "/socket.io": { target: socketTarget, changeOrigin: true, ws: true },
       },
     },
     // Страницы грузятся лениво; общий чанк с клиентом API крупный,
